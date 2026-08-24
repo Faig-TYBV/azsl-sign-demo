@@ -290,7 +290,7 @@ class AzslFeatureDataset(Dataset):
 
     def __init__(self, samples: Sequence[FeatureSample], augment=None,
                  with_delta: bool = False, normalizer=None,
-                 with_velocity: bool = False, timing_map=None):
+                 with_velocity: bool = False, timing_map=None, smoother=None):
         """``augment``: optional callable (features, mask) -> augmented
         features. Pass a TemporalAugmentation for the TRAINING split only;
         leave None (default) for validation/test so they stay untouched.
@@ -299,6 +299,8 @@ class AzslFeatureDataset(Dataset):
         (train-fitted statistics) after augmentation.
         ``with_velocity``: concatenate time-aware velocity -> [26, 252];
         requires ``timing_map`` ({npz_posix_path: {"n","fps"}}).
+        ``smoother``: optional TemporalSmoother applied to ALL splits
+        before any other transform (deterministic, mask-aware).
         """
         self.samples: List[FeatureSample] = list(samples)
         self.augment = augment
@@ -306,6 +308,7 @@ class AzslFeatureDataset(Dataset):
         self.normalizer = normalizer
         self.with_velocity = with_velocity
         self.timing_map = timing_map or {}
+        self.smoother = smoother
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -315,6 +318,8 @@ class AzslFeatureDataset(Dataset):
         with np.load(sample.path) as data:
             features = data["features"]
             mask = data["mask"]
+            if self.smoother is not None:
+                features = self.smoother(features, mask)
             if self.augment is not None:
                 features = self.augment(features, mask)
             if self.normalizer is not None:

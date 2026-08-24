@@ -564,5 +564,94 @@ class TimeAwareVelocityTests(unittest.TestCase):
         np.testing.assert_array_equal(v1, v2)
 
 
+class TemporalSmoothingTests(unittest.TestCase):
+    """Experiment 10: mask-aware centered 3-frame moving average."""
+
+    def setUp(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "data"))
+        from smoothing import TemporalSmoother
+        self.smooth = TemporalSmoother(window=3)
+        rng = np.random.default_rng(11)
+        self.mask = np.zeros(26, dtype=np.float32)
+        self.mask[2:9] = 1.0   # valid run
+        self.mask[14:20] = 1.0  # second valid run
+        self.feats = rng.normal(0.3, 0.3, (26, 126)).astype(np.float32)
+        self.feats[self.mask == 0] = 0.0
+
+    def test_shape_dtype_and_no_mutation(self):
+        original = self.feats.copy()
+        out = self.smooth(self.feats, self.mask)
+        self.assertEqual(out.shape, (26, 126))
+        self.assertEqual(out.dtype, np.float32)
+        np.testing.assert_array_equal(self.feats, original)
+
+    def test_invalid_frames_remain_zero(self):
+        out = self.smooth(self.feats, self.mask)
+        for t in [0, 1, 9, 10, 13, 20, 25]:
+            np.testing.assert_array_equal(
+                out[t], np.zeros(126, np.float32), err_msg=f"slot {t}")
+
+    def test_invalid_frames_do_not_influence_valid_neighbors(self):
+        out = self.smooth(self.feats, self.mask)
+        # Run start t=2: only neighbors 2,3 valid -> mean(feats[2:4])
+        np.testing.assert_allclose(
+            out[2], (self.feats[2] + self.feats[3]) / 2, rtol=1e-6)
+        # Interior slot 5: full 3-frame window within the same run
+        np.testing.assert_allclose(
+            out[5], (self.feats[4] + self.feats[5] + self.feats[6]) / 3,
+            rtol=1e-6)
+        # Run-end slot 8 must NOT include the following zero frame:
+        np.testing.assert_allclose(
+            out[8], (self.feats[7] + self.feats[8]) / 2, rtol=1e-6)
+        # And the invalid gap itself stays exactly zero:
+        np.testing.assert_array_equal(out[10], np.zeros(126, np.float32))
+
+    def test_smoothing_does_not_cross_run_boundaries(self):
+        out = self.smooth(self.feats, self.mask)
+        # Run1 end t=8 uses feats 7,8 only; run2 start t=14 uses 14,15.
+        np.testing.assert_allclose(
+            out[8], (self.feats[7] + self.feats[8]) / 2, rtol=1e-6)
+        np.testing.assert_allclose(
+            out[14], (self.feats[14] + self.feats[15]) / 2, rtol=1e-6)
+
+    def test_deterministic(self):
+        a = self.smooth(self.feats, self.mask)
+        b = self.smooth(self.feats, self.mask)
+        np.testing.assert_array_equal(a, b)
+
+    def test_noisy_sequence_is_smoothed_constant_stays_constant(self):
+        # Noisy single-feature sequence: smoothed interior = local mean.
+        f = np.zeros((26, 1), dtype=np.float32)
+        m = np.zeros(26, dtype=np.float32); m[1:24] = 1.0
+        f[:, 0] = np.round(np.random.default_rng(0).normal(0, 1, 26))
+        f[m == 0] = 0.0
+        out = self.smooth(f, m)
+        np.testing.assert_allclose(
+            out[5, 0], (f[4, 0] + f[5, 0] + f[6, 0]) / 3, rtol=1e-6)
+        # Variance across valid frames must decrease.
+        self.assertLess(out[m == 1].std(), f[m == 1].std())
+        # Constant sequence stays identical.
+        fc = np.full((26, 126), 0.42, dtype=np.float32)
+        oc = self.smooth(fc, np.ones(26, dtype=np.float32))
+        np.testing.assert_allclose(oc, fc, atol=1e-6)
+
+    def test_dataset_labels_and_shapes_unchanged(self):
+        import tempfile
+        from azsl_dataset import AzslFeatureDataset, FeatureSample
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "C" / "s.npz"
+            p.parent.mkdir(parents=True)
+            np.savez(p, features=self.feats, mask=self.mask)
+            ds_s = AzslFeatureDataset([FeatureSample(p, "C", 77)],
+                                      smoother=self.smooth)
+            ds_p = AzslFeatureDataset([FeatureSample(p, "C", 77)])
+            xs, ys = ds_s[0]
+            xp, yp = ds_p[0]
+            self.assertEqual(ys, yp == yp and 77)
+            self.assertEqual(tuple(xs.shape), (26, 126))
+            self.assertEqual(xs.dtype, torch.float32)
+            self.assertFalse(torch.allclose(xs, xp))
+
+
 if __name__ == "__main__":
     unittest.main()

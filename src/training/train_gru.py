@@ -125,6 +125,9 @@ def main() -> int:
     parser.add_argument("--velocity", action="store_true",
                         help="concatenate time-aware velocity features "
                              "(input_size 252; requires extraction metadata)")
+    parser.add_argument("--smooth", action="store_true",
+                        help="apply mask-aware centered 3-frame moving "
+                             "average to all splits (input stays 126)")
     parser.add_argument("--norm-stats", type=Path, default=None,
                         help="where to save/load normalization statistics")
     parser.add_argument("--delta", action="store_true",
@@ -188,19 +191,29 @@ def main() -> int:
         log.info("Time-aware velocity ENABLED; loaded timing for %d videos",
                  len(timing_map))
 
+    smoother = None
+    if args.smooth:
+        from smoothing import TemporalSmoother
+        smoother = TemporalSmoother(window=3)
+        log.info("Temporal smoothing ENABLED (centered 3-frame moving "
+                 "average, mask-aware) on ALL splits")
+
     train_ds = AzslFeatureDataset(data["splits"]["train"], augment=augment,
                                   with_delta=args.delta,
                                   normalizer=normalizer,
                                   with_velocity=args.velocity,
-                                  timing_map=timing_map)
+                                  timing_map=timing_map,
+                                  smoother=smoother)
     val_ds = AzslFeatureDataset(data["splits"]["val"], with_delta=args.delta,
                                 normalizer=normalizer,
                                 with_velocity=args.velocity,
-                                timing_map=timing_map)
+                                timing_map=timing_map,
+                                smoother=smoother)
     test_ds = AzslFeatureDataset(data["splits"]["test"], with_delta=args.delta,
                                  normalizer=normalizer,
                                  with_velocity=args.velocity,
-                                 timing_map=timing_map)
+                                 timing_map=timing_map,
+                                 smoother=smoother)
     pin_memory = device.type == "cuda"
     common = dict(batch_size=args.batch_size, num_workers=args.num_workers,
                   pin_memory=pin_memory)
