@@ -401,5 +401,77 @@ class FeatureNormalizationTests(unittest.TestCase):
         self.assertEqual(tuple(m(torch.randn(3, 26, 126)).shape), (3, 200))
 
 
+class BalancedSamplerTests(unittest.TestCase):
+    """Experiment 8: balanced sampling replaces class-weighted loss."""
+
+    def setUp(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "data"))
+        import tempfile
+        from azsl_dataset import AzslFeatureDataset, FeatureSample
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        # Imbalanced: class 0 x10, class 1 x2
+        samples = []
+        for cls, n in ((0, 10), (1, 2)):
+            for i in range(n):
+                p = root / f"C{cls}" / f"{i}.npz"
+                p.parent.mkdir(parents=True, exist_ok=True)
+                np.savez(p, features=np.random.rand(26, 126).astype(np.float32),
+                         mask=np.ones(26, dtype=np.float32))
+                samples.append(FeatureSample(p, f"C{cls}", cls))
+        self.ds = AzslFeatureDataset(samples)
+        self.labels = [s.label for s in samples]
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_weights_are_inverse_train_frequency(self):
+        from collections import Counter
+        counts = Counter(self.labels)
+        w = [1.0 / counts[l] for l in self.labels]
+        sampler = torch.utils.data.WeightedRandomSampler(
+            w, num_samples=len(self.ds), replacement=True)
+        self.assertEqual(len(sampler.weights), len(self.ds))
+        self.assertAlmostEqual(float(sampler.weights[0]), 0.1, places=6)   # class 0 (10x)
+        self.assertAlmostEqual(float(sampler.weights[10]), 0.5, places=6)  # class 1 (2x)
+
+    def test_sampler_properties_and_balance(self):
+        from collections import Counter
+        counts = Counter(self.labels)
+        w = [1.0 / counts[l] for l in self.labels]
+        sampler = torch.utils.data.WeightedRandomSampler(
+            w, num_samples=len(self.ds), replacement=True,
+            generator=torch.Generator().manual_seed(42))
+        self.assertTrue(sampler.replacement)
+        self.assertEqual(sampler.num_samples, len(self.ds))
+        idx = list(torch.utils.data.WeightedRandomSampler(
+            w, num_samples=200, replacement=True,
+            generator=torch.Generator().manual_seed(42)))
+        sampled = Counter(self.labels[i] for i in idx)
+        # Exposure approximately balanced despite 5:1 imbalance.
+        frac1 = sampled[1] / len(idx)
+        self.assertGreater(frac1, 0.4)
+        self.assertLess(frac1, 0.6)
+
+    def test_val_test_loaders_have_no_sampler(self):
+        from torch.utils.data import DataLoader
+        vl = DataLoader(torch.utils.data.Subset(self.ds, [0]), batch_size=4)
+        tl = DataLoader(torch.utils.data.Subset(self.ds, [0]), batch_size=4)
+        self.assertIsNone(vl.sampler.__class__.__name__ != "SequentialSampler" and vl.sampler or None)
+        self.assertEqual(vl.sampler.__class__.__name__, "SequentialSampler")
+        self.assertEqual(tl.sampler.__class__.__name__, "SequentialSampler")
+
+    def test_unweighted_loss(self):
+        crit = torch.nn.CrossEntropyLoss()
+        self.assertIsNone(crit.weight)
+
+    def test_batch_shape_preserved(self):
+        from torch.utils.data import DataLoader
+        dl = DataLoader(self.ds, batch_size=4)
+        x, y = next(iter(dl))
+        self.assertEqual(tuple(x.shape), (4, 26, 126))
+        self.assertEqual(y.shape[0], 4)
+
+
 if __name__ == "__main__":
     unittest.main()

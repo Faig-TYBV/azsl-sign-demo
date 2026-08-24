@@ -119,6 +119,9 @@ def main() -> int:
                         help="default: outputs/test_report_gru_baseline.json")
     parser.add_argument("--normalize", action="store_true",
                         help="apply train-only per-dim feature normalization")
+    parser.add_argument("--balanced-sampler", action="store_true",
+                        help="use WeightedRandomSampler on train loader with "
+                             "unweighted CrossEntropyLoss (replaces weighted loss)")
     parser.add_argument("--norm-stats", type=Path, default=None,
                         help="where to save/load normalization statistics")
     parser.add_argument("--delta", action="store_true",
@@ -184,7 +187,48 @@ def main() -> int:
     pin_memory = device.type == "cuda"
     common = dict(batch_size=args.batch_size, num_workers=args.num_workers,
                   pin_memory=pin_memory)
-    train_loader = DataLoader(train_ds, shuffle=True, **common)
+
+    sampler = None
+    shuffle = True
+    if getattr(args, "balanced_sampler", False):
+        # Balanced sampling REPLACES class-weighted loss. Weights use TRAIN
+        # labels only: w_i = 1 / count(class_of_i).
+        from collections import Counter
+        train_labels = [s.label for s in train_ds.samples]
+        counts = Counter(train_labels)
+        sample_weights = [1.0 / counts[l] for l in train_labels]
+        sampler = torch.utils.data.WeightedRandomSampler(
+            weights=sample_weights,
+            num_samples=len(train_ds),
+            replacement=True,
+            generator=torch.Generator().manual_seed(SEED),
+        )
+        shuffle = False  # sampler provides shuffling
+        log.info("Balanced sampling ENABLED (replacement=True, num_samples=%d); "
+                 "loss = unweighted CrossEntropyLoss", len(train_ds))
+        # Deterministic sanity check: draw one epoch of indices.
+        idx_list = list(torch.utils.data.WeightedRandomSampler(
+            weights=sample_weights, num_samples=len(train_ds),
+            replacement=True, generator=torch.Generator().manual_seed(SEED)))
+        sampled_counts = Counter(train_labels[i] for i in idx_list)
+        sc = list(sampled_counts.values())
+        analysis = {
+            "num_sampled": len(idx_list),
+            "unique_sampled": len(set(idx_list)),
+            "min_class_count": int(min(sc)),
+            "max_class_count": int(max(sc)),
+            "mean_class_count": float(np.mean(sc)),
+            "std_class_count": float(np.std(sc)),
+            "classes_sampled": len(sc),
+            "seed": SEED,
+        }
+        Path("outputs").mkdir(exist_ok=True)
+        with open("outputs/sampler_analysis.json", "w", encoding="utf-8") as f:
+            json.dump(analysis, f, indent=2)
+        log.info("Sampler sanity check: %s", analysis)
+
+    train_loader = DataLoader(train_ds, shuffle=shuffle, sampler=sampler,
+                              **common)
     val_loader = DataLoader(val_ds, shuffle=False, **common)
     test_loader = DataLoader(test_ds, shuffle=False, **common)
 
@@ -200,7 +244,10 @@ def main() -> int:
     log.info("Trainable parameters: %d", n_params)
 
     class_weights = data["class_weights"].to(device)  # TRAIN-only weights
-    criterion = nn.CrossEntropyLoss(weight=class_weights)
+    if getattr(args, "balanced_sampler", False):
+        criterion = nn.CrossEntropyLoss()  # NO class weights: sampling handles imbalance
+    else:
+        criterion = nn.CrossEntropyLoss(weight=class_weights)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr,
                                   weight_decay=args.weight_decay)
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
