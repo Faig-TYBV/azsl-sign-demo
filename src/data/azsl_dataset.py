@@ -288,8 +288,13 @@ class AzslFeatureDataset(Dataset):
     The .npz files are opened read-only and never modified.
     """
 
-    def __init__(self, samples: Sequence[FeatureSample]):
+    def __init__(self, samples: Sequence[FeatureSample], augment=None):
+        """``augment``: optional callable (features, mask) -> augmented
+        features. Pass a TemporalAugmentation for the TRAINING split only;
+        leave None (default) for validation/test so they stay untouched.
+        """
         self.samples: List[FeatureSample] = list(samples)
+        self.augment = augment
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -298,6 +303,8 @@ class AzslFeatureDataset(Dataset):
         sample = self.samples[idx]
         with np.load(sample.path) as data:
             features = data["features"]
+            if self.augment is not None:
+                features = self.augment(features, data["mask"])
         if features.shape != EXPECTED_SHAPE:
             raise ValueError(
                 f"{sample.path}: shape {features.shape}, expected {EXPECTED_SHAPE}"

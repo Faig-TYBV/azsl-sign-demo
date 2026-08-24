@@ -117,6 +117,12 @@ def main() -> int:
                         help="default: outputs/training_history_gru_baseline.json")
     parser.add_argument("--report", type=Path, default=None,
                         help="default: outputs/test_report_gru_baseline.json")
+    parser.add_argument("--augment", action="store_true",
+                        help="enable training-time temporal augmentation "
+                             "(train split only)")
+    parser.add_argument("--noise-std", type=float, default=0.01)
+    parser.add_argument("--temporal-mask-prob", type=float, default=0.10)
+    parser.add_argument("--temporal-dropout-prob", type=float, default=0.05)
     args = parser.parse_args()
 
     t_start = time.time()
@@ -129,7 +135,19 @@ def main() -> int:
     data = load_split_metadata(args.metadata)
     idx_to_class = data["idx_to_class"]
     num_classes = len(idx_to_class)
-    train_ds = AzslFeatureDataset(data["splits"]["train"])
+    augment = None
+    if args.augment:
+        from augmentation import TemporalAugmentation  # src/data
+        augment = TemporalAugmentation(
+            noise_std=args.noise_std,
+            temporal_mask_prob=args.temporal_mask_prob,
+            temporal_dropout_prob=args.temporal_dropout_prob,
+            seed=SEED,
+        )
+        log.info("Temporal augmentation ENABLED (train only): noise_std=%s "
+                 "mask_prob=%s dropout_prob=%s", args.noise_std,
+                 args.temporal_mask_prob, args.temporal_dropout_prob)
+    train_ds = AzslFeatureDataset(data["splits"]["train"], augment=augment)
     val_ds = AzslFeatureDataset(data["splits"]["val"])
     test_ds = AzslFeatureDataset(data["splits"]["test"])
     pin_memory = device.type == "cuda"

@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import numpy as np
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "models"))
@@ -155,6 +156,88 @@ class TemporalPoolingTests(unittest.TestCase):
             self.model.eval(); clone.eval()
             x = torch.randn(1, 26, 126)
             self.assertTrue(torch.allclose(self.model(x), clone(x), atol=1e-6))
+
+
+class TemporalAugmentationTests(unittest.TestCase):
+    """Experiment 3: training-time temporal augmentation."""
+
+    def setUp(self):
+        rng = np.random.default_rng(0)
+        self.feats = rng.normal(0.0, 0.5, (26, 126)).astype(np.float32)
+        self.mask = np.zeros(26, dtype=np.float32)
+        self.mask[:20] = 1.0  # last 6 frames are padding (zeros)
+        self.feats[20:] = 0.0
+        from augmentation import TemporalAugmentation
+        self.aug = TemporalAugmentation(
+            noise_std=0.01, temporal_mask_prob=0.10,
+            temporal_dropout_prob=0.05, seed=42)
+
+    def test_shape_and_dtype_preserved(self):
+        out = self.aug(self.feats, self.mask)
+        self.assertEqual(out.shape, (26, 126))
+        self.assertEqual(out.dtype, np.float32)
+
+    def test_original_not_modified(self):
+        original = self.feats.copy()
+        self.aug(self.feats, self.mask)
+        np.testing.assert_array_equal(self.feats, original)
+
+    def test_padding_frames_untouched(self):
+        out = self.aug(self.feats, self.mask)
+        # Padding frames must remain exactly zero.
+        np.testing.assert_array_equal(out[20:], np.zeros((6, 126), np.float32))
+        # Valid frames should change somewhere across several draws.
+        changed = any(
+            not np.allclose(self.aug(self.feats, self.mask)[10], self.feats[10])
+            for _ in range(5)
+        )
+        self.assertTrue(changed)
+
+    def test_zero_augmentation_reproduces_input(self):
+        from augmentation import TemporalAugmentation
+        zero = TemporalAugmentation(noise_std=0.0, temporal_mask_prob=0.0,
+                                    temporal_dropout_prob=0.0)
+        out = zero(self.feats, self.mask)
+        np.testing.assert_array_equal(out, self.feats)
+
+    def test_reproducible_under_seed(self):
+        from augmentation import TemporalAugmentation
+        a1 = TemporalAugmentation(seed=7)(self.feats, self.mask)
+        a2 = TemporalAugmentation(seed=7)(self.feats, self.mask)
+        np.testing.assert_array_equal(a1, a2)
+
+    def test_masking_never_destroys_all_frames(self):
+        from augmentation import TemporalAugmentation
+        # Extreme settings must still leave at least one valid frame intact.
+        for seed in range(10):
+            heavy = TemporalAugmentation(noise_std=0.0, temporal_mask_prob=0.9,
+                                         temporal_dropout_prob=0.5, seed=seed)
+            out = heavy(self.feats, self.mask)
+            frame_sums = np.abs(out[:20]).sum(axis=1)  # valid region only
+            self.assertGreater((frame_sums > 0).sum(), 0)
+
+    def test_dataloader_train_aug_vs_val_clean(self):
+        import tempfile
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "data"))
+        from azsl_dataset import AzslFeatureDataset, FeatureSample
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "C" / "s.npz"
+            p.parent.mkdir(parents=True)
+            np.savez(p, features=self.feats, mask=self.mask)
+            s = [FeatureSample(p, "C", 0)]
+            ds_aug = AzslFeatureDataset(s, augment=self.aug)
+            ds_clean = AzslFeatureDataset(s)
+            xa, ya = ds_aug[0]
+            xc, yc = ds_clean[0]
+            self.assertEqual(ya, yc)
+            self.assertEqual(tuple(xa.shape), (26, 126))
+            self.assertEqual(xa.dtype, torch.float32)
+            # Augmented sample differs but clean equals stored features
+            self.assertFalse(torch.allclose(xa, xc))
+
+
+if __name__ == "__main__":
+    unittest.main()
 
 
 if __name__ == "__main__":
