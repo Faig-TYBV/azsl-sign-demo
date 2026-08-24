@@ -1,0 +1,18 @@
+============================================================
+  FULL FEATURE EXTRACTION REPORT — AzSLD_Words_200
+============================================================
+Generated:                 2026-08-24 18:46:50
+Total videos:              8557
+Successfully extracted:    8557
+Skipped existing valid:    8557
+Failed videos:             0
+Final feature count:       8557
+Feature shape:             (26, 126)
+Avg detection rate:        0.9454
+Min detection rate:        0.0
+Avg sec/video:             1.543
+Total processing time:     13199.7 s (3.67 h)
+------------------------------------------------------------
+Failure list:
+  (none)
+============================================================

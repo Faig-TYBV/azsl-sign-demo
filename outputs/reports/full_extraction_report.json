@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-08-24 18:46:50",
+  "total_videos": 8557,
+  "successfully_extracted": 8557,
+  "skipped_existing_valid_files": 8557,
+  "failed_videos_count": 0,
+  "final_feature_count": 8557,
+  "invalid_or_missing_features_remaining": 0,
+  "feature_shape_expected": [
+    26,
+    126
+  ],
+  "avg_detection_rate": 0.9454,
+  "min_detection_rate": 0.0,
+  "avg_processing_time_sec_per_video": 1.543,
+  "total_processing_time_sec": 13199.7,
+  "report_generation_time_sec": 105.64,
+  "failure_list": []
+}

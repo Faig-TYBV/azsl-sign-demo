@@ -1,0 +1,97 @@
+========================================================================
+AzSLD_Words_200 — Distribution Analysis Report
+========================================================================
+
+Data root       : data\raw\AzSLD_Words_200
+Total classes   : 200
+Total videos    : 8557
+Analysis time   : 0.01s
+
+── Class Balance ─────────────────────────────────────────
+  Videos per class:
+    Min           : 9
+    P1            : 9
+    P5            : 10
+    P25 (Q1)      : 12
+    P50 (median)  : 18
+    P75 (Q3)      : 28
+    P95           : 102
+    P99           : 335
+    Max           : 2527
+    Mean          : 42.8 ± 182.4
+    IQR           : 16
+  Imbalance ratio : 280.78x (max/min)
+  Gini coefficient: 0.6239
+
+  Low-sample classes (<= 10 videos): 21
+    AYAQ: 10
+    COVİD: 10
+    DEYİL: 10
+    GUN: 10
+    HAVA: 10
+    KOMANDA: 10
+    NOTARİAL: 10
+    OLUR: 10
+    PROBLEM: 10
+    QONŞU: 10
+    ... and 11 more
+
+  High-sample classes (>= 200 videos): 4
+    MƏN: 2527
+    SİZ: 440
+    BU: 334
+    O: 303
+
+── Frame Count Distribution ──────────────────────────────
+  Total videos    : 8557
+  Min             : 1
+  P1              : 7
+  P5              : 10
+  P25 (Q1)        : 15
+  P50 (median)    : 20
+  P75 (Q3)        : 26
+  P95             : 40
+  P99             : 53
+  Max             : 117
+  Mean            : 21.8 ± 9.8
+  IQR             : 11
+  Short (< 5 frames): 31 videos
+  Recommended seq : 26 frames (P75)
+
+  Classes with short videos:
+    MƏN: 6 short videos
+    A: 3 short videos
+    O: 3 short videos
+    BU: 2 short videos
+    M: 2 short videos
+    İ: 2 short videos
+    ALMIŞAM: 1 short videos
+    BURDA: 1 short videos
+    HANSI: 1 short videos
+    MƏNİM: 1 short videos
+    ... and 9 more classes
+
+── Duration Distribution ─────────────────────────────────
+  Total videos    : 8557
+  Min             : 0.033s
+  P1              : 0.233s
+  P5              : 0.333s
+  P25 (Q1)        : 0.500s
+  P50 (median)    : 0.667s
+  P75 (Q3)        : 0.867s
+  P95             : 1.333s
+  P99             : 1.767s
+  Max             : 3.900s
+  Mean            : 0.728 ± 0.328s
+  IQR             : 0.367s
+  Short (< 0.2s)  : 44 videos
+
+── Recommendations ───────────────────────────────────────
+  1. CLASS BALANCING RECOMMENDED: Gini coefficient is 0.6239 (significant imbalance). Consider class weights, oversampling minority classes, or undersampling majority classes.
+  2. STRONG STRATIFICATION NEEDED: Imbalance ratio is 280.78 (max class has 280.78x more samples than min). Use stratified train/val/test split to preserve distribution.
+  3. RECOMMENDED SEQUENCE LENGTH: 26 frames (P75 of frame counts). This captures ~75% of temporal info. Videos with fewer frames will be padded; longer ones truncated.
+  4. SHORT VIDEOS: 31 videos (0.4%) have < 5 frames. These will require zero-padding or duplicate-frame padding. Review affected classes for data quality.
+  5. HIGH-SAMPLE OUTLIERS: 4 classes have >= 200 videos (e.g. MƏN, SİZ, BU, O). Consider whether these dominate training.
+  6. LOW-SAMPLE CLASSES: 21 classes have <= 10 videos (e.g. AYAQ(10), COVİD(10), DEYİL(10), GUN(10), HAVA(10)). These will be hard to learn — consider data augmentation or few-shot techniques.
+
+========================================================================

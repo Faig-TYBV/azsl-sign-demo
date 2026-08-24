@@ -1,0 +1,1203 @@
+{
+  "data_root": "data\\raw\\AzSLD_Words_200",
+  "total_classes": 200,
+  "total_videos": 8557,
+  "class_balance": {
+    "videos_per_class": {
+      "1": 13,
+      "2": 28,
+      "3": 12,
+      "A": 24,
+      "ABŞERON RAYON": 16,
+      "AC": 11,
+      "AD": 16,
+      "AD GÜNÜ": 18,
+      "ALMAQ": 45,
+      "ALMIŞAM": 11,
+      "ANA": 35,
+      "APARAT": 12,
+      "ATA": 21,
+      "AVTOBUS": 18,
+      "AVTOMOBİL": 32,
+      "AXŞAM": 27,
+      "AYAQ": 10,
+      "AYAQYOLU": 11,
+      "AZƏRBAYCAN": 37,
+      "AĞRIMAQ": 19,
+      "AİLƏ": 25,
+      "BACI": 9,
+      "BAKI": 64,
+      "BALACA": 19,
+      "BAXMAQ": 12,
+      "BAYRAM": 16,
+      "BAYRAQ": 17,
+      "BAZAR": 24,
+      "BAĞ": 19,
+      "BU": 334,
+      "BU AY": 15,
+      "BU GÜN": 35,
+      "BU HƏFTƏ": 32,
+      "BURA": 20,
+      "BURDA": 102,
+      "BİLMİR": 41,
+      "BİLMƏK": 22,
+      "BİLƏR": 49,
+      "BİTMƏK": 14,
+      "BİZ": 167,
+      "BƏLİ": 14,
+      "COVİD": 10,
+      "D": 55,
+      "DEYİL": 10,
+      "DONDURMA": 20,
+      "DOST": 16,
+      "DÖVLƏT": 18,
+      "DÜNƏN": 39,
+      "DİL": 16,
+      "DƏYİŞMƏK": 11,
+      "EDİR": 21,
+      "EDƏ BİLMƏK": 12,
+      "ETMƏK": 17,
+      "ETİBARNAMƏ": 43,
+      "EV": 77,
+      "EŞİTMƏ": 18,
+      "EŞİTMƏ APARATI": 17,
+      "EŞİTMƏ MƏHDÜDİYYƏTLİ": 18,
+      "FUTBOL": 46,
+      "GECİKMƏK": 21,
+      "GEDƏ": 11,
+      "GETMƏK": 48,
+      "GUN": 10,
+      "GÖRMƏK": 19,
+      "GÖRƏ": 12,
+      "GÖZƏL": 12,
+      "GƏLMƏK": 34,
+      "HALALDIR": 13,
+      "HAMI": 27,
+      "HANSI": 68,
+      "HARDA": 36,
+      "HAVA": 10,
+      "HƏKİM": 11,
+      "HƏR GÜN": 22,
+      "IKI": 17,
+      "J": 16,
+      "KOMANDA": 10,
+      "KOMPÜTER": 16,
+      "KÖMƏK": 15,
+      "KÖYNƏK": 12,
+      "KƏND": 11,
+      "LAZIM": 28,
+      "M": 11,
+      "METRO": 12,
+      "MÜRACİƏT": 33,
+      "MƏKTƏB": 25,
+      "MƏN": 2527,
+      "MƏNİM": 168,
+      "MƏNƏ": 46,
+      "MƏTBƏX": 13,
+      "N": 15,
+      "NECƏ": 27,
+      "NOTARİAL": 10,
+      "NÖVBƏ": 14,
+      "NƏDİR": 19,
+      "O": 303,
+      "OLACAQ": 12,
+      "OLAR": 23,
+      "OLMAQ": 40,
+      "OLMUSUZ": 9,
+      "OLUR": 10,
+      "ONLAR": 11,
+      "ONUN": 118,
+      "ORA": 21,
+      "ORDA": 37,
+      "OXUMAQ": 27,
+      "OYNAMAQ": 12,
+      "OĞUL": 19,
+      "PAROL": 15,
+      "PENSİYA": 67,
+      "PROBLEM": 10,
+      "PUL": 12,
+      "QAPI": 18,
+      "QARABAĞ": 19,
+      "QATAR": 26,
+      "QIZ": 11,
+      "QONŞU": 10,
+      "QƏLƏM": 17,
+      "RAYONLARDA": 13,
+      "RƏSİM": 19,
+      "S": 16,
+      "SAAT": 15,
+      "SABAH": 43,
+      "SALAM": 30,
+      "SATICI": 18,
+      "SAYLI": 12,
+      "SAĞLAM": 55,
+      "SONRA": 22,
+      "SOYUQ": 9,
+      "SRAĞAGÜN": 15,
+      "SU": 25,
+      "SUBAY": 14,
+      "SÖNDURƏ": 11,
+      "SİFARİŞ": 11,
+      "SİZ": 440,
+      "SİZİN": 17,
+      "SƏHƏR": 12,
+      "SƏN": 48,
+      "SƏNƏD": 60,
+      "SƏRGİ": 19,
+      "TAKSİ": 12,
+      "TELEFON": 40,
+      "TOYA": 11,
+      "TƏHSİL": 15,
+      "UCUZDUR": 10,
+      "UNUTMUŞAM": 10,
+      "UNİVERSİTET": 11,
+      "UĞUR": 19,
+      "UŞAQ": 69,
+      "UŞAQLAR": 15,
+      "VAR": 110,
+      "VAXT": 24,
+      "VERMƏK": 16,
+      "VİZA": 38,
+      "VƏ": 10,
+      "XAHİŞ": 17,
+      "XATIRLADIM": 20,
+      "XEYİR": 21,
+      "XOŞU GƏLMƏK": 15,
+      "XİRDA": 10,
+      "YATMAQ": 11,
+      "YAXŞI": 19,
+      "YAZDA": 17,
+      "YAZI": 26,
+      "YAŞ": 23,
+      "YAŞAMAQ": 32,
+      "YEMƏK": 36,
+      "YENİ": 19,
+      "YER": 11,
+      "YOL": 11,
+      "YOLDAŞIM": 11,
+      "YOX": 42,
+      "YOXDUR": 12,
+      "ZƏHMƏT OLMASA": 16,
+      "ZƏNG": 13,
+      "ÇANTA": 14,
+      "ÇOX": 34,
+      "ÇƏKMƏK": 20,
+      "ÖLƏN": 11,
+      "ÖYRƏNMƏK": 10,
+      "ÖZÜMÜ": 10,
+      "ÜNVANLİ": 26,
+      "ÜÇÜN": 20,
+      "İ": 32,
+      "İDMAN": 12,
+      "İL": 27,
+      "İNDİ": 20,
+      "İSTİ": 10,
+      "İSTƏMƏK": 105,
+      "İSTƏYİRƏM": 34,
+      "İTMİŞ": 16,
+      "İŞ": 39,
+      "İŞARƏ": 20,
+      "İŞLƏMİR": 10,
+      "İŞLƏMƏK": 24,
+      "İŞSİZ": 11,
+      "İŞİGİ": 12,
+      "Ə": 14,
+      "ƏLİL": 111,
+      "ƏRZAQ": 23
+    },
+    "sorted_by_count": [
+      [
+        "MƏN",
+        2527
+      ],
+      [
+        "SİZ",
+        440
+      ],
+      [
+        "BU",
+        334
+      ],
+      [
+        "O",
+        303
+      ],
+      [
+        "MƏNİM",
+        168
+      ],
+      [
+        "BİZ",
+        167
+      ],
+      [
+        "ONUN",
+        118
+      ],
+      [
+        "ƏLİL",
+        111
+      ],
+      [
+        "VAR",
+        110
+      ],
+      [
+        "İSTƏMƏK",
+        105
+      ],
+      [
+        "BURDA",
+        102
+      ],
+      [
+        "EV",
+        77
+      ],
+      [
+        "UŞAQ",
+        69
+      ],
+      [
+        "HANSI",
+        68
+      ],
+      [
+        "PENSİYA",
+        67
+      ],
+      [
+        "BAKI",
+        64
+      ],
+      [
+        "SƏNƏD",
+        60
+      ],
+      [
+        "D",
+        55
+      ],
+      [
+        "SAĞLAM",
+        55
+      ],
+      [
+        "BİLƏR",
+        49
+      ],
+      [
+        "GETMƏK",
+        48
+      ],
+      [
+        "SƏN",
+        48
+      ],
+      [
+        "FUTBOL",
+        46
+      ],
+      [
+        "MƏNƏ",
+        46
+      ],
+      [
+        "ALMAQ",
+        45
+      ],
+      [
+        "ETİBARNAMƏ",
+        43
+      ],
+      [
+        "SABAH",
+        43
+      ],
+      [
+        "YOX",
+        42
+      ],
+      [
+        "BİLMİR",
+        41
+      ],
+      [
+        "OLMAQ",
+        40
+      ],
+      [
+        "TELEFON",
+        40
+      ],
+      [
+        "DÜNƏN",
+        39
+      ],
+      [
+        "İŞ",
+        39
+      ],
+      [
+        "VİZA",
+        38
+      ],
+      [
+        "AZƏRBAYCAN",
+        37
+      ],
+      [
+        "ORDA",
+        37
+      ],
+      [
+        "HARDA",
+        36
+      ],
+      [
+        "YEMƏK",
+        36
+      ],
+      [
+        "ANA",
+        35
+      ],
+      [
+        "BU GÜN",
+        35
+      ],
+      [
+        "GƏLMƏK",
+        34
+      ],
+      [
+        "ÇOX",
+        34
+      ],
+      [
+        "İSTƏYİRƏM",
+        34
+      ],
+      [
+        "MÜRACİƏT",
+        33
+      ],
+      [
+        "AVTOMOBİL",
+        32
+      ],
+      [
+        "BU HƏFTƏ",
+        32
+      ],
+      [
+        "YAŞAMAQ",
+        32
+      ],
+      [
+        "İ",
+        32
+      ],
+      [
+        "SALAM",
+        30
+      ],
+      [
+        "2",
+        28
+      ],
+      [
+        "LAZIM",
+        28
+      ],
+      [
+        "AXŞAM",
+        27
+      ],
+      [
+        "HAMI",
+        27
+      ],
+      [
+        "NECƏ",
+        27
+      ],
+      [
+        "OXUMAQ",
+        27
+      ],
+      [
+        "İL",
+        27
+      ],
+      [
+        "QATAR",
+        26
+      ],
+      [
+        "YAZI",
+        26
+      ],
+      [
+        "ÜNVANLİ",
+        26
+      ],
+      [
+        "AİLƏ",
+        25
+      ],
+      [
+        "MƏKTƏB",
+        25
+      ],
+      [
+        "SU",
+        25
+      ],
+      [
+        "A",
+        24
+      ],
+      [
+        "BAZAR",
+        24
+      ],
+      [
+        "VAXT",
+        24
+      ],
+      [
+        "İŞLƏMƏK",
+        24
+      ],
+      [
+        "OLAR",
+        23
+      ],
+      [
+        "YAŞ",
+        23
+      ],
+      [
+        "ƏRZAQ",
+        23
+      ],
+      [
+        "BİLMƏK",
+        22
+      ],
+      [
+        "HƏR GÜN",
+        22
+      ],
+      [
+        "SONRA",
+        22
+      ],
+      [
+        "ATA",
+        21
+      ],
+      [
+        "EDİR",
+        21
+      ],
+      [
+        "GECİKMƏK",
+        21
+      ],
+      [
+        "ORA",
+        21
+      ],
+      [
+        "XEYİR",
+        21
+      ],
+      [
+        "BURA",
+        20
+      ],
+      [
+        "DONDURMA",
+        20
+      ],
+      [
+        "XATIRLADIM",
+        20
+      ],
+      [
+        "ÇƏKMƏK",
+        20
+      ],
+      [
+        "ÜÇÜN",
+        20
+      ],
+      [
+        "İNDİ",
+        20
+      ],
+      [
+        "İŞARƏ",
+        20
+      ],
+      [
+        "AĞRIMAQ",
+        19
+      ],
+      [
+        "BALACA",
+        19
+      ],
+      [
+        "BAĞ",
+        19
+      ],
+      [
+        "GÖRMƏK",
+        19
+      ],
+      [
+        "NƏDİR",
+        19
+      ],
+      [
+        "OĞUL",
+        19
+      ],
+      [
+        "QARABAĞ",
+        19
+      ],
+      [
+        "RƏSİM",
+        19
+      ],
+      [
+        "SƏRGİ",
+        19
+      ],
+      [
+        "UĞUR",
+        19
+      ],
+      [
+        "YAXŞI",
+        19
+      ],
+      [
+        "YENİ",
+        19
+      ],
+      [
+        "AD GÜNÜ",
+        18
+      ],
+      [
+        "AVTOBUS",
+        18
+      ],
+      [
+        "DÖVLƏT",
+        18
+      ],
+      [
+        "EŞİTMƏ",
+        18
+      ],
+      [
+        "EŞİTMƏ MƏHDÜDİYYƏTLİ",
+        18
+      ],
+      [
+        "QAPI",
+        18
+      ],
+      [
+        "SATICI",
+        18
+      ],
+      [
+        "BAYRAQ",
+        17
+      ],
+      [
+        "ETMƏK",
+        17
+      ],
+      [
+        "EŞİTMƏ APARATI",
+        17
+      ],
+      [
+        "IKI",
+        17
+      ],
+      [
+        "QƏLƏM",
+        17
+      ],
+      [
+        "SİZİN",
+        17
+      ],
+      [
+        "XAHİŞ",
+        17
+      ],
+      [
+        "YAZDA",
+        17
+      ],
+      [
+        "ABŞERON RAYON",
+        16
+      ],
+      [
+        "AD",
+        16
+      ],
+      [
+        "BAYRAM",
+        16
+      ],
+      [
+        "DOST",
+        16
+      ],
+      [
+        "DİL",
+        16
+      ],
+      [
+        "J",
+        16
+      ],
+      [
+        "KOMPÜTER",
+        16
+      ],
+      [
+        "S",
+        16
+      ],
+      [
+        "VERMƏK",
+        16
+      ],
+      [
+        "ZƏHMƏT OLMASA",
+        16
+      ],
+      [
+        "İTMİŞ",
+        16
+      ],
+      [
+        "BU AY",
+        15
+      ],
+      [
+        "KÖMƏK",
+        15
+      ],
+      [
+        "N",
+        15
+      ],
+      [
+        "PAROL",
+        15
+      ],
+      [
+        "SAAT",
+        15
+      ],
+      [
+        "SRAĞAGÜN",
+        15
+      ],
+      [
+        "TƏHSİL",
+        15
+      ],
+      [
+        "UŞAQLAR",
+        15
+      ],
+      [
+        "XOŞU GƏLMƏK",
+        15
+      ],
+      [
+        "BİTMƏK",
+        14
+      ],
+      [
+        "BƏLİ",
+        14
+      ],
+      [
+        "NÖVBƏ",
+        14
+      ],
+      [
+        "SUBAY",
+        14
+      ],
+      [
+        "ÇANTA",
+        14
+      ],
+      [
+        "Ə",
+        14
+      ],
+      [
+        "1",
+        13
+      ],
+      [
+        "HALALDIR",
+        13
+      ],
+      [
+        "MƏTBƏX",
+        13
+      ],
+      [
+        "RAYONLARDA",
+        13
+      ],
+      [
+        "ZƏNG",
+        13
+      ],
+      [
+        "3",
+        12
+      ],
+      [
+        "APARAT",
+        12
+      ],
+      [
+        "BAXMAQ",
+        12
+      ],
+      [
+        "EDƏ BİLMƏK",
+        12
+      ],
+      [
+        "GÖRƏ",
+        12
+      ],
+      [
+        "GÖZƏL",
+        12
+      ],
+      [
+        "KÖYNƏK",
+        12
+      ],
+      [
+        "METRO",
+        12
+      ],
+      [
+        "OLACAQ",
+        12
+      ],
+      [
+        "OYNAMAQ",
+        12
+      ],
+      [
+        "PUL",
+        12
+      ],
+      [
+        "SAYLI",
+        12
+      ],
+      [
+        "SƏHƏR",
+        12
+      ],
+      [
+        "TAKSİ",
+        12
+      ],
+      [
+        "YOXDUR",
+        12
+      ],
+      [
+        "İDMAN",
+        12
+      ],
+      [
+        "İŞİGİ",
+        12
+      ],
+      [
+        "AC",
+        11
+      ],
+      [
+        "ALMIŞAM",
+        11
+      ],
+      [
+        "AYAQYOLU",
+        11
+      ],
+      [
+        "DƏYİŞMƏK",
+        11
+      ],
+      [
+        "GEDƏ",
+        11
+      ],
+      [
+        "HƏKİM",
+        11
+      ],
+      [
+        "KƏND",
+        11
+      ],
+      [
+        "M",
+        11
+      ],
+      [
+        "ONLAR",
+        11
+      ],
+      [
+        "QIZ",
+        11
+      ],
+      [
+        "SÖNDURƏ",
+        11
+      ],
+      [
+        "SİFARİŞ",
+        11
+      ],
+      [
+        "TOYA",
+        11
+      ],
+      [
+        "UNİVERSİTET",
+        11
+      ],
+      [
+        "YATMAQ",
+        11
+      ],
+      [
+        "YER",
+        11
+      ],
+      [
+        "YOL",
+        11
+      ],
+      [
+        "YOLDAŞIM",
+        11
+      ],
+      [
+        "ÖLƏN",
+        11
+      ],
+      [
+        "İŞSİZ",
+        11
+      ],
+      [
+        "AYAQ",
+        10
+      ],
+      [
+        "COVİD",
+        10
+      ],
+      [
+        "DEYİL",
+        10
+      ],
+      [
+        "GUN",
+        10
+      ],
+      [
+        "HAVA",
+        10
+      ],
+      [
+        "KOMANDA",
+        10
+      ],
+      [
+        "NOTARİAL",
+        10
+      ],
+      [
+        "OLUR",
+        10
+      ],
+      [
+        "PROBLEM",
+        10
+      ],
+      [
+        "QONŞU",
+        10
+      ],
+      [
+        "UCUZDUR",
+        10
+      ],
+      [
+        "UNUTMUŞAM",
+        10
+      ],
+      [
+        "VƏ",
+        10
+      ],
+      [
+        "XİRDA",
+        10
+      ],
+      [
+        "ÖYRƏNMƏK",
+        10
+      ],
+      [
+        "ÖZÜMÜ",
+        10
+      ],
+      [
+        "İSTİ",
+        10
+      ],
+      [
+        "İŞLƏMİR",
+        10
+      ],
+      [
+        "BACI",
+        9
+      ],
+      [
+        "OLMUSUZ",
+        9
+      ],
+      [
+        "SOYUQ",
+        9
+      ]
+    ],
+    "summary": {
+      "count": 200,
+      "mean": 42.785,
+      "std": 182.395,
+      "min": 9.0,
+      "p1": 9.0,
+      "p5": 10.0,
+      "p25": 12.0,
+      "p50": 18.0,
+      "p75": 28.0,
+      "p95": 102.15,
+      "p99": 335.06,
+      "max": 2527.0,
+      "iqr": 16.0
+    },
+    "low_count_threshold": 10,
+    "high_count_threshold": 200,
+    "low_sample_classes": [
+      [
+        "AYAQ",
+        10
+      ],
+      [
+        "COVİD",
+        10
+      ],
+      [
+        "DEYİL",
+        10
+      ],
+      [
+        "GUN",
+        10
+      ],
+      [
+        "HAVA",
+        10
+      ],
+      [
+        "KOMANDA",
+        10
+      ],
+      [
+        "NOTARİAL",
+        10
+      ],
+      [
+        "OLUR",
+        10
+      ],
+      [
+        "PROBLEM",
+        10
+      ],
+      [
+        "QONŞU",
+        10
+      ],
+      [
+        "UCUZDUR",
+        10
+      ],
+      [
+        "UNUTMUŞAM",
+        10
+      ],
+      [
+        "VƏ",
+        10
+      ],
+      [
+        "XİRDA",
+        10
+      ],
+      [
+        "ÖYRƏNMƏK",
+        10
+      ],
+      [
+        "ÖZÜMÜ",
+        10
+      ],
+      [
+        "İSTİ",
+        10
+      ],
+      [
+        "İŞLƏMİR",
+        10
+      ],
+      [
+        "BACI",
+        9
+      ],
+      [
+        "OLMUSUZ",
+        9
+      ],
+      [
+        "SOYUQ",
+        9
+      ]
+    ],
+    "high_sample_classes": [
+      [
+        "MƏN",
+        2527
+      ],
+      [
+        "SİZ",
+        440
+      ],
+      [
+        "BU",
+        334
+      ],
+      [
+        "O",
+        303
+      ]
+    ],
+    "imbalance_ratio": 280.78,
+    "gini": 0.6239
+  },
+  "frame_count": {
+    "summary": {
+      "count": 8557,
+      "mean": 21.846,
+      "std": 9.846,
+      "min": 1.0,
+      "p1": 7.0,
+      "p5": 10.0,
+      "p25": 15.0,
+      "p50": 20.0,
+      "p75": 26.0,
+      "p95": 40.0,
+      "p99": 53.0,
+      "max": 117.0,
+      "iqr": 11.0
+    },
+    "recommended_sequence_length": 26,
+    "short_video_threshold": 5,
+    "short_video_count": 31,
+    "short_video_classes": {
+      "A": 3,
+      "ALMIŞAM": 1,
+      "BU": 2,
+      "BURDA": 1,
+      "HANSI": 1,
+      "M": 2,
+      "MƏN": 6,
+      "MƏNİM": 1,
+      "N": 1,
+      "O": 3,
+      "S": 1,
+      "SƏN": 1,
+      "SƏNƏD": 1,
+      "TOYA": 1,
+      "UNUTMUŞAM": 1,
+      "YEMƏK": 1,
+      "İ": 2,
+      "İTMİŞ": 1,
+      "İŞ": 1
+    }
+  },
+  "duration": {
+    "summary": {
+      "count": 8557,
+      "mean": 0.728,
+      "std": 0.328,
+      "min": 0.033,
+      "p1": 0.233,
+      "p5": 0.333,
+      "p25": 0.5,
+      "p50": 0.667,
+      "p75": 0.867,
+      "p95": 1.333,
+      "p99": 1.767,
+      "max": 3.9,
+      "iqr": 0.367
+    },
+    "short_duration_threshold": 0.2,
+    "short_duration_count": 44
+  },
+  "recommendations": [
+    "CLASS BALANCING RECOMMENDED: Gini coefficient is 0.6239 (significant imbalance). Consider class weights, oversampling minority classes, or undersampling majority classes.",
+    "STRONG STRATIFICATION NEEDED: Imbalance ratio is 280.78 (max class has 280.78x more samples than min). Use stratified train/val/test split to preserve distribution.",
+    "RECOMMENDED SEQUENCE LENGTH: 26 frames (P75 of frame counts). This captures ~75% of temporal info. Videos with fewer frames will be padded; longer ones truncated.",
+    "SHORT VIDEOS: 31 videos (0.4%) have < 5 frames. These will require zero-padding or duplicate-frame padding. Review affected classes for data quality.",
+    "HIGH-SAMPLE OUTLIERS: 4 classes have >= 200 videos (e.g. MƏN, SİZ, BU, O). Consider whether these dominate training.",
+    "LOW-SAMPLE CLASSES: 21 classes have <= 10 videos (e.g. AYAQ(10), COVİD(10), DEYİL(10), GUN(10), HAVA(10)). These will be hard to learn — consider data augmentation or few-shot techniques."
+  ],
+  "analysis_duration_sec": 0.01
+}

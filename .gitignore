@@ -1,0 +1,28 @@
+# --- Virtual environments ---
+.venv/
+venv/
+
+# --- Datasets and generated features (NEVER commit) ---
+# Raw videos (~1.4 GB) and all extracted .npz feature files live under data/
+data/
+
+# --- Downloaded model artifacts ---
+models/*.task
+
+# --- Generated run logs ---
+outputs/*.log
+
+# Large generated per-video inspection dump (keep the .txt summary instead)
+outputs/reports/dataset_inspection.json
+
+# --- Generated figures ---
+outputs/figures/
+
+# --- Tool/editor metadata ---
+.mimocode/
+
+# --- Python caches ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
