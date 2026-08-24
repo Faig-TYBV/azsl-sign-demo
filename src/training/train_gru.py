@@ -1,0 +1,283 @@
+"""
+GRU baseline training for AzSLD word recognition.
+
+Uses the EXISTING split from outputs/dataset_split.json (never re-splits),
+the existing class mapping, and class weights computed from the TRAIN
+split only.
+
+Usage:
+    python src/training/train_gru.py [--epochs 30] [--batch-size 32]
+        [--lr 1e-3] [--weight-decay 1e-4] [--patience 7] [--num-workers 0]
+"""
+
+import argparse
+import csv
+import json
+import logging
+import random
+import sys
+import time
+from pathlib import Path
+
+import numpy as np
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader
+
+SRC = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(SRC / "data"))
+sys.path.insert(0, str(SRC / "models"))
+sys.path.insert(0, str(SRC / "training"))
+
+from azsl_dataset import DEFAULT_NUM_WORKERS, load_split_metadata, AzslFeatureDataset  # noqa: E402
+from gru_classifier import GRUClassifier  # noqa: E402
+from metrics import confusion_matrix, metrics_from_confusion  # noqa: E402
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)-7s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+log = logging.getLogger("train_gru")
+
+DEFAULT_METADATA_PATH = Path("outputs/dataset_split.json")
+DEFAULT_CHECKPOINT_PATH = Path("outputs/checkpoints/gru_baseline_best.pt")
+DEFAULT_HISTORY_JSON = Path("outputs/training_history_gru_baseline.json")
+DEFAULT_HISTORY_CSV = Path("outputs/training_history_gru_baseline.csv")
+
+SEED: int = 42
+
+
+def set_seed(seed: int) -> None:
+    """Seed python/numpy/torch; keep cudnn benchmark ON for GPU speed."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
+@torch.no_grad()
+def evaluate_model(
+    model: nn.Module,
+    loader: DataLoader,
+    criterion: nn.Module,
+    device: torch.device,
+    num_classes: int,
+) -> dict:
+    """Return loss + metrics for a full pass over ``loader``."""
+    model.eval()
+    total_loss = 0.0
+    all_preds, all_labels = [], []
+    for x, y in loader:
+        x, y = x.to(device), y.to(device)
+        logits = model(x)
+        total_loss += criterion(logits, y).item() * y.size(0)
+        all_preds.append(logits.argmax(dim=1).cpu())
+        all_labels.append(y.cpu())
+
+    y_pred = torch.cat(all_preds).numpy()
+    y_true = torch.cat(all_labels).numpy()
+    cm = confusion_matrix(y_true, y_pred, num_classes)
+    result = metrics_from_confusion(cm)
+    result["loss"] = total_loss / max(1, len(loader.dataset))
+    return result
+
+
+def print_environment(device: torch.device) -> None:
+    print("=" * 60)
+    print("  ENVIRONMENT")
+    print("=" * 60)
+    print(f"device          : {device}")
+    if device.type == "cuda":
+        props = torch.cuda.get_device_properties(0)
+        print(f"gpu             : {props.name}")
+        print(f"vram_gb         : {props.total_memory / (1024 ** 3):.2f}")
+    print(f"torch           : {torch.__version__}")
+    print(f"torch_cuda      : {torch.version.cuda}")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--epochs", type=int, default=30)
+    parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--weight-decay", type=float, default=1e-4)
+    parser.add_argument("--patience", type=int, default=7)
+    parser.add_argument("--hidden-size", type=int, default=128)
+    parser.add_argument("--num-layers", type=int, default=2)
+    parser.add_argument("--dropout", type=float, default=0.3)
+    parser.add_argument("--num-workers", type=int, default=DEFAULT_NUM_WORKERS)
+    parser.add_argument("--metadata", type=Path, default=DEFAULT_METADATA_PATH)
+    parser.add_argument("--checkpoint", type=Path, default=DEFAULT_CHECKPOINT_PATH)
+    args = parser.parse_args()
+
+    t_start = time.time()
+    set_seed(SEED)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    use_amp = device.type == "cuda"
+    print_environment(device)
+
+    # ---- Data: reuse the SAVED split ------------------------------------
+    data = load_split_metadata(args.metadata)
+    idx_to_class = data["idx_to_class"]
+    num_classes = len(idx_to_class)
+    train_ds = AzslFeatureDataset(data["splits"]["train"])
+    val_ds = AzslFeatureDataset(data["splits"]["val"])
+    test_ds = AzslFeatureDataset(data["splits"]["test"])
+    pin_memory = device.type == "cuda"
+    common = dict(batch_size=args.batch_size, num_workers=args.num_workers,
+                  pin_memory=pin_memory)
+    train_loader = DataLoader(train_ds, shuffle=True, **common)
+    val_loader = DataLoader(val_ds, shuffle=False, **common)
+    test_loader = DataLoader(test_ds, shuffle=False, **common)
+
+    # ---- Model / loss / optimizer ----------------------------------------
+    model_cfg = dict(
+        input_size=126, hidden_size=args.hidden_size, num_layers=args.num_layers,
+        num_classes=num_classes, dropout=args.dropout, bidirectional=False,
+    )
+    model = GRUClassifier(**model_cfg).to(device)
+    n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    log.info("Trainable parameters: %d", n_params)
+
+    class_weights = data["class_weights"].to(device)  # TRAIN-only weights
+    criterion = nn.CrossEntropyLoss(weight=class_weights)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr,
+                                  weight_decay=args.weight_decay)
+    scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
+
+    best_f1, best_epoch = -1.0, -1
+    history, epochs_no_improve = [], 0
+    ckpt_path = args.checkpoint
+    ckpt_path.parent.mkdir(parents=True, exist_ok=True)
+
+    print("-" * 60)
+    header = f"{'epoch':>5} {'train_loss':>10} {'val_loss':>9} " \
+             f"{'val_acc':>8} {'val_macroF1':>11} {'bestF1':>7} {'sec':>6}"
+    print(header)
+
+    for epoch in range(1, args.epochs + 1):
+        t_epoch = time.time()
+        model.train()
+        running = 0.0
+        for x, y in train_loader:
+            x, y = x.to(device), y.to(device)
+            optimizer.zero_grad(set_to_none=True)
+            with torch.amp.autocast("cuda", enabled=use_amp):
+                logits = model(x)
+                loss = criterion(logits, y)
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+            running += loss.item() * y.size(0)
+        train_loss = running / len(train_ds)
+
+        val_metrics = evaluate_model(model, val_loader, criterion, device, num_classes)
+        epoch_time = time.time() - t_epoch
+        improved = val_metrics["macro_f1"] > best_f1
+        if improved:
+            best_f1 = val_metrics["macro_f1"]
+            best_epoch = epoch
+            epochs_no_improve = 0
+            torch.save(
+                {
+                    "model_state_dict": model.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "epoch": epoch,
+                    "best_val_macro_f1": best_f1,
+                    "class_to_idx": data["class_to_idx"],
+                    "model_config": model_cfg,
+                },
+                ckpt_path,
+            )
+        else:
+            epochs_no_improve += 1
+
+        history.append({
+            "epoch": epoch,
+            "train_loss": round(train_loss, 6),
+            "val_loss": round(val_metrics["loss"], 6),
+            "val_accuracy": round(val_metrics["accuracy"], 6),
+            "val_macro_f1": round(val_metrics["macro_f1"], 6),
+            "val_weighted_f1": round(val_metrics["weighted_f1"], 6),
+            "val_macro_recall": round(val_metrics["macro_recall"], 6),
+        })
+        print(f"{epoch:>5} {train_loss:>10.4f} {val_metrics['loss']:>9.4f} "
+              f"{val_metrics['accuracy']:>8.4f} {val_metrics['macro_f1']:>11.4f} "
+              f"{best_f1:>7.4f} {epoch_time:>6.1f}"
+              f"{' *' if improved else ''}")
+
+        if epochs_no_improve >= args.patience:
+            print(f"Early stopping at epoch {epoch} "
+                  f"(no improvement for {args.patience} epochs).")
+            break
+
+    # ---- Final test evaluation (BEST checkpoint only) ----------------------
+    log.info("Loading best checkpoint from %s", ckpt_path)
+    ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
+    model.load_state_dict(ckpt["model_state_dict"])
+    test_metrics = evaluate_model(model, test_loader, criterion, device, num_classes)
+
+    print("=" * 60)
+    print("  TEST RESULTS (best checkpoint)")
+    print("=" * 60)
+    print(f"test_loss      : {test_metrics['loss']:.4f}")
+    print(f"accuracy       : {test_metrics['accuracy']:.4f}")
+    print(f"macro_f1       : {test_metrics['macro_f1']:.4f}")
+    print(f"weighted_f1    : {test_metrics['weighted_f1']:.4f}")
+    print(f"macro_recall   : {test_metrics['macro_recall']:.4f}")
+
+    # Save per-class report + confusion matrix to JSON.
+    report = {
+        "test": {k: v for k, v in test_metrics.items()},
+        "confusion_matrix": None,  # filled below (numpy -> list)
+        "history": history,
+        "model_config": model_cfg,
+        "n_trainable_params": n_params,
+        "seed": SEED,
+        "args": {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()},
+    }
+    # Recompute CM for saving (evaluate_model discarded it).
+    all_preds, all_labels = [], []
+    with torch.no_grad():
+        for x, y in test_loader:
+            logits = model(x.to(device))
+            all_preds.append(logits.argmax(dim=1).cpu())
+            all_labels.append(y)
+    cm = confusion_matrix(torch.cat(all_labels).numpy(),
+                          torch.cat(all_preds).numpy(), num_classes)
+    report["confusion_matrix"] = cm.tolist()
+
+    out_json = Path("outputs/test_report_gru_baseline.json")
+    out_json.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_json, "w", encoding="utf-8") as f:
+        json.dump(report, f, ensure_ascii=False)
+
+    args.history_json = DEFAULT_HISTORY_JSON
+    with open(DEFAULT_HISTORY_JSON, "w", encoding="utf-8") as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+    with open(DEFAULT_HISTORY_CSV, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(history[0].keys()))
+        writer.writeheader()
+        writer.writerows(history)
+
+    total_min = (time.time() - t_start) / 60
+    gpu_mem = (
+        f"{torch.cuda.max_memory_allocated(0) / (1024 ** 2):.0f} MiB"
+        if device.type == "cuda" else "n/a"
+    )
+    print("-" * 60)
+    print(f"best_epoch     : {ckpt['epoch']}")
+    print(f"best_val_macroF1: {ckpt['best_val_macro_f1']:.4f}")
+    print(f"total_time     : {total_min:.1f} min")
+    print(f"gpu_memory_max : {gpu_mem}")
+    print(f"checkpoint     : {ckpt_path}")
+    print(f"history        : {DEFAULT_HISTORY_JSON} / {DEFAULT_HISTORY_CSV}")
+    print(f"test report    : {out_json}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+

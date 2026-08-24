@@ -379,3 +379,46 @@ def save_split_metadata(
     log.info("Saved split metadata to %s", metadata_path)
 
 
+def load_split_metadata(
+    metadata_path: Path,
+    features_root: Path = DEFAULT_FEATURES_ROOT,
+) -> dict:
+    """Reconstruct the saved split WITHOUT re-randomizing.
+
+    Reads outputs/dataset_split.json and rebuilds per-split FeatureSample
+    lists by matching the stored relative paths against files on disk.
+    Returns a dict with keys: idx_to_class, class_to_idx, class_weights,
+    splits (name -> list[FeatureSample]).
+    """
+    metadata_path = Path(metadata_path)
+    with open(metadata_path, "r", encoding="utf-8") as f:
+        payload = json.load(f)
+
+    idx_to_class: List[str] = payload["idx_to_class"]
+    class_to_idx: Dict[str, int] = payload["class_to_idx"]
+    weights = torch.tensor(payload["class_weights"], dtype=torch.float32)
+
+    features_root = Path(features_root)
+    # Paths in the metadata are relative to the PROJECT ROOT / CWD
+    # (e.g. data/features/full/<class>/<file>.npz).
+    splits: Dict[str, List[FeatureSample]] = {}
+    for name in ("train", "val", "test"):
+        items: List[FeatureSample] = []
+        for rel_path in payload["splits"][name]:
+            abs_path = Path(rel_path)
+            cls_name = abs_path.parent.name
+            items.append(FeatureSample(abs_path, cls_name, class_to_idx[cls_name]))
+        splits[name] = items
+
+    return {
+        "idx_to_class": idx_to_class,
+        "class_to_idx": class_to_idx,
+        "class_weights": weights,
+        "splits": splits,
+        "incomplete_split_coverage_classes": payload.get(
+            "incomplete_split_coverage_classes", []
+        ),
+        "seed": payload.get("seed"),
+    }
+
+
