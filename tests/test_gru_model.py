@@ -304,5 +304,31 @@ class TemporalDeltaTests(unittest.TestCase):
         self.assertEqual(tuple(out.shape), (2, 200))
 
 
+class Dropout05ConfigTests(unittest.TestCase):
+    """Experiment 6: verify dropout=0.5 configuration is exactly as specified."""
+
+    def test_dropout_configuration(self):
+        m = GRUClassifier(input_size=126, hidden_size=128, num_layers=2,
+                          num_classes=200, dropout=0.5, pooling="mean_max")
+        self.assertEqual(m.dropout, 0.5)
+        self.assertEqual(m.gru.dropout, 0.5)          # between GRU layers
+        self.assertEqual(m.head_dropout.p, 0.5)       # final head dropout
+        self.assertEqual(m.fc.in_features, 256)       # mean||max pooling
+        self.assertEqual(m.fc.out_features, 200)
+
+    def test_output_shape_and_checkpoint_roundtrip(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "ckpt.pt"
+            m = GRUClassifier(input_size=126, hidden_size=128, num_layers=2,
+                              num_classes=200, dropout=0.5, pooling="mean_max")
+            torch.save({"model_state_dict": m.state_dict(),
+                        "model_config": m.get_config()}, path)
+            ckpt = torch.load(path, weights_only=False)
+            clone = GRUClassifier(**ckpt["model_config"])
+            clone.load_state_dict(ckpt["model_state_dict"])
+            self.assertEqual(clone.get_config()["dropout"], 0.5)
+            self.assertEqual(tuple(m(torch.randn(4, 26, 126)).shape), (4, 200))
+
+
 if __name__ == "__main__":
     unittest.main()
