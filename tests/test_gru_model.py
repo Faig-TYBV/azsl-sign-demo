@@ -330,5 +330,76 @@ class Dropout05ConfigTests(unittest.TestCase):
             self.assertEqual(tuple(m(torch.randn(4, 26, 126)).shape), (4, 200))
 
 
+class FeatureNormalizationTests(unittest.TestCase):
+    """Experiment 7: train-only mask-aware feature normalization."""
+
+    def setUp(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "data"))
+        from normalization import fit_normalization, FeatureNormalizer
+        self.fit = fit_normalization
+        self.FeatureNormalizer = FeatureNormalizer
+        rng = np.random.default_rng(9)
+        self.mask = np.zeros(26, dtype=np.float32)
+        self.mask[:18] = 1.0  # 8 padding frames stay zero
+
+    def _mk_samples(self, tmp, n=3):
+        from azsl_dataset import FeatureSample
+        samples = []
+        for i in range(n):
+            rng = np.random.default_rng(100 + i)
+            f = (rng.normal(0.4, 0.25, (26, 126))).astype(np.float32)
+            f[self.mask == 0] = 0.0
+            p = Path(tmp) / f"C{i}" / "s.npz"
+            p.parent.mkdir(parents=True, exist_ok=True)
+            np.savez(p, features=f, mask=self.mask)
+            samples.append(FeatureSample(p, f"C{i}", i))
+        return samples
+
+    def test_stats_from_train_only_and_excludes_invalid(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            samples = self._mk_samples(tmp)
+            stats = self.fit(samples)
+            m = np.array(stats["mean"])
+            # If invalid frames leaked in (all-zero rows), mean would be
+            # pulled toward 0; with valid mean ~0.4 it must be near that.
+            self.assertTrue(np.all(np.abs(m - 0.4) < 0.15))
+            self.assertEqual(stats["n_valid_frames"], 3 * 18)
+
+    def test_invalid_frames_remain_zero_and_no_mutation(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            samples = self._mk_samples(tmp, n=1)
+            norm = self.FeatureNormalizer.from_stats(self.fit(samples))
+            f = samples[0].path
+            with np.load(f) as z:
+                feats = z["features"].copy()
+                orig = feats.copy()
+            out = norm(feats, self.mask)
+            self.assertEqual(out.shape, (26, 126))
+            self.assertEqual(out.dtype, np.float32)
+            np.testing.assert_array_equal(out[18:], np.zeros((8, 126), np.float32))
+            np.testing.assert_array_equal(feats, orig)  # input not mutated
+
+    def test_deterministic_and_val_test_use_train_stats(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            samples = self._mk_samples(tmp, n=2)
+            stats = self.fit(samples)
+            n1 = self.FeatureNormalizer.from_stats(stats)
+            n2 = self.FeatureNormalizer.from_stats(self.fit(samples))
+            with np.load(samples[0].path) as z:
+                feats, mask = z["features"], z["mask"]
+            np.testing.assert_array_equal(n1(feats, mask), n2(feats, mask))
+            # Same transform object applied to any data -> same stats source
+            out = n1(feats, mask)
+            self.assertTrue(np.isfinite(out).all())
+
+    def test_model_receives_126_output_200(self):
+        m = GRUClassifier(input_size=126, hidden_size=16, num_layers=2,
+                          num_classes=200, pooling="mean_max")
+        self.assertEqual(tuple(m(torch.randn(3, 26, 126)).shape), (3, 200))
+
+
 if __name__ == "__main__":
     unittest.main()

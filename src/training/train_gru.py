@@ -117,6 +117,10 @@ def main() -> int:
                         help="default: outputs/training_history_gru_baseline.json")
     parser.add_argument("--report", type=Path, default=None,
                         help="default: outputs/test_report_gru_baseline.json")
+    parser.add_argument("--normalize", action="store_true",
+                        help="apply train-only per-dim feature normalization")
+    parser.add_argument("--norm-stats", type=Path, default=None,
+                        help="where to save/load normalization statistics")
     parser.add_argument("--delta", action="store_true",
                         help="concatenate temporal delta features "
                              "(input_size 252)")
@@ -150,10 +154,33 @@ def main() -> int:
         log.info("Temporal augmentation ENABLED (train only): noise_std=%s "
                  "mask_prob=%s dropout_prob=%s", args.noise_std,
                  args.temporal_mask_prob, args.temporal_dropout_prob)
+    normalizer = None
+    if args.normalize:
+        from normalization import fit_normalization, FeatureNormalizer
+        norm_stats_path = args.norm_stats or Path(
+            "outputs/feature_normalization_stats.json")
+        if norm_stats_path.exists():
+            normalizer = FeatureNormalizer.load(norm_stats_path)
+            log.info("Loaded normalization statistics from %s", norm_stats_path)
+        else:
+            log.info("Fitting normalization on TRAIN split only...")
+            stats = fit_normalization(data["splits"]["train"])
+            normalizer = FeatureNormalizer.from_stats(stats)
+            normalizer.save(norm_stats_path, extra={
+                "fitted_on": "train_split_only",
+                "n_valid_frames": stats["n_valid_frames"],
+                "epsilon": stats["epsilon"],
+            })
+            log.info("Normalization fitted: %d valid frames, saved to %s",
+                     stats["n_valid_frames"], norm_stats_path)
+
     train_ds = AzslFeatureDataset(data["splits"]["train"], augment=augment,
-                                  with_delta=args.delta)
-    val_ds = AzslFeatureDataset(data["splits"]["val"], with_delta=args.delta)
-    test_ds = AzslFeatureDataset(data["splits"]["test"], with_delta=args.delta)
+                                  with_delta=args.delta,
+                                  normalizer=normalizer)
+    val_ds = AzslFeatureDataset(data["splits"]["val"], with_delta=args.delta,
+                                normalizer=normalizer)
+    test_ds = AzslFeatureDataset(data["splits"]["test"], with_delta=args.delta,
+                                 normalizer=normalizer)
     pin_memory = device.type == "cuda"
     common = dict(batch_size=args.batch_size, num_workers=args.num_workers,
                   pin_memory=pin_memory)
