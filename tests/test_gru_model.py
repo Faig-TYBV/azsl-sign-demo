@@ -473,5 +473,96 @@ class BalancedSamplerTests(unittest.TestCase):
         self.assertEqual(y.shape[0], 4)
 
 
+class TimeAwareVelocityTests(unittest.TestCase):
+    """Experiment 9: time-aware velocity features."""
+
+    def setUp(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "data"))
+        from velocity_features import (
+            compute_time_aware_velocity, combine_with_velocity,
+            compute_dt, resampled_timestamps, load_timing_map)
+        self.velocity = compute_time_aware_velocity
+        self.combine = combine_with_velocity
+        self.compute_dt = compute_dt
+        self.timestamps = resampled_timestamps
+        rng = np.random.default_rng(5)
+        # valid slots 0-4, invalid 5-7, valid 8-11, padding 12-25
+        self.mask = np.zeros(26, dtype=np.float32)
+        self.mask[0:5] = 1.0
+        self.mask[8:12] = 1.0
+        self.feats = rng.normal(0.3, 0.2, (26, 126)).astype(np.float32)
+        self.feats[self.mask == 0] = 0.0
+
+    def test_combined_shape_original_columns_unchanged_no_mutation(self):
+        original = self.feats.copy()
+        dt = np.full(26, 1 / 30.0, dtype=np.float32)
+        comb = self.combine(self.feats, self.mask, dt)
+        self.assertEqual(comb.shape, (26, 252))
+        np.testing.assert_array_equal(comb[:, :126], self.feats)
+        np.testing.assert_array_equal(self.feats, original)
+
+    def test_first_frame_zero_invalid_frames_zero(self):
+        d = np.full(26, 1 / 30.0, dtype=np.float32)
+        v = self.velocity(self.feats, self.mask, d)
+        self.assertEqual(v.dtype, np.float32)
+        np.testing.assert_array_equal(v[0], np.zeros(126, np.float32))
+        for t in list(range(5, 8)) + list(range(12, 26)):
+            np.testing.assert_array_equal(
+                v[t], np.zeros(126, np.float32), err_msg=f"slot {t}")
+
+    def test_boundaries_produce_zero_velocity(self):
+        d = np.full(26, 1 / 30.0, dtype=np.float32)
+        v = self.velocity(self.feats, self.mask, d)
+        np.testing.assert_array_equal(v[8], np.zeros(126, np.float32))  # inv->valid
+        self.assertTrue(np.any(v[4] != 0))  # interior valid has velocity
+
+    def test_known_synthetic_timestamps(self):
+        # 2 features; X moves +1 unit per slot; dt doubles each step.
+        x = np.array([[0, 0], [1, 1], [3, 3], [6, 6]], dtype=np.float32)
+        m = np.ones(4, dtype=np.float32)
+        dt = np.array([0.0, 1.0, 2.0, 3.0], dtype=np.float32)
+        v = self.velocity(x, m, dt)
+        np.testing.assert_allclose(
+            v[1:], [[1.0, 1.0], [1.0, 1.0], [1.0, 1.0]], rtol=1e-6)
+
+    def test_resampled_timestamps_and_dt_validity(self):
+        # n >= 26: linspace over full gesture
+        ts = self.timestamps(100)
+        self.assertEqual(len(ts), 26)
+        self.assertEqual(ts[0], 0)
+        self.assertEqual(ts[-1], 99)
+        dt = self.compute_dt(100, 30.0)
+        self.assertEqual(dt[0], 0.0)
+        self.assertTrue((dt[1:] > 0).all())
+        # n < 26: identity indices -> constant frame spacing of 1
+        dt_short = self.compute_dt(10, 30.0)
+        np.testing.assert_allclose(dt_short[1:10], 1 / 30.0, rtol=1e-5)
+
+    def test_dataset_returns_26x252_labels_identical(self):
+        import tempfile
+        from azsl_dataset import AzslFeatureDataset, FeatureSample
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "C" / "s.npz"
+            p.parent.mkdir(parents=True)
+            np.savez(p, features=self.feats, mask=self.mask)
+            tm = {p.as_posix(): {"n": 40, "fps": 30.0}}
+            ds_v = AzslFeatureDataset([FeatureSample(p, "C", 33)],
+                                      with_velocity=True, timing_map=tm)
+            ds_plain = AzslFeatureDataset([FeatureSample(p, "C", 33)])
+            x, y = ds_v[0]
+            xp, yp = ds_plain[0]
+            self.assertEqual(tuple(x.shape), (26, 252))
+            self.assertEqual(y, yp == yp and 33)  # label identical & unchanged
+            np.testing.assert_array_equal(x[:, :126].numpy(), xp.numpy())
+
+    def test_per_sequence_independence_no_leakage(self):
+        # Same content in two sequences must give the same velocity,
+        # regardless of any other sequence — computed independently.
+        d = np.full(26, 1 / 30.0, dtype=np.float32)
+        v1 = self.velocity(self.feats, self.mask, d)
+        v2 = self.velocity(self.feats.copy(), self.mask.copy(), d.copy())
+        np.testing.assert_array_equal(v1, v2)
+
+
 if __name__ == "__main__":
     unittest.main()

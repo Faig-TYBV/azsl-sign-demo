@@ -289,18 +289,23 @@ class AzslFeatureDataset(Dataset):
     """
 
     def __init__(self, samples: Sequence[FeatureSample], augment=None,
-                 with_delta: bool = False, normalizer=None):
+                 with_delta: bool = False, normalizer=None,
+                 with_velocity: bool = False, timing_map=None):
         """``augment``: optional callable (features, mask) -> augmented
         features. Pass a TemporalAugmentation for the TRAINING split only;
         leave None (default) for validation/test so they stay untouched.
         ``with_delta``: concatenate masked temporal deltas -> [26, 252].
         ``normalizer``: optional FeatureNormalizer applied to ALL splits
         (train-fitted statistics) after augmentation.
+        ``with_velocity``: concatenate time-aware velocity -> [26, 252];
+        requires ``timing_map`` ({npz_posix_path: {"n","fps"}}).
         """
         self.samples: List[FeatureSample] = list(samples)
         self.augment = augment
         self.with_delta = with_delta
         self.normalizer = normalizer
+        self.with_velocity = with_velocity
+        self.timing_map = timing_map or {}
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -314,11 +319,22 @@ class AzslFeatureDataset(Dataset):
                 features = self.augment(features, mask)
             if self.normalizer is not None:
                 features = self.normalizer(features, mask)
-            if self.with_delta:
+            if self.with_velocity:
+                from velocity_features import (
+                    combine_with_velocity, compute_dt)
+                timing = self.timing_map.get(sample.path.as_posix())
+                if timing is None:
+                    raise KeyError(
+                        f"No timing metadata for {sample.path}")
+                dt = compute_dt(timing["n"], timing["fps"],
+                                target_len=features.shape[0])
+                features = combine_with_velocity(features, mask, dt)
+            elif self.with_delta:
                 from delta_features import combine_with_deltas
                 features = combine_with_deltas(features, mask)
-        expected = EXPECTED_SHAPE if not self.with_delta else (
-            EXPECTED_SHAPE[0], EXPECTED_SHAPE[1] * 2)
+        expected = EXPECTED_SHAPE
+        if self.with_delta or self.with_velocity:
+            expected = (EXPECTED_SHAPE[0], EXPECTED_SHAPE[1] * 2)
         if features.shape != expected:
             raise ValueError(
                 f"{sample.path}: shape {features.shape}, expected {expected}"

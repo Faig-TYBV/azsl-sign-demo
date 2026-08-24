@@ -122,6 +122,9 @@ def main() -> int:
     parser.add_argument("--balanced-sampler", action="store_true",
                         help="use WeightedRandomSampler on train loader with "
                              "unweighted CrossEntropyLoss (replaces weighted loss)")
+    parser.add_argument("--velocity", action="store_true",
+                        help="concatenate time-aware velocity features "
+                             "(input_size 252; requires extraction metadata)")
     parser.add_argument("--norm-stats", type=Path, default=None,
                         help="where to save/load normalization statistics")
     parser.add_argument("--delta", action="store_true",
@@ -177,13 +180,27 @@ def main() -> int:
             log.info("Normalization fitted: %d valid frames, saved to %s",
                      stats["n_valid_frames"], norm_stats_path)
 
+    timing_map = None
+    if args.velocity:
+        from velocity_features import load_timing_map
+        timing_path = Path("data/features/full/extraction_metadata.jsonl")
+        timing_map = load_timing_map(timing_path)
+        log.info("Time-aware velocity ENABLED; loaded timing for %d videos",
+                 len(timing_map))
+
     train_ds = AzslFeatureDataset(data["splits"]["train"], augment=augment,
                                   with_delta=args.delta,
-                                  normalizer=normalizer)
+                                  normalizer=normalizer,
+                                  with_velocity=args.velocity,
+                                  timing_map=timing_map)
     val_ds = AzslFeatureDataset(data["splits"]["val"], with_delta=args.delta,
-                                normalizer=normalizer)
+                                normalizer=normalizer,
+                                with_velocity=args.velocity,
+                                timing_map=timing_map)
     test_ds = AzslFeatureDataset(data["splits"]["test"], with_delta=args.delta,
-                                 normalizer=normalizer)
+                                 normalizer=normalizer,
+                                 with_velocity=args.velocity,
+                                 timing_map=timing_map)
     pin_memory = device.type == "cuda"
     common = dict(batch_size=args.batch_size, num_workers=args.num_workers,
                   pin_memory=pin_memory)
@@ -234,7 +251,7 @@ def main() -> int:
 
     # ---- Model / loss / optimizer ----------------------------------------
     model_cfg = dict(
-        input_size=252 if args.delta else 126,
+        input_size=252 if (args.delta or args.velocity) else 126,
         hidden_size=args.hidden_size, num_layers=args.num_layers,
         num_classes=num_classes, dropout=args.dropout, bidirectional=False,
         pooling=args.pooling,
