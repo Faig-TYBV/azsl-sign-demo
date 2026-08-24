@@ -108,8 +108,15 @@ def main() -> int:
     parser.add_argument("--num-layers", type=int, default=2)
     parser.add_argument("--dropout", type=float, default=0.3)
     parser.add_argument("--num-workers", type=int, default=DEFAULT_NUM_WORKERS)
+    parser.add_argument("--pooling", choices=("last", "mean_max"), default="last",
+                        help="'last' = final hidden state (baseline); "
+                             "'mean_max' = temporal mean+max pooling")
     parser.add_argument("--metadata", type=Path, default=DEFAULT_METADATA_PATH)
     parser.add_argument("--checkpoint", type=Path, default=DEFAULT_CHECKPOINT_PATH)
+    parser.add_argument("--history-json", type=Path, default=None,
+                        help="default: outputs/training_history_gru_baseline.json")
+    parser.add_argument("--report", type=Path, default=None,
+                        help="default: outputs/test_report_gru_baseline.json")
     args = parser.parse_args()
 
     t_start = time.time()
@@ -136,6 +143,7 @@ def main() -> int:
     model_cfg = dict(
         input_size=126, hidden_size=args.hidden_size, num_layers=args.num_layers,
         num_classes=num_classes, dropout=args.dropout, bidirectional=False,
+        pooling=args.pooling,
     )
     model = GRUClassifier(**model_cfg).to(device)
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -249,15 +257,16 @@ def main() -> int:
                           torch.cat(all_preds).numpy(), num_classes)
     report["confusion_matrix"] = cm.tolist()
 
-    out_json = Path("outputs/test_report_gru_baseline.json")
-    out_json.parent.mkdir(parents=True, exist_ok=True)
+    history_json = args.history_json or DEFAULT_HISTORY_JSON
+    report_path = args.report or Path("outputs/test_report_gru_baseline.json")
+    out_json = report_path
     with open(out_json, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False)
 
-    args.history_json = DEFAULT_HISTORY_JSON
-    with open(DEFAULT_HISTORY_JSON, "w", encoding="utf-8") as f:
+    with open(history_json, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
-    with open(DEFAULT_HISTORY_CSV, "w", newline="", encoding="utf-8") as f:
+    csv_path = history_json.with_suffix(".csv")
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(history[0].keys()))
         writer.writeheader()
         writer.writerows(history)
@@ -273,7 +282,7 @@ def main() -> int:
     print(f"total_time     : {total_min:.1f} min")
     print(f"gpu_memory_max : {gpu_mem}")
     print(f"checkpoint     : {ckpt_path}")
-    print(f"history        : {DEFAULT_HISTORY_JSON} / {DEFAULT_HISTORY_CSV}")
+    print(f"history        : {history_json} / {csv_path}")
     print(f"test report    : {out_json}")
     return 0
 
