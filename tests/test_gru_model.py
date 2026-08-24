@@ -236,8 +236,72 @@ class TemporalAugmentationTests(unittest.TestCase):
             self.assertFalse(torch.allclose(xa, xc))
 
 
-if __name__ == "__main__":
-    unittest.main()
+class TemporalDeltaTests(unittest.TestCase):
+    """Experiment 4: masked temporal delta features."""
+
+    def setUp(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "data"))
+        from delta_features import compute_temporal_deltas, combine_with_deltas
+        self.compute = compute_temporal_deltas
+        self.combine = combine_with_deltas
+        rng = np.random.default_rng(3)
+        # mask: valid frames 0-4, invalid 5-7, valid 8-11, padding 12-25
+        self.mask = np.zeros(26, dtype=np.float32)
+        self.mask[0:5] = 1.0
+        self.mask[8:12] = 1.0
+        self.feats = rng.normal(0.3, 0.2, (26, 126)).astype(np.float32)
+        self.feats[self.mask == 0] = 0.0
+
+    def test_combined_shape_and_original_unchanged(self):
+        original = self.feats.copy()
+        comb = self.combine(self.feats, self.mask)
+        self.assertEqual(comb.shape, (26, 252))
+        np.testing.assert_array_equal(self.feats, original)  # not mutated
+        np.testing.assert_array_equal(comb[:, :126], self.feats)
+
+    def test_delta_shape_first_frame_zero(self):
+        d = self.compute(self.feats, self.mask)
+        self.assertEqual(d.shape, (26, 126))
+        np.testing.assert_array_equal(d[0], np.zeros(126, np.float32))
+        self.assertEqual(d.dtype, np.float32)
+
+    def test_invalid_frames_have_zero_delta(self):
+        d = self.compute(self.feats, self.mask)
+        for t in list(range(5, 8)) + list(range(12, 26)):
+            np.testing.assert_array_equal(
+                d[t], np.zeros(126, np.float32), err_msg=f"frame {t}")
+
+    def test_invalid_to_valid_boundary_no_fake_delta(self):
+        d = self.compute(self.feats, self.mask)
+        np.testing.assert_array_equal(d[8], np.zeros(126, np.float32))
+
+    def test_valid_to_invalid_boundary_no_fake_delta(self):
+        d = self.compute(self.feats, self.mask)
+        np.testing.assert_array_equal(d[5], np.zeros(126, np.float32))
+        self.assertTrue(np.any(d[4] != 0))
+
+    def test_normal_delta_values(self):
+        d = self.compute(self.feats, self.mask)
+        np.testing.assert_allclose(d[3], self.feats[3] - self.feats[2], rtol=1e-6)
+
+    def test_dataset_returns_26x252_labels_unchanged(self):
+        import tempfile
+        from azsl_dataset import AzslFeatureDataset, FeatureSample
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "C" / "s.npz"
+            p.parent.mkdir(parents=True)
+            np.savez(p, features=self.feats, mask=self.mask)
+            ds = AzslFeatureDataset([FeatureSample(p, "C", 17)], with_delta=True)
+            x, y = ds[0]
+            self.assertEqual(tuple(x.shape), (26, 252))
+            self.assertEqual(x.dtype, torch.float32)
+            self.assertEqual(y, 17)
+
+    def test_model_accepts_252_input(self):
+        m = GRUClassifier(input_size=252, hidden_size=16, num_layers=2,
+                          num_classes=200, pooling="mean_max")
+        out = m(torch.randn(2, 26, 252))
+        self.assertEqual(tuple(out.shape), (2, 200))
 
 
 if __name__ == "__main__":

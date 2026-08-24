@@ -288,13 +288,16 @@ class AzslFeatureDataset(Dataset):
     The .npz files are opened read-only and never modified.
     """
 
-    def __init__(self, samples: Sequence[FeatureSample], augment=None):
+    def __init__(self, samples: Sequence[FeatureSample], augment=None,
+                 with_delta: bool = False):
         """``augment``: optional callable (features, mask) -> augmented
         features. Pass a TemporalAugmentation for the TRAINING split only;
         leave None (default) for validation/test so they stay untouched.
+        ``with_delta``: concatenate masked temporal deltas -> [26, 252].
         """
         self.samples: List[FeatureSample] = list(samples)
         self.augment = augment
+        self.with_delta = with_delta
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -305,9 +308,14 @@ class AzslFeatureDataset(Dataset):
             features = data["features"]
             if self.augment is not None:
                 features = self.augment(features, data["mask"])
-        if features.shape != EXPECTED_SHAPE:
+            if self.with_delta:
+                from delta_features import combine_with_deltas
+                features = combine_with_deltas(features, data["mask"])
+        expected = EXPECTED_SHAPE if not self.with_delta else (
+            EXPECTED_SHAPE[0], EXPECTED_SHAPE[1] * 2)
+        if features.shape != expected:
             raise ValueError(
-                f"{sample.path}: shape {features.shape}, expected {EXPECTED_SHAPE}"
+                f"{sample.path}: shape {features.shape}, expected {expected}"
             )
         tensor = torch.from_numpy(np.ascontiguousarray(features)).float()
         return tensor, int(sample.label)

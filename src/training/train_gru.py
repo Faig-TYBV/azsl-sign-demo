@@ -117,6 +117,9 @@ def main() -> int:
                         help="default: outputs/training_history_gru_baseline.json")
     parser.add_argument("--report", type=Path, default=None,
                         help="default: outputs/test_report_gru_baseline.json")
+    parser.add_argument("--delta", action="store_true",
+                        help="concatenate temporal delta features "
+                             "(input_size 252)")
     parser.add_argument("--augment", action="store_true",
                         help="enable training-time temporal augmentation "
                              "(train split only)")
@@ -147,9 +150,10 @@ def main() -> int:
         log.info("Temporal augmentation ENABLED (train only): noise_std=%s "
                  "mask_prob=%s dropout_prob=%s", args.noise_std,
                  args.temporal_mask_prob, args.temporal_dropout_prob)
-    train_ds = AzslFeatureDataset(data["splits"]["train"], augment=augment)
-    val_ds = AzslFeatureDataset(data["splits"]["val"])
-    test_ds = AzslFeatureDataset(data["splits"]["test"])
+    train_ds = AzslFeatureDataset(data["splits"]["train"], augment=augment,
+                                  with_delta=args.delta)
+    val_ds = AzslFeatureDataset(data["splits"]["val"], with_delta=args.delta)
+    test_ds = AzslFeatureDataset(data["splits"]["test"], with_delta=args.delta)
     pin_memory = device.type == "cuda"
     common = dict(batch_size=args.batch_size, num_workers=args.num_workers,
                   pin_memory=pin_memory)
@@ -159,7 +163,8 @@ def main() -> int:
 
     # ---- Model / loss / optimizer ----------------------------------------
     model_cfg = dict(
-        input_size=126, hidden_size=args.hidden_size, num_layers=args.num_layers,
+        input_size=252 if args.delta else 126,
+        hidden_size=args.hidden_size, num_layers=args.num_layers,
         num_classes=num_classes, dropout=args.dropout, bidirectional=False,
         pooling=args.pooling,
     )
