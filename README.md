@@ -95,22 +95,111 @@ The `requirements.txt` includes: `fastapi`, `uvicorn`, `opencv-python`, `mediapi
 
 ## Model setup
 
-The web demo and the inference scripts both expect the trained checkpoint to live at:
+The web demo and the inference scripts both expect a single trained checkpoint file to live at:
 
 ```
 outputs/checkpoints/gru_temporal_pool_best.pt
 ```
 
-**The `.pt` file is NOT included in this repository** (`.gitignore` blocks it on purpose to keep the repo small). A teammate should:
+This file is **NOT** stored in the GitHub repository. The repository contains only the source code; the trained model artifact is a binary file that is intentionally distributed separately so the repo stays small and so the model can be updated without rewriting the git history.
 
-1. Obtain the checkpoint file by whatever out-of-band channel the team uses (shared drive, internal artifact store, training pipeline, etc.). The expected filename is `gru_temporal_pool_best.pt`.
-2. Create the destination directory if it does not exist:
-   ```bash
-   mkdir -p outputs/checkpoints
+**What is in GitHub vs. what is not:**
+
+| Artifact | In GitHub? | Where it comes from |
+|---|---|---|
+| Source code (this repository) | Yes | `git clone https://github.com/NurlanAslnzade/Holberton-azsl-word-recognition.git` |
+| Trained model checkpoint (`.pt`) | **No** | Distributed separately, see below |
+| Training dataset | **No** | The `data/` directory is git-ignored |
+| Generated training outputs (logs, CSVs, JSONs, figures) | **No** | Git-ignored under `outputs/` |
+
+The web demo requires the checkpoint for real-time prediction. Without it, the backend will refuse to start and will print `Failed to load model: ...` to the console.
+
+### Obtaining the checkpoint
+
+1. Clone the repository:
+   ```powershell
+   git clone https://github.com/NurlanAslnzade/Holberton-azsl-word-recognition.git
+   cd Holberton-azsl-word-recognition
    ```
-3. Place the file at the path above. The web demo (`backend.py`) loads it on startup from `PROJECT_ROOT / "outputs/checkpoints/gru_temporal_pool_best.pt"`.
+2. Create the destination directory if it does not exist (Windows PowerShell / macOS / Linux):
+   ```powershell
+   New-Item -ItemType Directory -Path outputs\checkpoints -Force
+   ```
+   (Bash equivalent: `mkdir -p outputs/checkpoints`)
+3. Download `gru_temporal_pool_best.pt` from the external checkpoint link below. **Keep the filename exactly as `gru_temporal_pool_best.pt`** — do not rename it and do not extract it into a subfolder.
+4. Place the file at exactly this path inside the cloned repository:
+   ```
+   outputs/checkpoints/gru_temporal_pool_best.pt
+   ```
 
-If the file is missing, the backend will refuse to start and will print `Failed to load model: ...` to the console.
+   **Checkpoint download link:**
+
+   ```
+   CHECKPOINT_DOWNLOAD_LINK
+   ```
+
+   *(Replace this placeholder with the actual download URL / share link that the team lead provides. The checkpoint is hosted outside GitHub on purpose; do not add the `.pt` file to the repository.)*
+
+### Verifying the checkpoint
+
+Before using the model, verify the file you downloaded is the expected one. The expected SHA-256 hash of `gru_temporal_pool_best.pt` is:
+
+```
+97B3459CCD79FF8F4D2E90452EA84B1DB3D521E1EBFBF8997E6E207B3617F4AC
+```
+
+Run this from the project root (Windows PowerShell):
+
+```powershell
+Get-FileHash .\outputs\checkpoints\gru_temporal_pool_best.pt -Algorithm SHA256
+```
+
+On macOS / Linux:
+
+```bash
+sha256sum outputs/checkpoints/gru_temporal_pool_best.pt
+```
+
+The output hash **must** be `97B3459CCD79FF8F4D2E90452EA84B1DB3D521E1EBFBF8997E6E207B3617F4AC`. If it matches, the checkpoint is the expected trained model and you can proceed. If it does not match, the download was corrupted or tampered with — re-download the file and try again. Do not start the web demo with a mismatched hash.
+
+### Confirming the checkpoint is correct
+
+- **Filename:** exactly `gru_temporal_pool_best.pt` (case-sensitive on Linux/macOS).
+- **Path:** exactly `outputs/checkpoints/gru_temporal_pool_best.pt` (relative to the project root).
+- **Size:** approximately 2.86 MB (3,000,905 bytes). A file that is dramatically smaller or larger is wrong.
+- **SHA-256:** `97B3459CCD79FF8F4D2E90452EA84B1DB3D521E1EBFBF8997E6E207B3617F4AC`.
+
+### Do not commit the checkpoint
+
+The `.pt` file is in `.gitignore` and must stay there. The trained model is a binary artifact that changes infrequently and is large enough to bloat the git history; it is distributed out-of-band. Never run `git add -f outputs/checkpoints/`, never rename it to something git would track, and never paste the file into a commit, pull request, or release asset on GitHub.
+
+### Starting the web demo (local only)
+
+Once the checkpoint is in place, start the backend from the project root with the virtual environment active:
+
+```powershell
+python -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port 8000
+```
+
+Wait for the console to show:
+
+```
+Loading model...
+Model loaded successfully on cuda
+WebSocket backend started.
+Uvicorn running on http://0.0.0.0:8000
+```
+
+Then open `http://localhost:8000` in Chrome, Edge, or Safari on the same machine. The browser will:
+
+1. Connect to the WebSocket automatically.
+2. Wait for you to press **Start Camera** and grant camera permission.
+3. Stream JPEG frames to the backend at ~10 fps.
+4. Display the live smoothed prediction and confidence.
+5. Add each completed sign (as reported by the temporal segmenter via `segment_event`) to a **Detected Words** list.
+6. Let you tap detected words in any order to build a **Final Sentence**.
+
+**Cloudflare is NOT required.** **An iPhone is NOT required.** The personal Cloudflare tunnel used during the original author's remote testing is not part of this project and is not needed for local use. Test locally first.
 
 ## Local inference
 
