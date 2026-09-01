@@ -134,11 +134,9 @@ The web demo requires the checkpoint for real-time prediction. Without it, the b
 
    **Checkpoint download link:**
 
-   ```
-   CHECKPOINT_DOWNLOAD_LINK
-   ```
+   [Download trained checkpoint](https://drive.google.com/file/d/1x598K9EcpIZk2y-2BvaP6Pcm9SbgWpjY/view?usp=drive_link)
 
-   *(Replace this placeholder with the actual download URL / share link that the team lead provides. The checkpoint is hosted outside GitHub on purpose; do not add the `.pt` file to the repository.)*
+   *(The checkpoint is hosted outside GitHub on purpose; do not add the `.pt` file to the repository.)*
 
 ### Verifying the checkpoint
 
