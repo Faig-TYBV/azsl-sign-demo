@@ -91,7 +91,7 @@ source .venv/bin/activate
 pip install -r src/web_demo/requirements.txt
 ```
 
-The `requirements.txt` includes: `fastapi`, `uvicorn`, `opencv-python`, `mediapipe`, `torch`, `numpy`, `mkcert` (for optional local HTTPS).
+The `requirements.txt` includes: `fastapi`, `uvicorn`, `opencv-python`, `mediapipe`, `torch`, `numpy`.
 
 ## Model setup
 
