@@ -1,0 +1,8 @@
+fastapi>=0.141.1
+uvicorn>=0.52.4
+opencv-python>=4.9.0
+mediapipe>=0.10.11
+torch>=2.3.0
+numpy>=1.26.0
+# Added for HTTPS support
+mkcert>=1.4.4

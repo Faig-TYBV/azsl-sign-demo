@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AzSLD Web Demo</title>
+    <style>
+:root {
+    --bg-dark: #0a0a0a;
+    --bg-darker: #040404;
+    --bg-card: #111111;
+    --bg-card-hover: #1a1a1a;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --accent: #00d4ff;
+    --accent-secondary: #ff6b6b;
+    --success: #4caf50;
+    --warning: #ff9800;
+    --error: #f44336;
+    --border-radius: 12px;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --transition: 0.3s ease;
+    --font-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --font-mono: 'Courier New', Courier, monospace;
+}
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+header {
+    text-align: center;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.title {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(to right, var(--accent), var(--accent-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.subtitle {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+.classes-info {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+main {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+    main {
+        grid-template-columns: 2fr 1fr;
+    }
+}
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity var(--transition);
+}
+.loading-overlay.visible {
+    opacity: 1;
+}
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--bg-card);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s ease-in-out infinite;
+}
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+.video-container {
+    position: relative;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    background-color: var(--bg-darker);
+    aspect-ratio: 4/3;
+}
+#video {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+#landmark-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+.prediction-card, .status-panel, .controls-panel {
+    background-color: var(--bg-card);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+}
+.prediction-card h3, .status-panel h3, .controls-panel h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.3rem;
+}
+.prediction-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    text-align: center;
+}
+.smooth-prediction {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    min-height: 4.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.smooth-confidence {
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+}
+.raw-prediction {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.5rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.raw-prediction div {
+    display: flex;
+    flex-direction: column;
+}
+.raw-prediction label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.2rem;
+}
+.raw-prediction value {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+.status-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.status-item {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+}
+.status-item label {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.3rem;
+}
+.status-item value {
+    font-size: 1.4rem;
+    font-weight: 600;
+    min-height: 1.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.status-item value.connected { color: var(--success); }
+.status-item value.disconnected { color: var(--error); }
+.status-item value.warning { color: var(--warning); }
+.status-item value.neutral { color: var(--text-primary); }
+.btn-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.btn {
+    background-color: var(--bg-card-hover);
+    color: var(--text-primary);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all var(--transition);
+}
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.btn-start {
+    background-color: var(--success);
+    color: white;
+}
+.btn-start:hover {
+    background-color: #43a047;
+}
+.btn-stop {
+    background-color: var(--error);
+    color: white;
+}
+.btn-stop:hover {
+    background-color: #d32f2f;
+}
+.btn-reset {
+    background-color: var(--accent);
+    color: white;
+}
+.btn-reset:hover {
+    background-color: #00b0cc;
+}
+
+/* Prediction History (detected segment events) */
+.history-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+.history-chip {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    min-width: 5rem;
+    transition: all var(--transition);
+    user-select: none;
+}
+.history-chip:hover {
+    background-color: var(--bg-card-hover);
+    transform: translateY(-1px);
+}
+.history-chip.selected {
+    background-color: rgba(0, 212, 255, 0.18);
+    border-color: var(--accent);
+}
+.history-chip .chip-label {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+.history-chip .chip-conf {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+.history-chip .chip-order {
+    display: inline-block;
+    font-size: 0.8rem;
+    color: var(--accent);
+    margin-right: 0.35rem;
+}
+.history-empty {
+    color: var(--text-secondary);
+    font-style: italic;
+    font-size: 0.95rem;
+}
+.selected-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
+.selected-item {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+.selected-item .order {
+    color: var(--accent);
+    font-weight: 700;
+    min-width: 1.75rem;
+}
+.sentence-box {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: rgba(0, 212, 255, 0.08);
+    border: 1px solid rgba(0, 212, 255, 0.25);
+    border-radius: 8px;
+    font-size: 1.4rem;
+    font-weight: 600;
+    min-height: 3rem;
+    color: var(--accent);
+    word-break: break-word;
+}
+.sentence-box.empty {
+    color: var(--text-secondary);
+    font-weight: 400;
+    font-style: italic;
+    font-size: 1rem;
+}
+.btn-clear-selection {
+    background-color: var(--warning);
+    color: white;
+}
+.btn-clear-selection:hover {
+    background-color: #e68900;
+}
+.btn-clear-history {
+    background-color: var(--accent-secondary);
+    color: white;
+}
+.btn-clear-history:hover {
+    background-color: #e65555;
+}
+.footer {
+    text-align: center;
+    padding: 1rem 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1 class="title">Azerbaijani Sign Language Recognition</h1>
+        <p class="subtitle">Real-time translation from video to text</p>
+        <p class="classes-info">Recognizes 26 Azerbaijani sign language words</p>
+    </header>
+
+    <main>
+        <section class="video-container">
+            <video id="video" autoplay playsinline webkit-playsinline muted></video>
+            <canvas id="landmark-canvas"></canvas>
+            <div id="loading-overlay" class="loading-overlay">
+                <div class="loading-spinner"></div>
+                <div id="loading-text">Initializing camera...</div>
+            </div>
+        </section>
+
+        <section class="prediction-card">
+            <h3><span>🎯</span> Prediction</h3>
+            <div class="prediction-content">
+                <div class="smooth-prediction" id="smoothPred">-</div>
+                <div class="smooth-confidence" id="smoothConf">0%</div>
+                <div class="raw-prediction">
+                    <div>
+                        <label>Raw Prediction</label>
+                        <div class="value" id="rawPred">-</div>
+                    </div>
+                    <div>
+                        <label>Confidence</label>
+                        <div class="value" id="rawConf">0%</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="status-panel">
+            <h3><span>📊</span> System Status</h3>
+            <div class="status-grid">
+                <div class="status-item">
+                    <label>Camera</label>
+                    <div class="value" id="camera-status" class="disconnected">Off</div>
+                </div>
+                <div class="status-item">
+                    <label>Hand Detection</label>
+                    <div class="value" id="hand-status" class="disconnected">Not Detecting</div>
+                </div>
+                <div class="status-item">
+                    <label>Buffer</label>
+                    <div class="value" id="buffer">0/26</div>
+                </div>
+                <div class="status-item">
+                    <label>Model</label>
+                    <div class="value" id="model-status" class="disconnected">Not Loaded</div>
+                </div>
+                <div class="status-item">
+                    <label>Device</label>
+                    <div class="value" id="device-status" class="neutral">Unknown</div>
+                </div>
+                <div class="status-item">
+                    <label>FPS</label>
+                    <div class="value" id="fps">0</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="controls-panel">
+            <h3><span>🎮</span> Controls</h3>
+            <div class="btn-group">
+                <button id="start" class="btn btn-start">Start Camera</button>
+                <button id="stop" class="btn btn-stop">Stop Camera</button>
+                <button id="reset" class="btn btn-reset">Reset Buffer</button>
+            </div>
+            <p id="status-text" class="status-text">Ready to start</p>
+        </section>
+
+        <section class="prediction-card" id="history-card">
+            <h3><span>📝</span> Detected Words</h3>
+            <p class="classes-info" style="margin-bottom:0.75rem;">
+                Words emitted by the temporal segmenter. Tap to add to your sentence.
+            </p>
+            <div id="history-grid" class="history-grid">
+                <span class="history-empty">No words detected yet.</span>
+            </div>
+        </section>
+
+        <section class="prediction-card" id="sentence-card">
+            <h3><span>🧩</span> Selected Words &amp; Final Sentence</h3>
+            <p class="classes-info" style="margin-bottom:0.75rem;">
+                Order is determined by your selection. Words already selected are highlighted in the list above.
+            </p>
+            <div id="selected-list" class="selected-list">
+                <span class="history-empty">No words selected yet.</span>
+            </div>
+            <div id="sentence-box" class="sentence-box empty">Final sentence will appear here.</div>
+            <div class="btn-group" style="margin-top:1rem;">
+                <button id="clear-selection" class="btn btn-clear-selection">Clear Selection</button>
+                <button id="clear-history" class="btn btn-clear-history">Clear History</button>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+let ws = null;
+let videoStream = null;
+let isStreaming = false;
+let frameIntervalId = null;
+let framesSent = 0;
+let captureCanvas = null;
+let captureCtx = null;
+const CAPTURE_WIDTH = 480;
+const CAPTURE_HEIGHT = 360;
+const FRAME_INTERVAL_MS = 100; // ~10 fps, keeps backend load reasonable
+const FRAME_LOG_INTERVAL = 30; // log every N sent frames
+// DOM elements
+const video = document.getElementById('video');
+const loadingOverlay = document.getElementById('loading-overlay');
+const smoothPred = document.getElementById('smoothPred');
+const smoothConf = document.getElementById('smoothConf');
+const rawPred = document.getElementById('rawPred');
+const rawConf = document.getElementById('rawConf');
+const bufferEl = document.getElementById('buffer');
+const cameraStatusEl = document.getElementById('camera-status');
+const handStatusEl = document.getElementById('hand-status');
+const modelStatusEl = document.getElementById('model-status');
+const deviceStatusEl = document.getElementById('device-status');
+const fpsEl = document.getElementById('fps');
+const startBtn = document.getElementById('start');
+const stopBtn = document.getElementById('stop');
+const resetBtn = document.getElementById('reset');
+const statusTextEl = document.getElementById('status-text');
+
+// Frontend-only state added on top of the recognition pipeline:
+// list of segment events emitted by the backend temporal segmenter, and
+// the user's selection order for building a final sentence.
+let predictionHistory = [];   // [{ label, confidence }]
+let selectedWords = [];       // [historyIndex, historyIndex, ...]
+const historyGrid = document.getElementById('history-grid');
+const selectedListEl = document.getElementById('selected-list');
+const sentenceBoxEl = document.getElementById('sentence-box');
+const clearSelectionBtn = document.getElementById('clear-selection');
+const clearHistoryBtn = document.getElementById('clear-history');
+
+function setLoadingText(message) {
+    const loadingTextEl = document.getElementById('loading-text');
+    if (loadingTextEl) {
+        loadingTextEl.textContent = message;
+    }
+}
+
+// WebSocket initialization
+function initWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+        console.log('WebSocket connected');
+        updateModelStatus('Loaded');
+        setStatus('Model loaded. Ready to start');
+        setLoadingText('WebSocket connected');
+    };
+
+    ws.onmessage = (event) => {
+        // Log message metadata without dumping base64 payloads.
+        console.log('WS MESSAGE RECEIVED:', event.data.length, 'bytes');
+        try {
+            const data = JSON.parse(event.data);
+
+            // Explicit backend error handling.
+            if (data.error) {
+                console.error('Backend error:', data.error);
+                setStatus('Error: ' + data.error);
+                return;
+            }
+
+            // Update buffer progress.
+            if (data.buffer_progress) {
+                if (bufferEl) bufferEl.textContent = data.buffer_progress;
+            }
+
+            // Update predictions using the actual backend field names.
+            if (smoothPred) smoothPred.textContent = data.smoothed_prediction || '-';
+            if (smoothConf) smoothConf.textContent = (data.smoothed_confidence * 100).toFixed(1) + '%';
+            if (rawPred) rawPred.textContent = data.raw_prediction || '-';
+            if (rawConf) rawConf.textContent = (data.raw_confidence * 100).toFixed(1) + '%';
+
+            // Update hand-detection status when frames are actually processed.
+            if (data.buffer_progress && data.buffer_progress !== '0/26') {
+                updateHandStatus('Detecting');
+            }
+
+            // New (additive): capture completed temporal segments emitted by
+            // the backend segmenter. Only this field is added to history;
+            // raw_prediction and smoothed_prediction are intentionally not.
+            if (data.segment_event && data.segment_event.label) {
+                addDetectedWord(data.segment_event.label, data.segment_event.confidence);
+            }
+        } catch (e) {
+            console.error('Error parsing WebSocket message:', e);
+        }
+    };
+
+    ws.onclose = () => {
+        console.log('WebSocket disconnected');
+        updateModelStatus('Not Loaded');
+        if (isStreaming) {
+            setStatus('Connection lost. Attempting to reconnect...');
+            setTimeout(initWebSocket, 3000);
+        }
+    };
+
+    ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+    };
+}
+
+// Camera functions
+function startCamera() {
+    if (isStreaming) return;
+
+    showLoading(true);
+    setStatus('Starting camera...');
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showLoading(false);
+        setStatus('Error: Camera API not available');
+        alert('Your browser does not support camera access.');
+        return;
+    }
+
+    navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480, facingMode: 'user' }
+    })
+    .then(stream => {
+        videoStream = stream;
+        video.srcObject = stream;
+        // Explicit play() is required on iOS Safari. Do not swallow the
+        // returned promise: if play() rejects, we want to surface that.
+        return video.play();
+    })
+    .then(() => {
+        // Wait until the video element has at least metadata (width/height).
+        // If the event has already fired (race), resolve immediately.
+        if (video.readyState >= 1) {
+            return Promise.resolve();
+        }
+        return new Promise((resolve, reject) => {
+            const onMeta = () => { video.removeEventListener('loadedmetadata', onMeta); resolve(); };
+            const onErr = () => { video.removeEventListener('error', onErr); reject(new Error('video error')); };
+            video.addEventListener('loadedmetadata', onMeta);
+            video.addEventListener('error', onErr);
+        });
+    })
+    .then(() => {
+        isStreaming = true;
+
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        resetBtn.disabled = false;
+
+        setStatus('Camera started. Sending frames...');
+        updateCameraStatus('On');
+        showLoading(false);
+        startFrameLoop();
+    })
+    .catch(err => {
+        console.error('Error starting camera:', err);
+        showLoading(false);
+        setStatus('Error: Could not start camera');
+        alert('Could not start the camera. Please check permissions and try again.');
+    });
+}
+
+function stopCamera() {
+    if (!isStreaming) return;
+
+    if (frameIntervalId) {
+        clearInterval(frameIntervalId);
+        frameIntervalId = null;
+    }
+
+    if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+    }
+    video.srcObject = null;
+    isStreaming = false;
+
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    resetBtn.disabled = false;
+
+    updateCameraStatus('Off');
+    handStatusEl.textContent = 'Not Detecting';
+    handStatusEl.className = 'value disconnected';
+    smoothPred.textContent = '-';
+    smoothConf.textContent = '0%';
+    rawPred.textContent = '-';
+    rawConf.textContent = '0%';
+
+    setStatus('Camera stopped');
+    showLoading(false);
+}
+
+// Frame loop: capture the camera video into an offscreen canvas, encode as
+// JPEG, and stream each frame to the backend. The backend is the only
+// component that runs MediaPipe landmark extraction + normalization.
+function startFrameLoop() {
+    if (!captureCanvas) {
+        captureCanvas = document.createElement('canvas');
+        captureCanvas.width = CAPTURE_WIDTH;
+        captureCanvas.height = CAPTURE_HEIGHT;
+        captureCtx = captureCanvas.getContext('2d');
+    }
+
+    if (frameIntervalId) {
+        clearInterval(frameIntervalId);
+    }
+
+    frameIntervalId = setInterval(() => {
+        // Only send while the camera stream and WebSocket both exist and are open.
+        if (!isStreaming || !videoStream || !video.readyState) {
+            return;
+        }
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            return;
+        }
+
+        captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+        const dataUrl = captureCanvas.toDataURL('image/jpeg', 0.7);
+        const base64 = dataUrl.split(',')[1];
+
+        ws.send(JSON.stringify({
+            type: 'frame',
+            data: base64
+        }));
+
+        framesSent += 1;
+        if (framesSent % FRAME_LOG_INTERVAL === 0) {
+            console.log('FRAME SENT:', framesSent);
+        }
+    }, FRAME_INTERVAL_MS);
+}
+
+function resetBuffer() {
+    framesSent = 0;
+    bufferEl.textContent = '0/26';
+    updateHandStatus('Not Detecting');
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'reset' }));
+    }
+    if (isStreaming) {
+        setStatus('Buffer reset');
+    }
+}
+
+function cleanup() {
+    stopCamera();
+    if (ws) {
+        ws.close();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Prediction History + Sentence Builder (additive frontend-only feature)
+//
+// Source of truth is the backend's segment_event field. The frontend does not
+// add raw_prediction or smoothed_prediction to history; it only adds words
+// when a completed temporal segment is reported.
+// ---------------------------------------------------------------------------
+
+function addDetectedWord(label, confidence) {
+    // Consecutive-duplicate suppression: if the previous entry has the same
+    // label, do nothing. Non-consecutive repeats are preserved (e.g.
+    // MƏN, KÖMƏK, MƏN keeps all three).
+    if (predictionHistory.length > 0
+        && predictionHistory[predictionHistory.length - 1].label === label) {
+        return;
+    }
+    const conf = (typeof confidence === 'number' && isFinite(confidence))
+        ? confidence : 0.0;
+    predictionHistory.push({ label: label, confidence: conf });
+    renderHistory();
+    renderSelected();
+}
+
+function renderHistory() {
+    if (!historyGrid) return;
+    if (predictionHistory.length === 0) {
+        historyGrid.innerHTML = '<span class="history-empty">No words detected yet.</span>';
+        return;
+    }
+    // Build the selection-order lookup so we can show "②" inside each chip.
+    const orderByIndex = new Map();
+    selectedWords.forEach((idx, i) => orderByIndex.set(idx, i + 1));
+
+    const html = predictionHistory.map((entry, idx) => {
+        const order = orderByIndex.get(idx);
+        const isSelected = order !== undefined;
+        const orderPrefix = isSelected
+            ? '<span class="chip-order">' + order + '</span>' : '';
+        const confPct = (entry.confidence * 100).toFixed(0) + '%';
+        return '<div class="history-chip' + (isSelected ? ' selected' : '') + '" data-history-idx="' + idx + '">'
+            + '<div class="chip-label">' + orderPrefix + escapeHtml(entry.label) + '</div>'
+            + '<div class="chip-conf">' + confPct + '</div>'
+            + '</div>';
+    }).join('');
+    historyGrid.innerHTML = html;
+
+    // Attach click handlers (rebuilt on every render).
+    historyGrid.querySelectorAll('.history-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const i = parseInt(chip.getAttribute('data-history-idx'), 10);
+            if (!isNaN(i)) toggleSelection(i);
+        });
+    });
+}
+
+function toggleSelection(historyIdx) {
+    const existingPos = selectedWords.indexOf(historyIdx);
+    if (existingPos !== -1) {
+        // Tapping an already-selected chip removes it from the sentence.
+        selectedWords.splice(existingPos, 1);
+    } else {
+        selectedWords.push(historyIdx);
+    }
+    renderHistory();
+    renderSelected();
+}
+
+function renderSelected() {
+    if (!selectedListEl || !sentenceBoxEl) return;
+    if (selectedWords.length === 0) {
+        selectedListEl.innerHTML = '<span class="history-empty">No words selected yet.</span>';
+        sentenceBoxEl.textContent = 'Final sentence will appear here.';
+        sentenceBoxEl.classList.add('empty');
+        return;
+    }
+    const lines = selectedWords.map((histIdx, i) => {
+        const entry = predictionHistory[histIdx];
+        if (!entry) return '';
+        return '<div class="selected-item">'
+            + '<span class="order">' + (i + 1) + '.</span>'
+            + '<span>' + escapeHtml(entry.label) + '</span>'
+            + '</div>';
+    }).join('');
+    selectedListEl.innerHTML = lines;
+    sentenceBoxEl.textContent = selectedWords
+        .map(i => (predictionHistory[i] ? predictionHistory[i].label : ''))
+        .filter(Boolean)
+        .join(' ');
+    sentenceBoxEl.classList.remove('empty');
+}
+
+function clearSelection() {
+    selectedWords = [];
+    renderHistory();
+    renderSelected();
+}
+
+function clearHistory() {
+    predictionHistory = [];
+    selectedWords = [];
+    renderHistory();
+    renderSelected();
+}
+
+function escapeHtml(s) {
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// Status update functions
+function setStatus(message) {
+    if (statusTextEl) {
+        statusTextEl.textContent = message;
+    }
+}
+
+function updateCameraStatus(status) {
+    if (cameraStatusEl) {
+        cameraStatusEl.textContent = status;
+        if (status === 'On' || status === 'Streaming') {
+            cameraStatusEl.className = 'value connected';
+        } else {
+            cameraStatusEl.className = 'value disconnected';
+        }
+    }
+}
+
+function updateHandStatus(status) {
+    if (handStatusEl) {
+        handStatusEl.textContent = status;
+        if (status === 'Detecting') {
+            handStatusEl.className = 'value connected';
+        } else {
+            handStatusEl.className = 'value disconnected';
+        }
+    }
+}
+
+function updateModelStatus(status) {
+    if (modelStatusEl) {
+        modelStatusEl.textContent = status;
+        if (status === 'Loaded') {
+            modelStatusEl.className = 'value connected';
+        } else {
+            modelStatusEl.className = 'value disconnected';
+        }
+    }
+}
+
+function updateDeviceStatus(device) {
+    if (deviceStatusEl) {
+        deviceStatusEl.textContent = device;
+        deviceStatusEl.className = 'value neutral';
+    }
+}
+
+function updateFPS(fps) {
+    if (fpsEl) {
+        fpsEl.textContent = fps;
+    }
+}
+
+function showLoading(show) {
+    if (loadingOverlay) {
+        if (show) {
+            loadingOverlay.classList.add('visible');
+        } else {
+            loadingOverlay.classList.remove('visible');
+        }
+    }
+}
+
+// Event listeners
+startBtn.addEventListener('click', startCamera);
+stopBtn.addEventListener('click', stopCamera);
+resetBtn.addEventListener('click', resetBuffer);
+if (clearSelectionBtn) clearSelectionBtn.addEventListener('click', clearSelection);
+if (clearHistoryBtn)   clearHistoryBtn.addEventListener('click', clearHistory);
+
+// Initialize on page load
+window.addEventListener('load', () => {
+    initWebSocket();
+});
+
+// Handle page unload
+window.addEventListener('beforeunload', () => {
+    cleanup();
+});
+</script>
+
+<footer>
+    <p>AzSL Word Recognition Demo &copy; 2026</p>
+</footer>
+
+</body>
+</html>

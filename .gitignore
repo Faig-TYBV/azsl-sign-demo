@@ -9,8 +9,41 @@ data/
 # --- Downloaded model artifacts ---
 models/*.task
 
+# --- Trained model checkpoints (NEVER commit) ---
+*.pt
+*.pth
+models/
+outputs/checkpoints/
+outputs/exp*/
+outputs/exp*_backup/
+outputs/inference/
+outputs/inference_backup/
+outputs/inference_subset/
+outputs/inference_test/
+
+# --- Generated training / analysis outputs (JSON, CSV, TXT) ---
+outputs/*.json
+outputs/*.csv
+outputs/*.txt
+outputs/exp*_analysis.txt
+outputs/comparison_*.json
+outputs/sampler_analysis.json
+outputs/feature_normalization_stats.json
+outputs/dataset_split.json.backup
+outputs/test_report_*.json
+outputs/training_history_*.csv
+outputs/training_history_*.json
+subset_metadata.json
+temp_per_class_metrics.npz
+
 # --- Generated run logs ---
 outputs/*.log
+*.log
+backend_*.log
+tunnel_*.log
+client_output*.log
+final_test.log
+investigation_output.txt
 
 # Large generated per-video inspection dump (keep the .txt summary instead)
 outputs/reports/dataset_inspection.json
@@ -20,9 +53,63 @@ outputs/figures/
 
 # --- Tool/editor metadata ---
 .mimocode/
+.pytest_cache/
 
 # --- Python caches ---
 __pycache__/
 *.py[cod]
 *.egg-info/
 .ipynb_checkpoints/
+
+# --- Personal/temp scratch scripts and notes at the project root ---
+#   Scoped to project root only; does NOT affect tests/ or src/.
+/apply_*.py
+/backend_original.py
+/check_*.py
+/count_*.py
+/debug_*.py
+/examine_*.py
+/extract_*.py
+/final_fix.py
+/find_*.py
+/fix_*.py
+/gen_*.py
+/generate_*.py
+/investigate_*.py
+/phase*_analysis.py
+/placeholder.py
+/print_lines.py
+/replace_*.py
+/run_subset_eval.py
+/simple_test.py
+/step1.py
+/test_*.py
+/test_*.txt
+/test.py
+/test_md.md
+/update_weights.py
+/verify_*.py
+/_test_*.py
+/_test_*.txt
+/_uv.log
+/_*.py
+/_*.txt
+/_*.log
+
+# --- Generated presentations / phase reports (project root) ---
+/FINAL_*.md
+/FINAL_*.pptx
+/PHASE*_*.md
+/REALTIME_*.md
+/Holberton_SignLanguage_Project/
+/backend.py.backup
+/TEST_EDIT.txt
+/test.txt
+
+# --- src/web_demo scratch and the iPhone remote-test notes ---
+/src/web_demo/backend.py.backup
+/src/web_demo/test.txt
+/src/web_demo/TEST_EDIT.txt
+/src/web_demo/HTTPS_INSTRUCTIONS.md
+/src/web_demo/SOLUTION_SUMMARY.md
+
