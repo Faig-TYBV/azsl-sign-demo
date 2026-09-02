@@ -9,7 +9,7 @@ data/
 # --- Downloaded model artifacts ---
 models/*.task
 # AzSL alphabet (fingerspelling) model bundled for the web demo
-src/web_demo/frontend/static/models/
+src/web_demo/frontend/models/
 
 # --- Trained model checkpoints (NEVER commit) ---
 *.pt
