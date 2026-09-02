@@ -371,7 +371,134 @@ main {
     font-size: 0.9rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* ===== BEGIN ALPHABET MODE INTEGRATION =====
+ * Mode toggle, alphabet panel, spelled-word display.
+ * Reuses the same CSS custom properties (--accent, --bg-card, etc.) defined
+ * at the top of this <style> block.
+ * ===== END ALPHABET MODE INTEGRATION ===== */
+.mode-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin: 0 auto 1rem;
+    background-color: var(--bg-card);
+    border-radius: var(--border-radius);
+    padding: 0.35rem;
+    box-shadow: var(--shadow);
+    max-width: 520px;
+}
+.mode-toggle button {
+    flex: 1;
+    background: transparent;
+    color: var(--text-secondary);
+    border: none;
+    padding: 0.75rem 1.25rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: calc(var(--border-radius) - 4px);
+    cursor: pointer;
+    transition: background-color var(--transition), color var(--transition);
+}
+.mode-toggle button.active {
+    background-color: var(--accent);
+    color: #001017;
+}
+.mode-toggle button:not(.active):hover {
+    background-color: var(--bg-card-hover);
+    color: var(--text-primary);
+}
+.alphabet-panel {
+    background-color: var(--bg-card);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
+}
+.alphabet-panel h3 {
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.spelled-word-display {
+    background-color: var(--bg-darker);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 2rem;
+    font-weight: 700;
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    min-height: 4rem;
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.05em;
+    word-break: break-word;
+    margin-bottom: 1rem;
+}
+.spelled-word-display.empty {
+    color: var(--text-secondary);
+    font-weight: 400;
+    font-style: italic;
+    font-size: 1rem;
+}
+.alphabet-letter {
+    color: var(--accent);
+    font-weight: 700;
+}
+.alphabet-letter.just-added {
+    animation: letterPop 0.4s ease-out;
+}
+@keyframes letterPop {
+    0%   { transform: scale(1.5); color: var(--success); }
+    100% { transform: scale(1.0); color: var(--accent); }
+}
+.alphabet-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+.alphabet-meta .item {
+    background-color: var(--bg-darker);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+}
+.alphabet-meta .item label {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+.alphabet-meta .item .value {
+    font-family: var(--font-mono);
+    font-size: 1.15rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+.alphabet-meta .item .value.empty { color: var(--text-secondary); font-weight: 400; }
+.alphabet-help {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 0.75rem;
+}
+.alphabet-help b { color: var(--text-primary); }
+.hidden { display: none !important; }
 </style>
+
+<!-- ===== BEGIN ALPHABET MODE INTEGRATION =====
+ * Load the alphabet inference engine (pure JS, no DOM dependency).
+ * Loaded via <script src=...> rather than ES module because the rest of
+ * this page is a single inline <script> block.
+ * ===== END ALPHABET MODE INTEGRATION ===== -->
+<script src="/static/js/azsl_alphabet.js"></script>
 </head>
 <body>
 <div class="container">
@@ -381,6 +508,18 @@ main {
         <p class="classes-info">Recognizes 26 Azerbaijani sign language words</p>
     </header>
 
+    <!-- ===== BEGIN ALPHABET MODE INTEGRATION =====
+     * Mode toggle: switches between the existing GRU word-recognition pipeline
+     * (which streams frames over WebSocket to the Python backend) and the new
+     * client-side alphabet (fingerspelling) pipeline.
+     * ===== END ALPHABET MODE INTEGRATION ===== -->
+    <div class="mode-toggle" role="tablist" aria-label="Recognition mode">
+        <button id="mode-word" class="active" type="button" role="tab"
+                aria-selected="true">Word Mode</button>
+        <button id="mode-alphabet" type="button" role="tab"
+                aria-selected="false">Alphabet Mode</button>
+    </div>
+
     <main>
         <section class="video-container">
             <video id="video" autoplay playsinline webkit-playsinline muted></video>
@@ -389,6 +528,52 @@ main {
                 <div class="loading-spinner"></div>
                 <div id="loading-text">Initializing camera...</div>
             </div>
+        </section>
+
+        <!-- ===== BEGIN ALPHABET MODE INTEGRATION =====
+         * Alphabet panel: hidden by default. Visible only when in Alphabet Mode.
+         * Fingerspelled letters accumulate in the display, and the
+         * "Add to Sentence" button appends the spelled word to the existing
+         * word-history + sentence UI (reuses predictionHistory / selectedWords
+         * so the existing renderHistory() / renderSelected() keep working
+         * with zero modifications).
+         * ===== END ALPHABET MODE INTEGRATION ===== -->
+        <section class="alphabet-panel hidden" id="alphabet-panel">
+            <h3><span>🤟</span> Alphabet Fingerspelling</h3>
+            <div id="spelled-word-display" class="spelled-word-display empty">
+                Spell a word with your hand...
+            </div>
+            <div class="alphabet-meta">
+                <div class="item">
+                    <label>Live Letter</label>
+                    <div class="value empty" id="alphabet-live-letter">-</div>
+                </div>
+                <div class="item">
+                    <label>Confidence</label>
+                    <div class="value empty" id="alphabet-live-conf">-</div>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button id="alphabet-add-sentence" class="btn btn-start"
+                        type="button">
+                    Add to Sentence
+                </button>
+                <button id="alphabet-backspace" class="btn btn-reset"
+                        type="button">
+                    Backspace (⌫ gesture)
+                </button>
+                <button id="alphabet-clear" class="btn btn-stop"
+                        type="button">
+                    Clear Word
+                </button>
+            </div>
+            <p class="alphabet-help">
+                Fingerspell letters one at a time. Each letter must hold for
+                about <b>700 ms</b> before it is accepted. Use the <b>SPACE</b>
+                gesture (fist with thumb tucked and pointing up) to commit the
+                spelled word to the sentence, or the <b>DEL</b> gesture (index
+                finger up, others curled) to delete the last letter.
+            </p>
         </section>
 
         <section class="prediction-card">
@@ -477,6 +662,27 @@ main {
 </div>
 
 <script>
+// ===== BEGIN ALPHABET MODE INTEGRATION =====
+// State for the client-side AzSL alphabet (fingerspelling) mode. All of this
+// state is read/written only by the alphabet-mode code path below; the
+// existing word-mode code never touches it.
+let currentMode = 'word';            // 'word' | 'alphabet'
+let azslModel = null;                // loaded azsl_hierarchical_model.json
+let mpHands = null;                  // MediaPipe Hands instance (lazy-loaded)
+let mpLoadingPromise = null;         // de-dupe concurrent MediaPipe script loads
+let mpCameraLoopId = null;           // setInterval id for the alphabet loop
+let alphabetLandmarkBuffer = null;   // LandmarkBuffer for trajectory engine
+let alphabetMotionBuffer = null;     // MotionBuffer (raw wrist position history)
+let alphabetHysteresis = null;       // DynamicHysteresis for O->Ö / U->Ü / C->Ç
+let spelledWord = '';                // accumulated letters since last sentence commit
+let lastAcceptedLetter = null;       // last letter appended to spelledWord
+let lastAcceptedAt = 0;              // performance.now() of last acceptance (debounce)
+
+// Tuning constants (override-able via the help text in the UI).
+const LETTER_HOLD_MS = 700;          // min hold time before re-accepting same letter
+const DIFFERENT_LETTER_HOLD_MS = 250; // min hold time for a DIFFERENT new letter
+// ===== END ALPHABET MODE INTEGRATION =====
+
 let ws = null;
 let videoStream = null;
 let isStreaming = false;
@@ -695,6 +901,12 @@ function startFrameLoop() {
     }
 
     frameIntervalId = setInterval(() => {
+        // ALPHABET MODE: gate the word-mode frame loop. When in alphabet mode,
+        // frames are processed locally by MediaPipe + azsl_alphabet.js; we
+        // must NOT also stream JPEGs to the backend (which would waste
+        // bandwidth and confuse the backend's 26-frame buffer).
+        if (currentMode !== 'word') return;
+
         // Only send while the camera stream and WebSocket both exist and are open.
         if (!isStreaming || !videoStream || !video.readyState) {
             return;
@@ -913,6 +1125,339 @@ function showLoading(show) {
         }
     }
 }
+
+// ===== BEGIN ALPHABET MODE INTEGRATION =====
+/* AzSL Alphabet (fingerspelling) mode - client-side, no backend involvement.
+ *
+ * Architecture:
+ *   - MediaPipe Hands (legacy browser solution, matches the alphabet repo)
+ *     is lazy-loaded only when the user first enters Alphabet Mode. Until
+ *     then, Word Mode behaves EXACTLY as before - no extra scripts fetched.
+ *   - The trained model JSON (~476 KB) is fetched once, handed to
+ *     AzslAlphabet.setAzslModel(), and then the JS in azsl_alphabet.js does
+ *     MediaPipe -> 84-dim feature -> 2-level MLP dispatch -> letter label,
+ *     all in the browser.
+ *   - When the user switches back to Word Mode, we tear down the alphabet
+ *     loop, clear local alphabet state, send a `reset` to the backend (so
+ *     its 26-frame buffer is clean), and resume the word frame loop.
+ */
+
+function loadScriptOnce(src) {
+    return new Promise((resolve, reject) => {
+        const existing = document.querySelector('script[data-mp-src="' + src + '"]');
+        if (existing) {
+            if (existing.dataset.loaded === '1') resolve();
+            else existing.addEventListener('load', () => resolve(), { once: true });
+            return;
+        }
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.dataset.mpSrc = src;
+        s.addEventListener('load', () => { s.dataset.loaded = '1'; resolve(); }, { once: true });
+        s.addEventListener('error', () => reject(new Error('Failed to load ' + src)), { once: true });
+        document.head.appendChild(s);
+    });
+}
+
+async function loadMediaPipeHands() {
+    if (mpHands) return mpHands;
+    if (mpLoadingPromise) return mpLoadingPromise;
+
+    mpLoadingPromise = (async () => {
+        if (typeof window.Hands !== 'function') {
+            await loadScriptOnce('https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js');
+            await loadScriptOnce('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js');
+            await loadScriptOnce('https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js');
+        }
+        if (typeof window.Hands !== 'function') {
+            throw new Error('MediaPipe Hands did not load.');
+        }
+
+        const hands = new window.Hands({
+            locateFile: (file) => 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/' + file
+        });
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7
+        });
+
+        hands.onResults(onAlphabetHandsResults);
+        mpHands = hands;
+        return hands;
+    })().catch((err) => {
+        mpLoadingPromise = null;
+        throw err;
+    });
+
+    return mpLoadingPromise;
+}
+
+async function loadAzslModelJson() {
+    if (azslModel) return azslModel;
+    const resp = await fetch('/static/models/azsl_hierarchical_model.json');
+    if (!resp.ok) throw new Error('Failed to fetch alphabet model: HTTP ' + resp.status);
+    azslModel = await resp.json();
+    window.AzslAlphabet.setAzslModel(azslModel);
+    return azslModel;
+}
+
+// ===== BEGIN ALPHABET MODE INTEGRATION =====
+/* Mode toggle + alphabet frame loop + MediaPipe -> AzslAlphabet pipeline.
+ *
+ * The setMode() handler is the heart of the integration: it gates whether
+ * frames go over WebSocket (word mode, existing path) or through MediaPipe
+ * (alphabet mode, this path).
+ */
+
+async function setMode(newMode) {
+    if (newMode === currentMode) return;
+    currentMode = newMode;
+
+    const wordBtn    = document.getElementById('mode-word');
+    const alphaBtn   = document.getElementById('mode-alphabet');
+    const alphaPanel = document.getElementById('alphabet-panel');
+
+    if (currentMode === 'alphabet') {
+        wordBtn.classList.remove('active');  wordBtn.setAttribute('aria-selected', 'false');
+        alphaBtn.classList.add('active');    alphaBtn.setAttribute('aria-selected', 'true');
+        alphaPanel.classList.remove('hidden');
+
+        // Clear backend 26-frame buffer so word-mode leftovers never bleed
+        // into a future switch-back.
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            try { ws.send(JSON.stringify({ type: 'reset' })); } catch (_) {}
+        }
+        // Stop the word-mode JPEG stream loop so we don't double-encode.
+        if (frameIntervalId) {
+            clearInterval(frameIntervalId);
+            frameIntervalId = null;
+        }
+
+        setStatus('Alphabet mode: loading MediaPipe + model...');
+        try {
+            await loadAzslModelJson();
+            await loadMediaPipeHands();
+            if (typeof window.AzslAlphabet.getAzslModel() !== 'object') {
+                throw new Error('Alphabet model not registered.');
+            }
+            // Allocate trajectory engine state once per mode-entry.
+            alphabetLandmarkBuffer = new window.AzslAlphabet.LandmarkBuffer(14);
+            // Minimal MotionBuffer shim - velocityAndPush(x,y) -> {x,y}.
+            alphabetMotionBuffer   = { buffer: [], velocityAndPush: function (x, y) {
+                let vx = 0, vy = 0;
+                if (this.buffer.length) {
+                    const oldest = this.buffer[0];
+                    const span = this.buffer.length;
+                    vx = (x - oldest.x) / span;
+                    vy = (y - oldest.y) / span;
+                }
+                this.buffer.push({ x: x, y: y });
+                if (this.buffer.length > 10) this.buffer.shift();
+                return { x: vx, y: vy };
+            }};
+            alphabetHysteresis = new window.AzslAlphabet.DynamicHysteresis(
+                window.AzslAlphabet.DYNAMIC_HYSTERESIS_MS
+            );
+            startAlphabetLoop();
+            setStatus('Alphabet mode active. Show your hand to the camera.');
+            renderSpelledWord();
+        } catch (err) {
+            console.error('Alphabet mode init failed:', err);
+            setStatus('Alphabet mode error: ' + err.message);
+            alphaPanel.classList.add('hidden');
+            wordBtn.classList.add('active');    wordBtn.setAttribute('aria-selected', 'true');
+            alphaBtn.classList.remove('active');alphaBtn.setAttribute('aria-selected', 'false');
+            currentMode = 'word';
+        }
+    } else {
+        // Returning to word mode.
+        wordBtn.classList.add('active');      wordBtn.setAttribute('aria-selected', 'true');
+        alphaBtn.classList.remove('active');  alphaBtn.setAttribute('aria-selected', 'false');
+        alphaPanel.classList.add('hidden');
+
+        stopAlphabetLoop();
+        setStatus('Word mode active.');
+        if (isStreaming) startFrameLoop();
+    }
+}
+
+function startAlphabetLoop() {
+    if (mpCameraLoopId) return;
+    // MediaPipe is event-driven via hands.onResults(); we push the <video>
+    // frame into it on a fixed cadence (~15 fps, well under the 30 fps
+    // main-thread budget for a single-hand landmarker).
+    mpCameraLoopId = setInterval(() => {
+        if (!videoStream || !video || video.readyState < 2) return;
+        if (!mpHands) return;
+        mpHands.send({ image: video }).catch((err) => {
+            console.warn('hands.send failed (non-fatal):', err);
+        });
+    }, 66);
+}
+
+function stopAlphabetLoop() {
+    if (mpCameraLoopId) {
+        clearInterval(mpCameraLoopId);
+        mpCameraLoopId = null;
+    }
+    if (alphabetLandmarkBuffer) alphabetLandmarkBuffer.reset();
+    if (alphabetHysteresis)     alphabetHysteresis.reset();
+    if (alphabetMotionBuffer)   alphabetMotionBuffer.buffer = [];
+}
+// ===== END ALPHABET MODE INTEGRATION =====
+
+// ===== BEGIN ALPHABET MODE INTEGRATION =====
+/* MediaPipe onResults -> AzslAlphabet.predictGesture -> debounced letter
+ * acceptance -> spelled-word buffer -> existing sentence UI.
+ *
+ * The spelled-word buffer (string `spelledWord`) is independent of the
+ * existing predictionHistory/selectedWords. commitSpelledWordToSentence()
+ * is the only writer that crosses between the two, and it does so by
+ * appending to the existing arrays and calling the existing renderers
+ * (renderHistory + renderSelected) unchanged.
+ */
+
+function onAlphabetHandsResults(results) {
+    if (currentMode !== 'alphabet') return;
+    const liveLetterEl = document.getElementById('alphabet-live-letter');
+    const liveConfEl   = document.getElementById('alphabet-live-conf');
+
+    if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+        if (liveLetterEl) { liveLetterEl.textContent = '-'; liveLetterEl.classList.add('empty'); }
+        if (liveConfEl)   { liveConfEl.textContent   = '-'; liveConfEl.classList.add('empty'); }
+        return;
+    }
+
+    const lm = results.multiHandLandmarks[0]; // 21 {x,y,z}, normalized 0..1
+    // Mirror left-hand detections so the 84-dim feature builder always
+    // sees a canonical Right hand.
+    const handednessLabel = (results.multiHandedness && results.multiHandedness[0]
+        && results.multiHandedness[0].label) || 'Right';
+    const mirrorX = (handednessLabel === 'Left');
+
+    // Feed the wrist-velocity feature (trained input contract): wrist X/Y
+    // delta over the 10 most recent raw wrist positions, normalized by
+    // frame count.
+    const wrist = lm[window.AzslAlphabet.LM.WRIST];
+    const vel = alphabetMotionBuffer.velocityAndPush(wrist.x, wrist.y);
+
+    // Push into the trajectory ring buffer (raw landmarks, not normalized -
+    // computeTrajectoryFeatures expects raw coordinates).
+    const t = performance.now();
+    alphabetLandmarkBuffer.push(lm, t);
+    const trajectory = window.AzslAlphabet.computeTrajectoryFeatures(
+        alphabetLandmarkBuffer, mirrorX
+    );
+
+    const result = window.AzslAlphabet.predictGesture(
+        lm, mirrorX, vel, trajectory, alphabetHysteresis, t
+    );
+
+    if (!result || !result.label) {
+        if (liveLetterEl) { liveLetterEl.textContent = '-'; liveLetterEl.classList.add('empty'); }
+        if (liveConfEl)   { liveConfEl.textContent   = '-'; liveConfEl.classList.add('empty'); }
+        return;
+    }
+
+    // Update live read-out.
+    const friendly = (window.AzslAlphabet.labelMeta(result.label).friendly) || result.label;
+    if (liveLetterEl) { liveLetterEl.textContent = friendly; liveLetterEl.classList.remove('empty'); }
+    if (liveConfEl)   {
+        liveConfEl.textContent = (result.confidence * 100).toFixed(1) + '%';
+        liveConfEl.classList.remove('empty');
+    }
+
+    handleAlphabetDecision(result, t);
+}
+
+function handleAlphabetDecision(result, t) {
+    const label = result.label;
+    const A = window.AzslAlphabet;
+
+    // Debounce: same letter must hold for LETTER_HOLD_MS; a different new
+    // letter is accepted faster (active handshape change).
+    if (label === lastAcceptedLetter) {
+        if (t - lastAcceptedAt < LETTER_HOLD_MS) return;
+    } else {
+        if (t - lastAcceptedAt < DIFFERENT_LETTER_HOLD_MS) return;
+    }
+
+    lastAcceptedLetter = label;
+    lastAcceptedAt = t;
+
+    if (label === A.LABELS.SPACE) {
+        commitSpelledWordToSentence();
+        return;
+    }
+    if (label === A.LABELS.DEL) {
+        spelledWord = spelledWord.slice(0, -1);
+        renderSpelledWord();
+        return;
+    }
+    spelledWord += label;
+    renderSpelledWord(label);
+}
+
+function renderSpelledWord(justAddedLabel) {
+    const el = document.getElementById('spelled-word-display');
+    if (!el) return;
+    if (!spelledWord) {
+        el.classList.add('empty');
+        el.textContent = 'Spell a word with your hand...';
+        return;
+    }
+    el.classList.remove('empty');
+    el.innerHTML = '';
+    for (let i = 0; i < spelledWord.length; i++) {
+        const ch = spelledWord[i];
+        const span = document.createElement('span');
+        span.className = 'alphabet-letter';
+        span.textContent = ch;
+        if (justAddedLabel && i === spelledWord.length - 1 && ch === justAddedLabel) {
+            span.classList.add('just-added');
+        }
+        el.appendChild(span);
+    }
+}
+
+/* Spelled word -> existing sentence UI.
+ * Pushes a single entry into predictionHistory whose label is the entire
+ * spelled word (e.g. "Salam") and immediately selects it, so it shows up
+ * in the final sentence UI just like any backend-emitted word. ZERO
+ * modifications to renderHistory() / renderSelected() / selectedWords. */
+function commitSpelledWordToSentence() {
+    const word = spelledWord.trim();
+    if (!word) return;
+    const lastHist = predictionHistory[predictionHistory.length - 1];
+    if (!lastHist || lastHist.label !== word) {
+        predictionHistory.push({ label: word, confidence: 1.0 });
+    }
+    const latestIdx = predictionHistory.length - 1;
+    if (selectedWords[selectedWords.length - 1] !== latestIdx) {
+        selectedWords.push(latestIdx);
+    }
+    renderHistory();
+    renderSelected();
+    spelledWord = '';
+    renderSpelledWord();
+    setStatus('Added "' + word + '" to sentence.');
+}
+
+document.getElementById('mode-word').addEventListener('click',     () => setMode('word'));
+document.getElementById('mode-alphabet').addEventListener('click', () => setMode('alphabet'));
+document.getElementById('alphabet-add-sentence').addEventListener('click', commitSpelledWordToSentence);
+document.getElementById('alphabet-backspace').addEventListener('click', () => {
+    spelledWord = spelledWord.slice(0, -1);
+    renderSpelledWord();
+});
+document.getElementById('alphabet-clear').addEventListener('click', () => {
+    spelledWord = '';
+    renderSpelledWord();
+});
+// ===== END ALPHABET MODE INTEGRATION =====
 
 // Event listeners
 startBtn.addEventListener('click', startCamera);
