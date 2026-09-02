@@ -681,6 +681,7 @@ let lastAcceptedAt = 0;              // performance.now() of last acceptance (de
 // Tuning constants (override-able via the help text in the UI).
 const LETTER_HOLD_MS = 700;          // min hold time before re-accepting same letter
 const DIFFERENT_LETTER_HOLD_MS = 250; // min hold time for a DIFFERENT new letter
+const ALPHABET_CONFIDENCE_FLOOR = 0.60; // min confidence to accept a prediction
 // ===== END ALPHABET MODE INTEGRATION =====
 
 let ws = null;
@@ -762,14 +763,30 @@ function initWebSocket() {
             }
 
             // Update predictions using the actual backend field names.
-            if (smoothPred) smoothPred.textContent = data.smoothed_prediction || '-';
-            if (smoothConf) smoothConf.textContent = (data.smoothed_confidence * 100).toFixed(1) + '%';
-            if (rawPred) rawPred.textContent = data.raw_prediction || '-';
-            if (rawConf) rawConf.textContent = (data.raw_confidence * 100).toFixed(1) + '%';
+            // Hand-presence gate: if MediaPipe did not detect a hand in the
+            // current frame, force both live readouts to "Əl aşkarlanmadı"
+            // regardless of what the buffer-based inference returned. Without
+            // this, a zero-feature buffer would still produce a top-1 class
+            // via softmax and the user would see ghost predictions.
+            const noHand = (data.hand_present === false);
+            const smoothed = (!noHand && data.smoothed_confidence >= 0.50)
+                ? (data.smoothed_prediction || '-')
+                : '-';
+            const raw = (!noHand && data.raw_confidence >= 0.50)
+                ? (data.raw_prediction || '-')
+                : '-';
+            if (smoothPred) smoothPred.textContent = smoothed;
+            if (smoothConf) smoothConf.textContent = noHand
+                ? 'Əl aşkarlanmadı'
+                : (smoothed === '-' ? '-' : (data.smoothed_confidence * 100).toFixed(1) + '%');
+            if (rawPred) rawPred.textContent = raw;
+            if (rawConf) rawConf.textContent = noHand
+                ? 'Əl aşkarlanmadı'
+                : (raw === '-' ? '-' : (data.raw_confidence * 100).toFixed(1) + '%');
 
             // Update hand-detection status when frames are actually processed.
             if (data.buffer_progress && data.buffer_progress !== '0/26') {
-                updateHandStatus('Detecting');
+                updateHandStatus(noHand ? 'Axtarılır...' : 'Detecting');
             }
 
             // New (additive): capture completed temporal segments emitted by
@@ -1426,6 +1443,20 @@ function onAlphabetHandsResults(results) {
     if (!result || !result.label) {
         if (liveLetterEl) { liveLetterEl.textContent = '-'; liveLetterEl.classList.add('empty'); }
         if (liveConfEl)   { liveConfEl.textContent   = '-'; liveConfEl.classList.add('empty'); }
+        return;
+    }
+
+    // Confidence gate: the alphabet model is also trained without an
+    // explicit idle/background class, so low-confidence reads (e.g. when
+    // the hand is half-occluded or moving between gestures) are noise.
+    // Below the floor, treat as idle: do NOT update the live letter, do
+    // NOT advance the debounce, do NOT append to spelledWord.
+    if (result.confidence < ALPHABET_CONFIDENCE_FLOOR) {
+        console.log('[ALPHABET-DEBUG] Rejected (low confidence):',
+                    result.label, ' conf=', (result.confidence * 100).toFixed(1),
+                    '% <', (ALPHABET_CONFIDENCE_FLOOR * 100).toFixed(0), '%');
+        if (liveLetterEl) { liveLetterEl.textContent = '-'; liveLetterEl.classList.add('empty'); }
+        if (liveConfEl)   { liveConfEl.textContent   = (result.confidence * 100).toFixed(1) + '%'; liveConfEl.classList.add('empty'); }
         return;
     }
 

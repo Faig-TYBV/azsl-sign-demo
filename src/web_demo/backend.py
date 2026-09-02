@@ -71,6 +71,16 @@ STABLE_PRED_FRAMES = 3      # consecutive agreeing smoothed predictions required
 MIN_SEGMENT_FRAMES = 26     # minimum frames between consecutive emits
 COOLDOWN_FRAMES = 13        # minimum cooldown frames after an emit
 
+# === Hand-presence gate (post-prediction, no retraining required) ============
+# The GRU was trained without an explicit "idle/background" class, so softmax
+# ALWAYS returns a top-1 even on all-zero feature buffers (confidence ~1/N).
+# We compensate by NOT running inference when the buffer has no valid frames,
+# and by clamping the displayed fields when the most recent frame is not a
+# real hand detection. These thresholds are tuning knobs, not architecture.
+SEGMENT_CONFIDENCE_FLOOR = 0.50   # strict: smoothed conf must be >= this to emit
+DISPLAY_CONFIDENCE_FLOOR = 0.50   # below this we display "-" instead of the label
+MIN_VALID_FRAMES_IN_BUFFER = 1    # skip inference if buffer has 0 valid frames
+
 # Serve the frontend as static files
 FRONTEND_DIR = PROJECT_ROOT / "src" / "web_demo" / "frontend"
 app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
@@ -182,9 +192,17 @@ async def websocket_endpoint(websocket: WebSocket):
                 buffer_len = len(state.feature_buffer)
                 buffer_full = buffer_len >= TARGET_SEQ_LEN
 
+                # Hand-presence gate (latest frame).
+                # If MediaPipe did NOT detect a hand in this frame, do not let
+                # the model be the source of truth for the UI — clamp the
+                # displayed fields to "-" so the user sees idle state, not a
+                # bogus softmax argmax over a zero feature vector.
+                current_frame_valid = bool(state.validity_buffer[-1]) if state.validity_buffer else False
+
                 response = {
                     "buffer_progress": f"{buffer_len}/{TARGET_SEQ_LEN}",
                     "buffer_full": buffer_full,
+                    "hand_present": current_frame_valid,
                     "raw_prediction": "-",
                     "raw_confidence": 0.0,
                     "smoothed_prediction": state.smoothed_prediction or "-",
@@ -192,46 +210,80 @@ async def websocket_endpoint(websocket: WebSocket):
                 }
 
                 if buffer_full:
-                    print("INFERENCE", flush=True)
-                    frame_features = np.stack(list(state.feature_buffer), axis=0)
-                    frame_valid = np.array(list(state.validity_buffer), dtype=bool)
-                    seq_features, mask = preprocess_sequence(frame_features, frame_valid)
-
-                    input_tensor = torch.from_numpy(seq_features).unsqueeze(0).to(device)
-                    mask_tensor = torch.from_numpy(mask).unsqueeze(0).to(device)
-
-                    with torch.no_grad():
-                        logits = model(input_tensor)
-                        probs = torch.softmax(logits, dim=1)[0]
-
-                    confidence_t, predicted_idx_t = torch.max(probs, dim=0)
-                    confidence = float(confidence_t.item())
-                    predicted_idx = int(predicted_idx_t.item())
-                    pred_class = idx_to_class[predicted_idx]
-
-                    print(f"Prediction: {pred_class} Confidence: {confidence:.2f}", flush=True)
-
-                    if confidence >= CONFIDENCE_THRESHOLD:
-                        state.pred_history.append((predicted_idx, confidence))
-
-                    if state.pred_history:
-                        votes = {}
-                        for idx, conf in state.pred_history:
-                            votes[idx] = votes.get(idx, 0.0) + conf
-                        smoothed_idx = max(votes, key=votes.get)
-                        smoothed_confidence = votes[smoothed_idx] / len(state.pred_history)
-                        state.smoothed_prediction = idx_to_class[smoothed_idx]
-                        state.smoothed_confidence = smoothed_confidence
+                    # Skip inference entirely if the buffer has zero valid
+                    # hand frames (e.g. user just opened the page, no hand
+                    # shown yet, or background-only). Without this gate,
+                    # softmax over an all-zero 126-dim buffer would still
+                    # pick a top-1 class and the frontend would display a
+                    # false-positive prediction.
+                    n_valid_in_buffer = int(sum(state.validity_buffer))
+                    if n_valid_in_buffer < MIN_VALID_FRAMES_IN_BUFFER:
+                        print(f"INFERENCE SKIPPED: zero valid frames in buffer (valid={n_valid_in_buffer}/{buffer_len})", flush=True)
+                        # Keep state.smoothed_prediction / smoothed_confidence
+                        # as they were (do NOT reset — the user may still want
+                        # to see the last word they signed before backing off).
                     else:
-                        state.smoothed_prediction = None
-                        state.smoothed_confidence = 0.0
+                        print("INFERENCE", flush=True)
+                        frame_features = np.stack(list(state.feature_buffer), axis=0)
+                        frame_valid = np.array(list(state.validity_buffer), dtype=bool)
+                        seq_features, mask = preprocess_sequence(frame_features, frame_valid)
 
-                    response.update({
-                        "raw_prediction": pred_class,
-                        "raw_confidence": float(confidence),
-                        "smoothed_prediction": state.smoothed_prediction or "-",
-                        "smoothed_confidence": float(state.smoothed_confidence),
-                    })
+                        input_tensor = torch.from_numpy(seq_features).unsqueeze(0).to(device)
+                        mask_tensor = torch.from_numpy(mask).unsqueeze(0).to(device)
+
+                        with torch.no_grad():
+                            logits = model(input_tensor)
+                            probs = torch.softmax(logits, dim=1)[0]
+
+                        confidence_t, predicted_idx_t = torch.max(probs, dim=0)
+                        confidence = float(confidence_t.item())
+                        predicted_idx = int(predicted_idx_t.item())
+                        pred_class = idx_to_class[predicted_idx]
+
+                        print(f"Prediction: {pred_class} Confidence: {confidence:.2f}", flush=True)
+
+                        if confidence >= CONFIDENCE_THRESHOLD:
+                            state.pred_history.append((predicted_idx, confidence))
+
+                        if state.pred_history:
+                            votes = {}
+                            for idx, conf in state.pred_history:
+                                votes[idx] = votes.get(idx, 0.0) + conf
+                            smoothed_idx = max(votes, key=votes.get)
+                            smoothed_confidence = votes[smoothed_idx] / len(state.pred_history)
+                            state.smoothed_prediction = idx_to_class[smoothed_idx]
+                            state.smoothed_confidence = smoothed_confidence
+                        else:
+                            state.smoothed_prediction = None
+                            state.smoothed_confidence = 0.0
+
+                        response.update({
+                            "raw_prediction": pred_class,
+                            "raw_confidence": float(confidence),
+                            "smoothed_prediction": state.smoothed_prediction or "-",
+                            "smoothed_confidence": float(state.smoothed_confidence),
+                        })
+
+                    # Confidence-floor clamp: if the *displayed* smoothed
+                    # confidence is below the floor, show "-" instead. This
+                    # prevents low-confidence noise from rendering as a real
+                    # prediction in the UI even when the segmenter already
+                    # decided not to emit (the segmenter uses a stricter
+                    # SEGMENT_CONFIDENCE_FLOOR).
+                    if float(response["smoothed_confidence"]) < DISPLAY_CONFIDENCE_FLOOR:
+                        response["smoothed_prediction"] = "-"
+                        response["smoothed_confidence"] = 0.0
+
+                # If the latest frame had no hand, ALWAYS force idle display,
+                # regardless of what the buffer-based inference above said.
+                # (Inference is skipped when valid_count==0, but even a few
+                # valid frames in the past do not justify showing a label
+                # when the *current* moment is "no hand".)
+                if not current_frame_valid:
+                    response["raw_prediction"] = "-"
+                    response["raw_confidence"] = 0.0
+                    response["smoothed_prediction"] = "-"
+                    response["smoothed_confidence"] = 0.0
 
                 # --- Temporal segmentation (additive layer) -----------------
                 # 1) Hand-presence counters
@@ -299,11 +351,12 @@ async def websocket_endpoint(websocket: WebSocket):
                 if (
                     state.seg_state == "IDLE"
                     and state.smoothed_prediction not in (None, "-")
-                    and float(state.smoothed_confidence) >= IDLE_CONFIDENCE_MAX
+                    and float(state.smoothed_confidence) >= SEGMENT_CONFIDENCE_FLOOR
                     and state.stable_pred_count >= STABLE_PRED_FRAMES
                     and state.frames_since_last_emit >= MIN_SEGMENT_FRAMES
                     and state.frames_since_last_emit >= COOLDOWN_FRAMES
                     and state.smoothed_prediction != state.last_segment_label
+                    and current_frame_valid   # do NOT emit on a hand-absent frame
                 ):
                     state.last_segment_label = state.smoothed_prediction
                     state.frames_since_last_emit = 0
