@@ -1166,28 +1166,37 @@ async function loadMediaPipeHands() {
 
     mpLoadingPromise = (async () => {
         if (typeof window.Hands !== 'function') {
+            console.log('[ALPHABET-DEBUG] Loading MediaPipe Hands script tags from CDN...');
             await loadScriptOnce('https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js');
+            console.log('[ALPHABET-DEBUG] hands.js loaded');
             await loadScriptOnce('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js');
+            console.log('[ALPHABET-DEBUG] camera_utils.js loaded');
             await loadScriptOnce('https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js');
+            console.log('[ALPHABET-DEBUG] drawing_utils.js loaded');
         }
         if (typeof window.Hands !== 'function') {
             throw new Error('MediaPipe Hands did not load.');
         }
 
+        console.log('[ALPHABET-DEBUG] Constructing window.Hands instance...');
         const hands = new window.Hands({
             locateFile: (file) => 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/' + file
         });
         hands.setOptions({
             maxNumHands: 1,
             modelComplexity: 1,
-            minDetectionConfidence: 0.7,
-            minTrackingConfidence: 0.7
+            // Slightly relaxed from 0.7 to 0.5 for typical webcam lighting
+            // conditions (the 0.7 default was tuned for studio conditions).
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
         });
 
         hands.onResults(onAlphabetHandsResults);
         mpHands = hands;
+        console.log('[ALPHABET-DEBUG] MediaPipe Hands initialized and onResults wired up');
         return hands;
     })().catch((err) => {
+        console.error('[ALPHABET-DEBUG] MediaPipe Hands load/init failed:', err);
         mpLoadingPromise = null;
         throw err;
     });
@@ -1239,9 +1248,35 @@ async function setMode(newMode) {
         setStatus('Alphabet mode: loading MediaPipe + model...');
         try {
             await loadAzslModelJson();
+            console.log('[ALPHABET-DEBUG] Alphabet model JSON loaded and registered');
             await loadMediaPipeHands();
             if (typeof window.AzslAlphabet.getAzslModel() !== 'object') {
                 throw new Error('Alphabet model not registered.');
+            }
+            // CRITICAL FIX: The alphabet pipeline needs a live video stream
+            // to send frames into MediaPipe. The previous version silently
+            // failed here when the user had never clicked "Start Camera"
+            // (startAlphabetLoop's setInterval would early-return every tick
+            // because videoStream was null, so onResults was never invoked).
+            // We auto-start the camera if it isn't already running, using
+            // the same startCamera() flow that powers Word Mode.
+            if (!isStreaming) {
+                console.log('[ALPHABET-DEBUG] Camera not running; auto-starting it for Alphabet Mode');
+                setStatus('Alphabet mode: starting camera...');
+                await startCamera();
+                // Give the <video> element a brief moment to reach
+                // readyState >= 2 (HAVE_CURRENT_DATA) so hands.send()
+                // doesn't reject frames on the first tick.
+                await new Promise((resolve) => {
+                    const deadline = Date.now() + 3000;
+                    const tick = () => {
+                        if (video && video.readyState >= 2) return resolve();
+                        if (Date.now() > deadline) return resolve(); // proceed anyway
+                        setTimeout(tick, 50);
+                    };
+                    tick();
+                });
+                console.log('[ALPHABET-DEBUG] Camera readyState now:', video && video.readyState);
             }
             // Allocate trajectory engine state once per mode-entry.
             alphabetLandmarkBuffer = new window.AzslAlphabet.LandmarkBuffer(14);
@@ -1286,14 +1321,32 @@ async function setMode(newMode) {
 
 function startAlphabetLoop() {
     if (mpCameraLoopId) return;
+    console.log('[ALPHABET-DEBUG] startAlphabetLoop() — starting 15 fps push loop into MediaPipe Hands');
     // MediaPipe is event-driven via hands.onResults(); we push the <video>
     // frame into it on a fixed cadence (~15 fps, well under the 30 fps
     // main-thread budget for a single-hand landmarker).
+    let frameCount = 0;
+    let skipLog = 0;
     mpCameraLoopId = setInterval(() => {
-        if (!videoStream || !video || video.readyState < 2) return;
-        if (!mpHands) return;
+        if (!videoStream || !video) {
+            // Don't spam the console; just count.
+            return;
+        }
+        if (video.readyState < 2) {
+            skipLog++;
+            if (skipLog === 30) console.warn('[ALPHABET-DEBUG] video.readyState still < 2 after 30 ticks (have:', video.readyState, ')');
+            return;
+        }
+        if (!mpHands) {
+            console.warn('[ALPHABET-DEBUG] mpHands is null in loop tick — MediaPipe not initialized');
+            return;
+        }
+        frameCount++;
+        if (frameCount === 1 || frameCount % 100 === 0) {
+            console.log('[ALPHABET-DEBUG] Pushing frame to MediaPipe, count=', frameCount, 'readyState=', video.readyState);
+        }
         mpHands.send({ image: video }).catch((err) => {
-            console.warn('hands.send failed (non-fatal):', err);
+            console.warn('[ALPHABET-DEBUG] hands.send failed (non-fatal):', err);
         });
     }, 66);
 }
@@ -1324,6 +1377,14 @@ function onAlphabetHandsResults(results) {
     if (currentMode !== 'alphabet') return;
     const liveLetterEl = document.getElementById('alphabet-live-letter');
     const liveConfEl   = document.getElementById('alphabet-live-conf');
+
+    // Log landmark detection at most every 30 frames to avoid console spam.
+    onAlphabetHandsResults._n = (onAlphabetHandsResults._n || 0) + 1;
+    if (onAlphabetHandsResults._n === 1 || onAlphabetHandsResults._n % 30 === 0) {
+        const detected = !!(results.multiHandLandmarks && results.multiHandLandmarks.length);
+        console.log('[ALPHABET-DEBUG] onResults call #', onAlphabetHandsResults._n,
+                    'hand detected=', detected);
+    }
 
     if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
         if (liveLetterEl) { liveLetterEl.textContent = '-'; liveLetterEl.classList.add('empty'); }
@@ -1356,13 +1417,21 @@ function onAlphabetHandsResults(results) {
         lm, mirrorX, vel, trajectory, alphabetHysteresis, t
     );
 
+    // Log every prediction (label + confidence) — this is the most useful
+    // single line for debugging whether the trained model is firing.
+    console.log('[ALPHABET-DEBUG] predictGesture -> label=',
+                result && result.label, ' conf=',
+                result && result.confidence);
+
     if (!result || !result.label) {
         if (liveLetterEl) { liveLetterEl.textContent = '-'; liveLetterEl.classList.add('empty'); }
         if (liveConfEl)   { liveConfEl.textContent   = '-'; liveConfEl.classList.add('empty'); }
         return;
     }
 
-    // Update live read-out.
+    // Update live read-out IMMEDIATELY (before any debounce) so the user
+    // sees what the classifier is currently seeing. The debounce in
+    // handleAlphabetDecision() only gates appending to spelledWord.
     const friendly = (window.AzslAlphabet.labelMeta(result.label).friendly) || result.label;
     if (liveLetterEl) { liveLetterEl.textContent = friendly; liveLetterEl.classList.remove('empty'); }
     if (liveConfEl)   {
@@ -1380,13 +1449,24 @@ function handleAlphabetDecision(result, t) {
     // Debounce: same letter must hold for LETTER_HOLD_MS; a different new
     // letter is accepted faster (active handshape change).
     if (label === lastAcceptedLetter) {
-        if (t - lastAcceptedAt < LETTER_HOLD_MS) return;
+        if (t - lastAcceptedAt < LETTER_HOLD_MS) {
+            console.log('[ALPHABET-DEBUG] Rejected (same-letter hold):',
+                        label, 'elapsed=', (t - lastAcceptedAt).toFixed(0),
+                        'ms <', LETTER_HOLD_MS, 'ms');
+            return;
+        }
     } else {
-        if (t - lastAcceptedAt < DIFFERENT_LETTER_HOLD_MS) return;
+        if (t - lastAcceptedAt < DIFFERENT_LETTER_HOLD_MS) {
+            console.log('[ALPHABET-DEBUG] Rejected (different-letter hold):',
+                        label, 'elapsed=', (t - lastAcceptedAt).toFixed(0),
+                        'ms <', DIFFERENT_LETTER_HOLD_MS, 'ms');
+            return;
+        }
     }
 
     lastAcceptedLetter = label;
     lastAcceptedAt = t;
+    console.log('[ALPHABET-DEBUG] Accepted letter/gesture:', label);
 
     if (label === A.LABELS.SPACE) {
         commitSpelledWordToSentence();
