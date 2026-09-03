@@ -60,6 +60,22 @@ except Exception as e:
 WINDOW_SIZE = 5
 CONFIDENCE_THRESHOLD = 0.50
 
+# Server-side logging verbosity.
+#   False (default): only operational / error / hand-presence events print
+#                    to the console. Per-frame debug noise is silenced to
+#                    keep the server console usable at 15-30 fps.
+#   True:            every frame prints (JPEG decoded, MediaPipe processed,
+#                    FRAME RECEIVED, INFERENCE, Prediction: ..., response
+#                    sent) — useful when debugging the WebSocket frame
+#                    pipeline itself.
+DEBUG_LOG = False
+
+
+def _dbg(msg: str) -> None:
+    """Per-frame debug printer; silenced unless DEBUG_LOG=True."""
+    if DEBUG_LOG:
+        print(msg, flush=True)
+
 # Temporal segmentation thresholds (additive layer; does not change inference).
 PRESENCE_ON_FRAMES = 3      # consecutive hand-present frames to enter SIGNING
 PRESENCE_OFF_FRAMES = 10    # consecutive end-condition frames to exit SIGNING
@@ -159,14 +175,14 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 nparr = np.frombuffer(image_bytes, np.uint8)
                 frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                print("JPEG decoded", flush=True)
+                _dbg("JPEG decoded")
 
                 if frame is None:
                     await websocket.send_text(json.dumps({"error": "Failed to decode image"}))
                     continue
 
                 state.frame_count += 1
-                print(f"FRAME RECEIVED: {state.frame_count}", flush=True)
+                _dbg(f"FRAME RECEIVED: {state.frame_count}")
 
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
@@ -176,7 +192,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 state.last_timestamp_ms = timestamp_ms
 
                 result = state.landmarker.detect_for_video(mp_image, timestamp_ms)
-                print("MediaPipe processed", flush=True)
+                _dbg("MediaPipe processed")
 
                 frame_result = _mp_result_to_frame_result(result)
                 if frame_result.num_hands > 0:
@@ -223,7 +239,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         # as they were (do NOT reset — the user may still want
                         # to see the last word they signed before backing off).
                     else:
-                        print("INFERENCE", flush=True)
+                        _dbg("INFERENCE")
                         frame_features = np.stack(list(state.feature_buffer), axis=0)
                         frame_valid = np.array(list(state.validity_buffer), dtype=bool)
                         seq_features, mask = preprocess_sequence(frame_features, frame_valid)
@@ -240,7 +256,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         predicted_idx = int(predicted_idx_t.item())
                         pred_class = idx_to_class[predicted_idx]
 
-                        print(f"Prediction: {pred_class} Confidence: {confidence:.2f}", flush=True)
+                        _dbg(f"Prediction: {pred_class} Confidence: {confidence:.2f}")
 
                         if confidence >= CONFIDENCE_THRESHOLD:
                             state.pred_history.append((predicted_idx, confidence))
@@ -383,7 +399,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 # --- end temporal segmentation ------------------------------
 
                 await websocket.send_text(json.dumps(response))
-                print("Response sent", flush=True)
+                _dbg("Response sent")
 
             elif msg_type == "reset":
                 state.feature_buffer.clear()
