@@ -226,16 +226,197 @@ def normalize_hand(landmarks: np.ndarray) -> np.ndarray:
     return out.astype(np.float32)
 
 
-def normalize_frame(frame: FrameResult) -> np.ndarray:
+def normalize_frame(frame: FrameResult, version: str = "v1") -> np.ndarray:
     """
-    Normalize one frame into a flat feature vector of length
-    MAX_HANDS * FEATURES_PER_HAND (126).
+    Normalize one frame into a flat feature vector.
 
-    Layout: [left-slot hand (63)] + [right-slot hand (63)].
-    Missing hands stay zero-filled.
+    Args:
+        frame: FrameResult object containing raw landmark detections.
+        version: Preprocessing version ("v1" for 126D, "v2" for Option A 280D).
+
+    Returns:
+        126D array (v1) or 280D array (v2).
     """
-    feats = np.zeros(MAX_HANDS * FEATURES_PER_HAND, dtype=np.float32)
+    feats_v1 = np.zeros(MAX_HANDS * FEATURES_PER_HAND, dtype=np.float32)
     for slot in range(min(frame.num_hands, MAX_HANDS)):
         norm = normalize_hand(frame.landmarks[slot])
-        feats[slot * FEATURES_PER_HAND:(slot + 1) * FEATURES_PER_HAND] = norm.ravel()
-    return feats
+        feats_v1[slot * FEATURES_PER_HAND:(slot + 1) * FEATURES_PER_HAND] = norm.ravel()
+
+    if version == "v1":
+        return feats_v1
+    elif version == "v2":
+        landmarks_3d = frame.landmarks[np.newaxis, ...]  # (1, 2, 21, 3)
+        validity_mask = np.array([frame.num_hands > 0], dtype=bool)
+        raw_wrists = np.array([[[lm[0, 0], lm[0, 1], lm[0, 2]] for lm in frame.landmarks]], dtype=np.float32)
+        v2_feats = compute_v2_features(landmarks_3d, validity_mask=validity_mask, raw_wrists_seq=raw_wrists)
+        return v2_feats[0]
+    else:
+        raise ValueError(f"Unknown preprocessing version: {version!r}. Expected 'v1' or 'v2'.")
+
+
+def compute_v2_features(
+    landmarks_seq: np.ndarray,
+    validity_mask: np.ndarray | None = None,
+    raw_wrists_seq: np.ndarray | None = None,
+) -> np.ndarray:
+    """
+    Compute Option A Full Dynamic 280D feature representation for a sequence of frames.
+
+    Features layout (280D total):
+      - 126D: Normalized Position Coordinates (v1 pos)
+      - 126D: Landmark Velocity / Position Deltas (pos_t - pos_{t-1})
+      -   6D: Global Wrist Trajectory / Velocity (wrist_t - wrist_{t-1} per hand)
+      -  12D: Fingertip & Palm Orientation Vectors (Index Ray 3D + Palm Normal 3D per hand)
+      -  10D: Finger Extension Ratios (Tip-to-wrist / MCP-to-wrist ratio per finger, 5 per hand)
+
+    Args:
+        landmarks_seq: Input landmarks sequence. Either shape (T, 126) normalized v1 features,
+                       or (T, MAX_HANDS, 21, 3) landmark array.
+        validity_mask: Optional boolean or binary float mask of shape (T,) indicating frame validity.
+        raw_wrists_seq: Optional array of shape (T, MAX_HANDS, 3) containing raw wrist coordinates.
+
+    Returns:
+        Array of shape (T, 280) with float32 dtype and zero NaNs.
+    """
+    landmarks_arr = np.asarray(landmarks_seq, dtype=np.float32)
+    if landmarks_arr.ndim == 2 and landmarks_arr.shape[1] == 126:
+        T = landmarks_arr.shape[0]
+        pos_feats = landmarks_arr.copy()
+        landmarks_3d = pos_feats.reshape(T, MAX_HANDS, NUM_LANDMARKS, NUM_COORDS)
+    elif landmarks_arr.ndim == 4 and landmarks_arr.shape[1:] == (MAX_HANDS, NUM_LANDMARKS, NUM_COORDS):
+        T = landmarks_arr.shape[0]
+        pos_feats = np.zeros((T, MAX_HANDS * FEATURES_PER_HAND), dtype=np.float32)
+        for t in range(T):
+            for slot in range(MAX_HANDS):
+                norm = normalize_hand(landmarks_arr[t, slot])
+                pos_feats[t, slot * FEATURES_PER_HAND:(slot + 1) * FEATURES_PER_HAND] = norm.ravel()
+        landmarks_3d = pos_feats.reshape(T, MAX_HANDS, NUM_LANDMARKS, NUM_COORDS)
+    else:
+        raise ValueError(
+            f"Expected landmarks_seq shape (T, 126) or (T, {MAX_HANDS}, {NUM_LANDMARKS}, {NUM_COORDS}), "
+            f"got {landmarks_arr.shape}"
+        )
+
+    # Validity mask (T,)
+    if validity_mask is not None:
+        valid_frames = np.asarray(validity_mask, dtype=bool)
+    else:
+        valid_frames = np.linalg.norm(pos_feats, axis=1) > 1e-6
+
+    # 1. Position features (126D)
+    pos_feats = np.nan_to_num(pos_feats, nan=0.0)
+
+    # 2. Velocity features (126D)
+    vel_feats = np.zeros_like(pos_feats, dtype=np.float32)
+    for t in range(1, T):
+        if valid_frames[t] and valid_frames[t - 1]:
+            vel_feats[t] = pos_feats[t] - pos_feats[t - 1]
+    vel_feats = np.nan_to_num(vel_feats, nan=0.0)
+
+    # 3. Global Wrist Velocity (6D)
+    wrist_vel_feats = np.zeros((T, MAX_HANDS * NUM_COORDS), dtype=np.float32)
+    if raw_wrists_seq is not None:
+        wrists_arr = np.asarray(raw_wrists_seq, dtype=np.float32)
+        if wrists_arr.shape == (T, MAX_HANDS, NUM_COORDS):
+            for t in range(1, T):
+                if valid_frames[t] and valid_frames[t - 1]:
+                    diff = wrists_arr[t] - wrists_arr[t - 1]
+                    wrist_vel_feats[t] = diff.ravel()
+    wrist_vel_feats = np.nan_to_num(wrist_vel_feats, nan=0.0)
+
+    # 4. Orientation Vectors (12D: 6D per hand)
+    orientation_feats = np.zeros((T, MAX_HANDS * 6), dtype=np.float32)
+    for t in range(T):
+        if not valid_frames[t]:
+            continue
+        for slot in range(MAX_HANDS):
+            hand_lm = landmarks_3d[t, slot]  # (21, 3)
+            if np.linalg.norm(hand_lm) < 1e-6:
+                continue
+
+            w = hand_lm[0]      # Wrist
+            idx_mcp = hand_lm[5]
+            idx_tip = hand_lm[8]
+            pinky_mcp = hand_lm[17]
+
+            # Index ray
+            ray = idx_tip - idx_mcp
+            ray_norm = float(np.linalg.norm(ray))
+            ray_unit = (ray / ray_norm) if ray_norm > 1e-6 else np.zeros(3, dtype=np.float32)
+
+            # Palm normal
+            u = idx_mcp - w
+            v = pinky_mcp - w
+            normal = np.cross(u, v)
+            norm_val = float(np.linalg.norm(normal))
+            normal_unit = (normal / norm_val) if norm_val > 1e-6 else np.zeros(3, dtype=np.float32)
+
+            slot_orient = np.concatenate([ray_unit, normal_unit], axis=0)
+            orientation_feats[t, slot * 6:(slot + 1) * 6] = slot_orient
+    orientation_feats = np.nan_to_num(orientation_feats, nan=0.0)
+
+    # 5. Finger Extension Ratios (10D: 5D per hand)
+    ratio_feats = np.zeros((T, MAX_HANDS * 5), dtype=np.float32)
+    tip_indices = [4, 8, 12, 16, 20]
+    mcp_indices = [2, 5, 9, 13, 17]
+
+    for t in range(T):
+        if not valid_frames[t]:
+            continue
+        for slot in range(MAX_HANDS):
+            hand_lm = landmarks_3d[t, slot]  # (21, 3)
+            if np.linalg.norm(hand_lm) < 1e-6:
+                continue
+
+            w = hand_lm[0]  # Wrist
+            ratios = np.zeros(5, dtype=np.float32)
+            for f_idx in range(5):
+                tip_dist = float(np.linalg.norm(hand_lm[tip_indices[f_idx]] - w))
+                mcp_dist = float(np.linalg.norm(hand_lm[mcp_indices[f_idx]] - w))
+                ratios[f_idx] = tip_dist / (mcp_dist + 1e-6)
+
+            ratio_feats[t, slot * 5:(slot + 1) * 5] = ratios
+    ratio_feats = np.nan_to_num(ratio_feats, nan=0.0)
+
+    # Concatenate all 5 components: 126 + 126 + 6 + 12 + 10 = 280D
+    v2_feats = np.concatenate(
+        [pos_feats, vel_feats, wrist_vel_feats, orientation_feats, ratio_feats],
+        axis=1,
+    )
+    return v2_feats.astype(np.float32)
+
+
+def normalize_sequence(
+    raw_frames: list[FrameResult],
+    version: str = "v1",
+) -> np.ndarray:
+    """
+    Normalize a list of FrameResult objects into a sequence array.
+
+    Args:
+        raw_frames: List of FrameResult objects.
+        version: "v1" for (T, 126) or "v2" for (T, 280).
+
+    Returns:
+        Array of shape (T, 126) or (T, 280).
+    """
+    if version == "v1":
+        return np.stack([normalize_frame(fr, version="v1") for fr in raw_frames], axis=0)
+    elif version == "v2":
+        T = len(raw_frames)
+        if T == 0:
+            return np.zeros((0, 280), dtype=np.float32)
+
+        landmarks_3d = np.zeros((T, MAX_HANDS, NUM_LANDMARKS, NUM_COORDS), dtype=np.float32)
+        validity_mask = np.zeros(T, dtype=bool)
+        raw_wrists = np.zeros((T, MAX_HANDS, NUM_COORDS), dtype=np.float32)
+
+        for t, fr in enumerate(raw_frames):
+            validity_mask[t] = fr.num_hands > 0
+            for slot in range(min(fr.num_hands, MAX_HANDS)):
+                landmarks_3d[t, slot] = fr.landmarks[slot]
+                raw_wrists[t, slot] = fr.landmarks[slot][0]
+
+        return compute_v2_features(landmarks_3d, validity_mask=validity_mask, raw_wrists_seq=raw_wrists)
+    else:
+        raise ValueError(f"Unknown preprocessing version: {version!r}. Expected 'v1' or 'v2'.")
