@@ -50,6 +50,8 @@ from src.features.preprocess_sequence import (  # noqa: E402
 )
 from src.models.gru_classifier import GRUClassifier  # noqa: E402
 
+from src.inference.ambiguity_gate import is_ambiguous_prediction
+
 DEFAULT_CHECKPOINT_PATH = PROJECT_ROOT / "outputs/checkpoints/gru_temporal_pool_best.pt"
 
 EXPECTED_CONFIG = {
@@ -204,10 +206,20 @@ def predict_video(
     top_k = max(1, min(int(top_k), len(idx_to_class)))
     order = np.argsort(-probs)[:top_k]
 
+    if len(order) >= 2:
+        top1_c = idx_to_class[int(order[0])]
+        top2_c = idx_to_class[int(order[1])]
+        top1_p = float(probs[order[0]])
+        top2_p = float(probs[order[1]])
+        is_ambig = is_ambiguous_prediction(top1_c, top2_c, top1_p, top2_p)
+    else:
+        is_ambig = False
+
     return {
         "video": str(video_path),
         "predicted_class": idx_to_class[int(order[0])],
         "confidence": float(probs[order[0]]),
+        "is_ambiguous": is_ambig,
         "top_k": [
             {"class": idx_to_class[int(i)], "probability": float(probs[i])}
             for i in order

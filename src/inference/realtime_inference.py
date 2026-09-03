@@ -41,9 +41,11 @@ from src.inference.predict import get_device, load_model, EXPECTED_CONFIG, Check
 # ---------------------------------------------------------------------------
 
 
+from src.inference.ambiguity_gate import is_ambiguous_prediction
+
 # Real-time specific constants
 WINDOW_SIZE = 5  # for prediction smoothing history
-CONFIDENCE_THRESHOLD = 0.50  # minimum confidence to consider a raw prediction for smoothing
+CONFIDENCE_THRESHOLD = 0.70  # minimum confidence to consider a raw prediction for smoothing
 DRAW_LANDMARKS = True  # set to False to skip drawing landmarks for performance
 FPS_UPDATE_INTERVAL = 1.0  # seconds over which to compute FPS
 def main() -> int:
@@ -150,13 +152,24 @@ def main() -> int:
                     logits = model(input_tensor)  # (1, 200)
                     probs = torch.softmax(logits, dim=1)[0].cpu().numpy()  # (200,)
     
-                # Get top-1 prediction
-                pred_idx = int(np.argmax(probs))
+                # Get top-1 and top-2 predictions
+                top_2_indices = np.argsort(-probs)[:2]
+                pred_idx = int(top_2_indices[0])
                 pred_confidence = float(probs[pred_idx])
                 pred_class = idx_to_class[pred_idx]
-    
-                # Update prediction history for smoothing (only if confidence >= threshold)
-                if pred_confidence >= CONFIDENCE_THRESHOLD:
+
+                if len(top_2_indices) >= 2:
+                    top2_idx = int(top_2_indices[1])
+                    top2_class = idx_to_class[top2_idx]
+                    top2_confidence = float(probs[top2_idx])
+                    is_ambig = is_ambiguous_prediction(
+                        pred_class, top2_class, pred_confidence, top2_confidence, margin_threshold=0.15
+                    )
+                else:
+                    is_ambig = False
+
+                # Update prediction history for smoothing (only if confidence >= threshold and not ambiguous)
+                if pred_confidence >= CONFIDENCE_THRESHOLD and not is_ambig:
                     pred_history.append((pred_idx, pred_confidence))
     
                 # Compute smoothed prediction from history (majority voting)

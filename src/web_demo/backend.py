@@ -34,6 +34,7 @@ from src.features.preprocess_sequence import (
     preprocess_sequence,
 )
 from src.models.gru_classifier import GRUClassifier
+from src.inference.ambiguity_gate import is_ambiguous_prediction
 from src.inference.predict import (
     get_device,
     load_model,
@@ -93,8 +94,8 @@ COOLDOWN_FRAMES = 13        # minimum cooldown frames after an emit
 # We compensate by NOT running inference when the buffer has no valid frames,
 # and by clamping the displayed fields when the most recent frame is not a
 # real hand detection. These thresholds are tuning knobs, not architecture.
-SEGMENT_CONFIDENCE_FLOOR = 0.50   # strict: smoothed conf must be >= this to emit
-DISPLAY_CONFIDENCE_FLOOR = 0.50   # below this we display "-" instead of the label
+SEGMENT_CONFIDENCE_FLOOR = 0.70   # strict: smoothed conf must be >= this to emit
+DISPLAY_CONFIDENCE_FLOOR = 0.70   # below this we display "-" instead of the label
 MIN_VALID_FRAMES_IN_BUFFER = 1    # skip inference if buffer has 0 valid frames
 
 # Serve the frontend as static files
@@ -124,6 +125,7 @@ class ConnectionState:
         self.frames_since_last_emit = 10**9
         self.stable_pred_count = 0         # consecutive windows agreeing on smoothed_prediction
         self.prev_smoothed_prediction = None
+        self.last_is_ambiguous = False
 
 
 @app.on_event("startup")
@@ -251,14 +253,24 @@ async def websocket_endpoint(websocket: WebSocket):
                             logits = model(input_tensor)
                             probs = torch.softmax(logits, dim=1)[0]
 
-                        confidence_t, predicted_idx_t = torch.max(probs, dim=0)
-                        confidence = float(confidence_t.item())
-                        predicted_idx = int(predicted_idx_t.item())
-                        pred_class = idx_to_class[predicted_idx]
+                        top2_probs, top2_indices = torch.topk(probs, k=2)
+                        top1_prob = float(top2_probs[0].item())
+                        top2_prob = float(top2_probs[1].item())
+                        top1_class = idx_to_class[int(top2_indices[0].item())]
+                        top2_class = idx_to_class[int(top2_indices[1].item())]
 
-                        _dbg(f"Prediction: {pred_class} Confidence: {confidence:.2f}")
+                        confidence = top1_prob
+                        predicted_idx = int(top2_indices[0].item())
+                        pred_class = top1_class
 
-                        if confidence >= CONFIDENCE_THRESHOLD:
+                        is_ambiguous = is_ambiguous_prediction(
+                            top1_class, top2_class, top1_prob, top2_prob, margin_threshold=0.15
+                        )
+                        state.last_is_ambiguous = is_ambiguous
+
+                        _dbg(f"Prediction: {pred_class} Confidence: {confidence:.2f} (ambiguous={is_ambiguous})")
+
+                        if confidence >= CONFIDENCE_THRESHOLD and not is_ambiguous:
                             state.pred_history.append((predicted_idx, confidence))
 
                         if state.pred_history:
@@ -373,6 +385,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     and state.frames_since_last_emit >= COOLDOWN_FRAMES
                     and state.smoothed_prediction != state.last_segment_label
                     and current_frame_valid   # do NOT emit on a hand-absent frame
+                    and not state.last_is_ambiguous   # suppress emission if prediction is ambiguous
                 ):
                     state.last_segment_label = state.smoothed_prediction
                     state.frames_since_last_emit = 0
@@ -414,6 +427,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 state.motion_window.clear()
                 state.stable_pred_count = 0
                 state.prev_smoothed_prediction = None
+                state.last_is_ambiguous = False
                 state.frames_since_last_emit = 10**9
                 # last_segment_label is intentionally preserved so the user
                 # can still see the most recent emitted word.

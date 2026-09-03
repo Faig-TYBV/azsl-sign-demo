@@ -170,4 +170,11 @@ def test_top_k_count_via_predict_structure():     # 5. top-k returns k items
         result = P.predict_video("fake.mp4", REAL_CHECKPOINT, top_k=3)
     assert len(result["top_k"]) == 3
     assert result["preprocessing"]["feature_shape"] == [26, 126]
+    assert "is_ambiguous" in result
+
+
+def test_segment_confidence_floor_is_raised_to_0_70():
+    from src.web_demo.backend import SEGMENT_CONFIDENCE_FLOOR
+    assert SEGMENT_CONFIDENCE_FLOOR == 0.70
+
 

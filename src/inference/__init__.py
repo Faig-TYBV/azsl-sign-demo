@@ -13,6 +13,14 @@ from typing import Any
 
 def __getattr__(name: str) -> Any:
     if name in {
+        "is_ambiguous_prediction",
+        "check_ambiguity_gate",
+        "PRONOUN_CLUSTER",
+    }:
+        from src.inference import ambiguity_gate
+
+        return getattr(ambiguity_gate, name)
+    if name in {
         "CheckpointVerificationError",
         "get_device",
         "load_model",
