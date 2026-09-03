@@ -1,4 +1,4 @@
-﻿/* =============================================================================
+/* =============================================================================
  * azsl_alphabet.js - client-side AzSL alphabet (fingerspelling) inference.
  *
  * Single-file port of the relevant subset of alphabet-repo/js/gestures.js.
@@ -59,7 +59,7 @@
     return CONTROL_LABEL_META[label] || { friendly: label, symbol: label };
   }
 
-  var MIN_CONFIDENCE = 0.55;
+  var MIN_CONFIDENCE = 0.30;
   var HEURISTIC_CONF  = 0.92;
   var ANGLE_STRAIGHT  = 155;
   var ANGLE_FIST      = 100;

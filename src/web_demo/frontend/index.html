@@ -681,7 +681,7 @@ let lastAcceptedAt = 0;              // performance.now() of last acceptance (de
 // Tuning constants (override-able via the help text in the UI).
 const LETTER_HOLD_MS = 700;          // min hold time before re-accepting same letter
 const DIFFERENT_LETTER_HOLD_MS = 250; // min hold time for a DIFFERENT new letter
-const ALPHABET_CONFIDENCE_FLOOR = 0.60; // min confidence to accept a prediction
+const ALPHABET_CONFIDENCE_FLOOR = 0.35; // min confidence to accept a prediction
 // ===== END ALPHABET MODE INTEGRATION =====
 
 let ws = null;
