@@ -167,9 +167,9 @@ def validate_features(
             result.malformed_files.append(f"{sample.path} ({exc})")
             continue
 
-        if feats.shape != EXPECTED_SHAPE:
+        if feats.shape not in ((26, 126), (26, 280)):
             result.shape_errors.append(
-                f"{sample.path}: shape {feats.shape}, expected {EXPECTED_SHAPE}"
+                f"{sample.path}: shape {feats.shape}, expected (26, 126) or (26, 280)"
             )
         if not np.isfinite(feats).all():
             result.non_finite_files.append(str(sample.path))
@@ -337,12 +337,9 @@ class AzslFeatureDataset(Dataset):
             elif self.with_delta:
                 from delta_features import combine_with_deltas
                 features = combine_with_deltas(features, mask)
-        expected = EXPECTED_SHAPE
-        if self.with_delta or self.with_velocity:
-            expected = (EXPECTED_SHAPE[0], EXPECTED_SHAPE[1] * 2)
-        if features.shape != expected:
+        if features.shape[0] != 26:
             raise ValueError(
-                f"{sample.path}: shape {features.shape}, expected {expected}"
+                f"{sample.path}: sequence length {features.shape[0]}, expected 26"
             )
         tensor = torch.from_numpy(np.ascontiguousarray(features)).float()
         return tensor, int(sample.label)

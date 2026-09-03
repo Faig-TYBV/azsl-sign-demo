@@ -4,7 +4,7 @@ venv/
 
 # --- Datasets and generated features (NEVER commit) ---
 # Raw videos (~1.4 GB) and all extracted .npz feature files live under data/
-data/
+/data/
 
 # --- Downloaded model artifacts ---
 models/*.task
