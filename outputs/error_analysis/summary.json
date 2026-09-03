@@ -1,0 +1,636 @@
+{
+  "checkpoint": "C:\\Users\\ASUS\\Desktop\\azsl-word-recognition\\outputs\\checkpoints\\gru_temporal_pool_best.pt",
+  "model_config": {
+    "input_size": 126,
+    "hidden_size": 128,
+    "num_layers": 2,
+    "num_classes": 200,
+    "dropout": 0.3,
+    "bidirectional": false,
+    "pooling": "mean_max"
+  },
+  "class_to_idx_size": 200,
+  "test": {
+    "n_evaluated": 1299,
+    "n_skipped": 0,
+    "accuracy": 0.5981524249422633,
+    "macro_precision": 0.5666414412779901,
+    "macro_recall": 0.5724602118415928,
+    "macro_f1": 0.5389865741148516,
+    "weighted_precision": 0.7091976347513659,
+    "weighted_recall": 0.5981524249422633,
+    "weighted_f1": 0.6231121049602153
+  },
+  "top_confused_pairs_test": [
+    {
+      "true_class": "MƏN",
+      "predicted_class": "MƏNƏ",
+      "count": 53,
+      "train_freq_true": 1769,
+      "train_freq_pred": 32
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "MƏNİM",
+      "count": 39,
+      "train_freq_true": 1769,
+      "train_freq_pred": 118
+    },
+    {
+      "true_class": "O",
+      "predicted_class": "ONUN",
+      "count": 27,
+      "train_freq_true": 213,
+      "train_freq_pred": 82
+    },
+    {
+      "true_class": "MƏNİM",
+      "predicted_class": "MƏN",
+      "count": 14,
+      "train_freq_true": 118,
+      "train_freq_pred": 1769
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "SİZİN",
+      "count": 12,
+      "train_freq_true": 308,
+      "train_freq_pred": 11
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "BAKI",
+      "count": 7,
+      "train_freq_true": 308,
+      "train_freq_pred": 44
+    },
+    {
+      "true_class": "MƏNİM",
+      "predicted_class": "MƏNƏ",
+      "count": 6,
+      "train_freq_true": 118,
+      "train_freq_pred": 32
+    },
+    {
+      "true_class": "BU",
+      "predicted_class": "ÜÇÜN",
+      "count": 5,
+      "train_freq_true": 234,
+      "train_freq_pred": 14
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "SİZ",
+      "count": 5,
+      "train_freq_true": 1769,
+      "train_freq_pred": 308
+    },
+    {
+      "true_class": "O",
+      "predicted_class": "ORDA",
+      "count": 5,
+      "train_freq_true": 213,
+      "train_freq_pred": 25
+    },
+    {
+      "true_class": "BİZ",
+      "predicted_class": "MƏN",
+      "count": 4,
+      "train_freq_true": 117,
+      "train_freq_pred": 1769
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "YAZDA",
+      "count": 4,
+      "train_freq_true": 1769,
+      "train_freq_pred": 11
+    },
+    {
+      "true_class": "MƏNƏ",
+      "predicted_class": "MƏN",
+      "count": 4,
+      "train_freq_true": 32,
+      "train_freq_pred": 1769
+    },
+    {
+      "true_class": "İSTƏMƏK",
+      "predicted_class": "İSTƏYİRƏM",
+      "count": 4,
+      "train_freq_true": 73,
+      "train_freq_pred": 24
+    },
+    {
+      "true_class": "İSTƏYİRƏM",
+      "predicted_class": "İSTƏMƏK",
+      "count": 4,
+      "train_freq_true": 24,
+      "train_freq_pred": 73
+    },
+    {
+      "true_class": "ALMAQ",
+      "predicted_class": "AVTOMOBİL",
+      "count": 3,
+      "train_freq_true": 31,
+      "train_freq_pred": 22
+    },
+    {
+      "true_class": "BU",
+      "predicted_class": "BURDA",
+      "count": 3,
+      "train_freq_true": 234,
+      "train_freq_pred": 72
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "SİZİN",
+      "count": 3,
+      "train_freq_true": 1769,
+      "train_freq_pred": 11
+    },
+    {
+      "true_class": "ONUN",
+      "predicted_class": "ORDA",
+      "count": 3,
+      "train_freq_true": 82,
+      "train_freq_pred": 25
+    },
+    {
+      "true_class": "ORDA",
+      "predicted_class": "ONUN",
+      "count": 3,
+      "train_freq_true": 25,
+      "train_freq_pred": 82
+    },
+    {
+      "true_class": "ORDA",
+      "predicted_class": "ORA",
+      "count": 3,
+      "train_freq_true": 25,
+      "train_freq_pred": 15
+    },
+    {
+      "true_class": "İSTƏMƏK",
+      "predicted_class": "SUBAY",
+      "count": 3,
+      "train_freq_true": 73,
+      "train_freq_pred": 10
+    },
+    {
+      "true_class": "BAZAR",
+      "predicted_class": "SİFARİŞ",
+      "count": 2,
+      "train_freq_true": 16,
+      "train_freq_pred": 7
+    },
+    {
+      "true_class": "BİLƏR",
+      "predicted_class": "BİLMƏK",
+      "count": 2,
+      "train_freq_true": 35,
+      "train_freq_pred": 16
+    },
+    {
+      "true_class": "BİZ",
+      "predicted_class": "HAMI",
+      "count": 2,
+      "train_freq_true": 117,
+      "train_freq_pred": 19
+    },
+    {
+      "true_class": "BƏLİ",
+      "predicted_class": "HANSI",
+      "count": 2,
+      "train_freq_true": 10,
+      "train_freq_pred": 48
+    },
+    {
+      "true_class": "FUTBOL",
+      "predicted_class": "SATICI",
+      "count": 2,
+      "train_freq_true": 32,
+      "train_freq_pred": 12
+    },
+    {
+      "true_class": "GÖRMƏK",
+      "predicted_class": "2",
+      "count": 2,
+      "train_freq_true": 13,
+      "train_freq_pred": 20
+    },
+    {
+      "true_class": "KOMPÜTER",
+      "predicted_class": "YER",
+      "count": 2,
+      "train_freq_true": 12,
+      "train_freq_pred": 7
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "AC",
+      "count": 2,
+      "train_freq_true": 1769,
+      "train_freq_pred": 7
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "YOX",
+      "count": 2,
+      "train_freq_true": 1769,
+      "train_freq_pred": 30
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "ÖZÜMÜ",
+      "count": 2,
+      "train_freq_true": 1769,
+      "train_freq_pred": 6
+    },
+    {
+      "true_class": "O",
+      "predicted_class": "ORA",
+      "count": 2,
+      "train_freq_true": 213,
+      "train_freq_pred": 15
+    },
+    {
+      "true_class": "O",
+      "predicted_class": "SRAĞAGÜN",
+      "count": 2,
+      "train_freq_true": 213,
+      "train_freq_pred": 11
+    },
+    {
+      "true_class": "O",
+      "predicted_class": "SƏN",
+      "count": 2,
+      "train_freq_true": 213,
+      "train_freq_pred": 34
+    },
+    {
+      "true_class": "O",
+      "predicted_class": "İ",
+      "count": 2,
+      "train_freq_true": 213,
+      "train_freq_pred": 22
+    },
+    {
+      "true_class": "ONUN",
+      "predicted_class": "O",
+      "count": 2,
+      "train_freq_true": 82,
+      "train_freq_pred": 213
+    },
+    {
+      "true_class": "ONUN",
+      "predicted_class": "SƏN",
+      "count": 2,
+      "train_freq_true": 82,
+      "train_freq_pred": 34
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "BƏLİ",
+      "count": 2,
+      "train_freq_true": 308,
+      "train_freq_pred": 10
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "J",
+      "count": 2,
+      "train_freq_true": 308,
+      "train_freq_pred": 12
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "SƏN",
+      "count": 2,
+      "train_freq_true": 308,
+      "train_freq_pred": 34
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "UNUTMUŞAM",
+      "count": 2,
+      "train_freq_true": 308,
+      "train_freq_pred": 6
+    },
+    {
+      "true_class": "SİZİN",
+      "predicted_class": "SİZ",
+      "count": 2,
+      "train_freq_true": 11,
+      "train_freq_pred": 308
+    },
+    {
+      "true_class": "SƏNƏD",
+      "predicted_class": "PENSİYA",
+      "count": 2,
+      "train_freq_true": 42,
+      "train_freq_pred": 47
+    },
+    {
+      "true_class": "VAXT",
+      "predicted_class": "YAŞ",
+      "count": 2,
+      "train_freq_true": 16,
+      "train_freq_pred": 17
+    },
+    {
+      "true_class": "YAZDA",
+      "predicted_class": "SİZİN",
+      "count": 2,
+      "train_freq_true": 11,
+      "train_freq_pred": 11
+    },
+    {
+      "true_class": "1",
+      "predicted_class": "BAXMAQ",
+      "count": 1,
+      "train_freq_true": 9,
+      "train_freq_pred": 8
+    },
+    {
+      "true_class": "1",
+      "predicted_class": "DİL",
+      "count": 1,
+      "train_freq_true": 9,
+      "train_freq_pred": 12
+    },
+    {
+      "true_class": "2",
+      "predicted_class": "LAZIM",
+      "count": 1,
+      "train_freq_true": 20,
+      "train_freq_pred": 20
+    },
+    {
+      "true_class": "2",
+      "predicted_class": "YEMƏK",
+      "count": 1,
+      "train_freq_true": 20,
+      "train_freq_pred": 26
+    }
+  ],
+  "zero_recall_test_count": 29,
+  "zero_recall_test": [
+    {
+      "class": "ORDA",
+      "support": 6,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 25
+    },
+    {
+      "class": "ÜÇÜN",
+      "support": 3,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 14
+    },
+    {
+      "class": "GÖRMƏK",
+      "support": 3,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 13
+    },
+    {
+      "class": "OĞUL",
+      "support": 3,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 13
+    },
+    {
+      "class": "DİL",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 12
+    },
+    {
+      "class": "KOMPÜTER",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 12
+    },
+    {
+      "class": "S",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 12
+    },
+    {
+      "class": "SAAT",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 11
+    },
+    {
+      "class": "SİZİN",
+      "support": 3,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 11
+    },
+    {
+      "class": "TƏHSİL",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 11
+    },
+    {
+      "class": "BƏLİ",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 10
+    },
+    {
+      "class": "Ə",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 10
+    },
+    {
+      "class": "1",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 9
+    },
+    {
+      "class": "HALALDIR",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 9
+    },
+    {
+      "class": "BAXMAQ",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 8
+    },
+    {
+      "class": "GÖZƏL",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 8
+    },
+    {
+      "class": "AC",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 7
+    },
+    {
+      "class": "ALMIŞAM",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 7
+    },
+    {
+      "class": "OLMUSUZ",
+      "support": 1,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 7
+    },
+    {
+      "class": "SOYUQ",
+      "support": 1,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 7
+    },
+    {
+      "class": "SÖNDURƏ",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 7
+    },
+    {
+      "class": "UNİVERSİTET",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 7
+    },
+    {
+      "class": "İŞSİZ",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 7
+    },
+    {
+      "class": "GUN",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 6
+    },
+    {
+      "class": "HAVA",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 6
+    },
+    {
+      "class": "PROBLEM",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 6
+    },
+    {
+      "class": "UCUZDUR",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 6
+    },
+    {
+      "class": "XİRDA",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 6
+    },
+    {
+      "class": "İSTİ",
+      "support": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "train_freq": 6
+    }
+  ],
+  "per_class_metrics_test_count": 200,
+  "confidence_test": {
+    "n_correct": 777,
+    "n_incorrect": 522,
+    "mean_conf_correct": 0.7163213611876489,
+    "median_conf_correct": 0.7097287178039551,
+    "mean_conf_incorrect": 0.5292660275838156,
+    "median_conf_incorrect": 0.5042411386966705
+  },
+  "val": {
+    "n_evaluated": 1299,
+    "n_skipped": 0,
+    "accuracy": 0.588144726712856,
+    "macro_precision": 0.5693386726945477,
+    "macro_recall": 0.6048621549719272,
+    "macro_f1": 0.5521486685920443,
+    "weighted_precision": 0.7264343421556201,
+    "weighted_recall": 0.588144726712856,
+    "weighted_f1": 0.6112853376169035
+  },
+  "freq_vs_f1_correlation_val": {
+    "pearson": 0.023498926174382994,
+    "spearman": 0.03798710055345867,
+    "n_valid_pairs": 180
+  }
+}
