@@ -12,28 +12,66 @@ import shutil
 import sys
 from pathlib import Path
 
+# Exact 20 target words matching folder names on disk in the dataset
 TARGET_WORDS = [
-    "Men",
-    "Sen",
-    "Biz",
+    "MƏN",
+    "SƏN",
+    "BİZ",
     "O",
-    "Salam",
-    "Necesen",
-    "Yaxsi",
-    "Pis",
-    "Tesekkur",
-    "Sag_ol",
-    "Istemek",
-    "Getmek",
-    "Oyrenmek",
-    "Bilmek",
-    "Komek_etmek",
-    "Bu_gun",
-    "Sabah",
-    "Universitet",
-    "Ad",
-    "Vaxt",
+    "SALAM",
+    "NECƏ",
+    "YAXŞI",
+    "DEYİL",
+    "XAHİŞ",
+    "HALALDIR",
+    "İSTƏMƏK",
+    "GETMƏK",
+    "ÖYRƏNMƏK",
+    "BİLMƏK",
+    "KÖMƏK",
+    "BU GÜN",
+    "SABAH",
+    "UNİVERSİTET",
+    "AD",
+    "VAXT",
 ]
+
+# Alias mapping for user transliterations
+ALIAS_MAP = {
+    "MEN": "MƏN",
+    "SEN": "SƏN",
+    "BIZ": "BİZ",
+    "O": "O",
+    "SALAM": "SALAM",
+    "NECESEN": "NECƏ",
+    "YAXSI": "YAXŞI",
+    "PIS": "DEYİL",
+    "TESEKKUR": "XAHİŞ",
+    "SAG_OL": "HALALDIR",
+    "ISTEMEK": "İSTƏMƏK",
+    "GETMEK": "GETMƏK",
+    "OYRENMEK": "ÖYRƏNMƏK",
+    "BILMEK": "BİLMƏK",
+    "KOMEK_ETMEK": "KÖMƏK",
+    "KOMEK": "KÖMƏK",
+    "BU_GUN": "BU GÜN",
+    "SABAH": "SABAH",
+    "UNIVERSITET": "UNİVERSİTET",
+    "AD": "AD",
+    "VAXT": "VAXT",
+}
+
+
+def resolve_folder_name(name: str, existing_names: set[str]) -> str | None:
+    """Resolve requested word/alias to exact folder name on disk."""
+    if name in existing_names:
+        return name
+    upper_name = name.upper()
+    if upper_name in ALIAS_MAP and ALIAS_MAP[upper_name] in existing_names:
+        return ALIAS_MAP[upper_name]
+    if upper_name in existing_names:
+        return upper_name
+    return None
 
 
 def filter_dataset(
@@ -51,36 +89,26 @@ def filter_dataset(
 
     dest_dir.mkdir(parents=True, exist_ok=True)
 
-    # Get available items in source_dir
-    existing_items = {item.name: item for item in source_dir.iterdir()}
-    # Case-insensitive map for convenient matching if folder names vary
-    lower_map = {name.lower(): item for name, item in existing_items.items()}
+    existing_names = set(d.name for d in source_dir.iterdir() if d.is_dir())
 
     copied_count = 0
     copied_classes = []
     missing_classes = []
 
     for word in target_words:
-        matched_item = None
-        if word in existing_items:
-            matched_item = existing_items[word]
-        elif word.lower() in lower_map:
-            matched_item = lower_map[word.lower()]
+        resolved = resolve_folder_name(word, existing_names)
+        if resolved is not None:
+            source_item = source_dir / resolved
+            target_dest = dest_dir / resolved
 
-        if matched_item is not None:
-            target_dest = dest_dir / matched_item.name
-            if matched_item.is_dir():
-                if target_dest.exists():
-                    shutil.rmtree(target_dest)
-                shutil.copytree(matched_item, target_dest)
-                n_files = len(list(target_dest.glob("*.npz")))
-                print(f"  [+] Copied class folder '{matched_item.name}' ({n_files} files)")
-            else:
-                shutil.copy2(matched_item, target_dest)
-                print(f"  [+] Copied file '{matched_item.name}'")
+            if target_dest.exists():
+                shutil.rmtree(target_dest)
+            shutil.copytree(source_item, target_dest)
+            n_files = len(list(target_dest.glob("*.npz")))
+            print(f"  [+] Copied class folder '{resolved}' ({n_files} files)")
 
             copied_count += 1
-            copied_classes.append(matched_item.name)
+            copied_classes.append(resolved)
         else:
             missing_classes.append(word)
             print(f"  [-] Target word not found in source: '{word}'")
