@@ -47,7 +47,7 @@ app = FastAPI(title="AzSLD Web Demo Backend")
 # Load the model once at startup
 print("Loading model...", flush=True)
 device = get_device()
-checkpoint_path = PROJECT_ROOT / "outputs/checkpoints/gru_temporal_pool_best.pt"
+checkpoint_path = PROJECT_ROOT / "outputs/checkpoints/gru_demo_25_balanced_best.pt"
 try:
     model, class_to_idx, idx_to_class, _ = load_model(checkpoint_path)
     model.to(device)

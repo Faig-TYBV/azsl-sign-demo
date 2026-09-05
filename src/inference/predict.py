@@ -99,24 +99,30 @@ def verify_checkpoint(checkpoint_path: Path) -> dict:
     if cfg is None:
         raise CheckpointVerificationError("Checkpoint has no 'model_config'.")
 
+    expected_keys = {
+        "hidden_size": 128,
+        "num_layers": 2,
+        "dropout": 0.3,
+        "bidirectional": False,
+        "pooling": "mean_max",
+    }
     mismatches = {
         key: {"expected": expected, "found": cfg.get(key)}
-        for key, expected in EXPECTED_CONFIG.items()
+        for key, expected in expected_keys.items()
         if cfg.get(key) != expected
     }
+    if cfg.get("input_size") not in (126, 280):
+        mismatches["input_size"] = {"expected": "126 or 280", "found": cfg.get("input_size")}
+    if cfg.get("num_classes") not in (20, 25, 200):
+        mismatches["num_classes"] = {"expected": "20, 25, or 200", "found": cfg.get("num_classes")}
     if mismatches:
         raise CheckpointVerificationError(
-            f"Checkpoint config mismatch (not an Exp2 model): {mismatches}"
+            f"Checkpoint config mismatch: {mismatches}"
         )
 
     class_to_idx = ckpt.get("class_to_idx")
     if not isinstance(class_to_idx, dict) or len(class_to_idx) == 0:
         raise CheckpointVerificationError("Checkpoint has no 'class_to_idx' mapping.")
-    if len(class_to_idx) != EXPECTED_CONFIG["num_classes"]:
-        raise CheckpointVerificationError(
-            f"Expected {EXPECTED_CONFIG['num_classes']} classes, "
-            f"checkpoint has {len(class_to_idx)}."
-        )
     return ckpt
 
 
