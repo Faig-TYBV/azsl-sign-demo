@@ -15,7 +15,7 @@ src/web_demo/frontend/models/
 # --- Trained model checkpoints (NEVER commit) ---
 *.pt
 *.pth
-models/
+/models/
 outputs/checkpoints/
 outputs/exp*/
 outputs/exp*_backup/
