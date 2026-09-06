@@ -1,0 +1,312 @@
+{
+  "20": {
+    "val_total": 656,
+    "test_total": 656,
+    "subset_acc": 0.6738,
+    "subset_macro_f1": 0.6627,
+    "caps": {
+      "Cap 25": {
+        "train_total": 497,
+        "min": 22,
+        "median": 25.0,
+        "max": 25,
+        "ratio": 1.14,
+        "pct_capped": 90.0,
+        "pct_retained": 16.2
+      },
+      "Cap 35": {
+        "train_total": 639,
+        "min": 22,
+        "median": 34.5,
+        "max": 35,
+        "ratio": 1.59,
+        "pct_capped": 50.0,
+        "pct_retained": 20.8
+      },
+      "Cap 50": {
+        "train_total": 772,
+        "min": 22,
+        "median": 36.5,
+        "max": 50,
+        "ratio": 2.27,
+        "pct_capped": 40.0,
+        "pct_retained": 25.1
+      },
+      "Cap 75": {
+        "train_total": 945,
+        "min": 22,
+        "median": 36.5,
+        "max": 75,
+        "ratio": 3.41,
+        "pct_capped": 25.0,
+        "pct_retained": 30.7
+      },
+      "Cap 100": {
+        "train_total": 1048,
+        "min": 22,
+        "median": 36.5,
+        "max": 100,
+        "ratio": 4.55,
+        "pct_capped": 20.0,
+        "pct_retained": 34.1
+      },
+      "Uncapped": {
+        "train_total": 3076,
+        "min": 22,
+        "median": 36.5,
+        "max": 1769,
+        "ratio": 80.41,
+        "pct_capped": 0.0,
+        "pct_retained": 100.0
+      }
+    }
+  },
+  "22": {
+    "val_total": 667,
+    "test_total": 667,
+    "subset_acc": 0.6747,
+    "subset_macro_f1": 0.6601,
+    "caps": {
+      "Cap 25": {
+        "train_total": 547,
+        "min": 22,
+        "median": 25.0,
+        "max": 25,
+        "ratio": 1.14,
+        "pct_capped": 86.4,
+        "pct_retained": 17.5
+      },
+      "Cap 35": {
+        "train_total": 690,
+        "min": 22,
+        "median": 34.0,
+        "max": 35,
+        "ratio": 1.59,
+        "pct_capped": 45.5,
+        "pct_retained": 22.1
+      },
+      "Cap 50": {
+        "train_total": 823,
+        "min": 22,
+        "median": 34.0,
+        "max": 50,
+        "ratio": 2.27,
+        "pct_capped": 36.4,
+        "pct_retained": 26.3
+      },
+      "Cap 75": {
+        "train_total": 996,
+        "min": 22,
+        "median": 34.0,
+        "max": 75,
+        "ratio": 3.41,
+        "pct_capped": 22.7,
+        "pct_retained": 31.9
+      },
+      "Cap 100": {
+        "train_total": 1099,
+        "min": 22,
+        "median": 34.0,
+        "max": 100,
+        "ratio": 4.55,
+        "pct_capped": 18.2,
+        "pct_retained": 35.1
+      },
+      "Uncapped": {
+        "train_total": 3127,
+        "min": 22,
+        "median": 34.0,
+        "max": 1769,
+        "ratio": 80.41,
+        "pct_capped": 0.0,
+        "pct_retained": 100.0
+      }
+    }
+  },
+  "24": {
+    "val_total": 676,
+    "test_total": 676,
+    "subset_acc": 0.6731,
+    "subset_macro_f1": 0.651,
+    "caps": {
+      "Cap 25": {
+        "train_total": 590,
+        "min": 19,
+        "median": 25.0,
+        "max": 25,
+        "ratio": 1.32,
+        "pct_capped": 79.2,
+        "pct_retained": 18.6
+      },
+      "Cap 35": {
+        "train_total": 733,
+        "min": 19,
+        "median": 32.5,
+        "max": 35,
+        "ratio": 1.84,
+        "pct_capped": 41.7,
+        "pct_retained": 23.1
+      },
+      "Cap 50": {
+        "train_total": 866,
+        "min": 19,
+        "median": 32.5,
+        "max": 50,
+        "ratio": 2.63,
+        "pct_capped": 33.3,
+        "pct_retained": 27.3
+      },
+      "Cap 75": {
+        "train_total": 1039,
+        "min": 19,
+        "median": 32.5,
+        "max": 75,
+        "ratio": 3.95,
+        "pct_capped": 20.8,
+        "pct_retained": 32.8
+      },
+      "Cap 100": {
+        "train_total": 1142,
+        "min": 19,
+        "median": 32.5,
+        "max": 100,
+        "ratio": 5.26,
+        "pct_capped": 16.7,
+        "pct_retained": 36.0
+      },
+      "Uncapped": {
+        "train_total": 3170,
+        "min": 19,
+        "median": 32.5,
+        "max": 1769,
+        "ratio": 93.11,
+        "pct_capped": 0.0,
+        "pct_retained": 100.0
+      }
+    }
+  },
+  "26": {
+    "val_total": 727,
+    "test_total": 727,
+    "subset_acc": 0.6355,
+    "subset_macro_f1": 0.6234,
+    "caps": {
+      "Cap 25": {
+        "train_total": 640,
+        "min": 19,
+        "median": 25.0,
+        "max": 25,
+        "ratio": 1.32,
+        "pct_capped": 80.8,
+        "pct_retained": 18.8
+      },
+      "Cap 35": {
+        "train_total": 795,
+        "min": 19,
+        "median": 32.5,
+        "max": 35,
+        "ratio": 1.84,
+        "pct_capped": 42.3,
+        "pct_retained": 23.3
+      },
+      "Cap 50": {
+        "train_total": 943,
+        "min": 19,
+        "median": 32.5,
+        "max": 50,
+        "ratio": 2.63,
+        "pct_capped": 34.6,
+        "pct_retained": 27.7
+      },
+      "Cap 75": {
+        "train_total": 1141,
+        "min": 19,
+        "median": 32.5,
+        "max": 75,
+        "ratio": 3.95,
+        "pct_capped": 23.1,
+        "pct_retained": 33.5
+      },
+      "Cap 100": {
+        "train_total": 1269,
+        "min": 19,
+        "median": 32.5,
+        "max": 100,
+        "ratio": 5.26,
+        "pct_capped": 19.2,
+        "pct_retained": 37.2
+      },
+      "Uncapped": {
+        "train_total": 3410,
+        "min": 19,
+        "median": 32.5,
+        "max": 1769,
+        "ratio": 93.11,
+        "pct_capped": 0.0,
+        "pct_retained": 100.0
+      }
+    }
+  },
+  "28": {
+    "val_total": 733,
+    "test_total": 733,
+    "subset_acc": 0.6344,
+    "subset_macro_f1": 0.6066,
+    "caps": {
+      "Cap 25": {
+        "train_total": 669,
+        "min": 13,
+        "median": 25.0,
+        "max": 25,
+        "ratio": 1.92,
+        "pct_capped": 75.0,
+        "pct_retained": 19.5
+      },
+      "Cap 35": {
+        "train_total": 824,
+        "min": 13,
+        "median": 31.0,
+        "max": 35,
+        "ratio": 2.69,
+        "pct_capped": 39.3,
+        "pct_retained": 24.0
+      },
+      "Cap 50": {
+        "train_total": 972,
+        "min": 13,
+        "median": 31.0,
+        "max": 50,
+        "ratio": 3.85,
+        "pct_capped": 32.1,
+        "pct_retained": 28.3
+      },
+      "Cap 75": {
+        "train_total": 1170,
+        "min": 13,
+        "median": 31.0,
+        "max": 75,
+        "ratio": 5.77,
+        "pct_capped": 21.4,
+        "pct_retained": 34.0
+      },
+      "Cap 100": {
+        "train_total": 1298,
+        "min": 13,
+        "median": 31.0,
+        "max": 100,
+        "ratio": 7.69,
+        "pct_capped": 17.9,
+        "pct_retained": 37.7
+      },
+      "Uncapped": {
+        "train_total": 3439,
+        "min": 13,
+        "median": 31.0,
+        "max": 1769,
+        "ratio": 136.08,
+        "pct_capped": 0.0,
+        "pct_retained": 100.0
+      }
+    }
+  }
+}

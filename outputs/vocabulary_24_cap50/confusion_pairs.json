@@ -1,0 +1,382 @@
+{
+  "total_confusion_pairs": 50,
+  "top_confusion_pairs": [
+    {
+      "true_class": "SİZ",
+      "predicted_class": "BAKI",
+      "count": 10
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "SİZ",
+      "count": 9
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "İSTƏMƏK",
+      "count": 7
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "SƏN",
+      "count": 5
+    },
+    {
+      "true_class": "BU",
+      "predicted_class": "BURDA",
+      "count": 5
+    },
+    {
+      "true_class": "BİZ",
+      "predicted_class": "MƏN",
+      "count": 4
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "MƏN",
+      "count": 3
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "SABAH",
+      "count": 3
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "BİZ",
+      "count": 2
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "BAKI",
+      "count": 2
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "BURDA",
+      "count": 2
+    },
+    {
+      "true_class": "SƏN",
+      "predicted_class": "HARDA",
+      "count": 2
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "TELEFON",
+      "count": 2
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "BURDA",
+      "count": 2
+    },
+    {
+      "true_class": "İSTƏMƏK",
+      "predicted_class": "TELEFON",
+      "count": 2
+    },
+    {
+      "true_class": "EV",
+      "predicted_class": "NECƏ",
+      "count": 2
+    },
+    {
+      "true_class": "BAKI",
+      "predicted_class": "SİZ",
+      "count": 2
+    },
+    {
+      "true_class": "BURDA",
+      "predicted_class": "SƏN",
+      "count": 2
+    },
+    {
+      "true_class": "BURDA",
+      "predicted_class": "BU",
+      "count": 2
+    },
+    {
+      "true_class": "BU",
+      "predicted_class": "VAR",
+      "count": 2
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "SƏN",
+      "count": 1
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "YEMƏK",
+      "count": 1
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "TELEFON",
+      "count": 1
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "SABAH",
+      "count": 1
+    },
+    {
+      "true_class": "BİZ",
+      "predicted_class": "SAĞLAM",
+      "count": 1
+    }
+  ],
+  "all_confusion_pairs": [
+    {
+      "true_class": "SİZ",
+      "predicted_class": "BAKI",
+      "count": 10
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "SİZ",
+      "count": 9
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "İSTƏMƏK",
+      "count": 7
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "SƏN",
+      "count": 5
+    },
+    {
+      "true_class": "BU",
+      "predicted_class": "BURDA",
+      "count": 5
+    },
+    {
+      "true_class": "BİZ",
+      "predicted_class": "MƏN",
+      "count": 4
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "MƏN",
+      "count": 3
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "SABAH",
+      "count": 3
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "BİZ",
+      "count": 2
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "BAKI",
+      "count": 2
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "BURDA",
+      "count": 2
+    },
+    {
+      "true_class": "SƏN",
+      "predicted_class": "HARDA",
+      "count": 2
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "TELEFON",
+      "count": 2
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "BURDA",
+      "count": 2
+    },
+    {
+      "true_class": "İSTƏMƏK",
+      "predicted_class": "TELEFON",
+      "count": 2
+    },
+    {
+      "true_class": "EV",
+      "predicted_class": "NECƏ",
+      "count": 2
+    },
+    {
+      "true_class": "BAKI",
+      "predicted_class": "SİZ",
+      "count": 2
+    },
+    {
+      "true_class": "BURDA",
+      "predicted_class": "SƏN",
+      "count": 2
+    },
+    {
+      "true_class": "BURDA",
+      "predicted_class": "BU",
+      "count": 2
+    },
+    {
+      "true_class": "BU",
+      "predicted_class": "VAR",
+      "count": 2
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "SƏN",
+      "count": 1
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "YEMƏK",
+      "count": 1
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "TELEFON",
+      "count": 1
+    },
+    {
+      "true_class": "MƏN",
+      "predicted_class": "SABAH",
+      "count": 1
+    },
+    {
+      "true_class": "BİZ",
+      "predicted_class": "SAĞLAM",
+      "count": 1
+    },
+    {
+      "true_class": "BİZ",
+      "predicted_class": "BURDA",
+      "count": 1
+    },
+    {
+      "true_class": "BİZ",
+      "predicted_class": "BU",
+      "count": 1
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "İSTƏMƏK",
+      "count": 1
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "YEMƏK",
+      "count": 1
+    },
+    {
+      "true_class": "SİZ",
+      "predicted_class": "EV",
+      "count": 1
+    },
+    {
+      "true_class": "GETMƏK",
+      "predicted_class": "NECƏ",
+      "count": 1
+    },
+    {
+      "true_class": "GƏLMƏK",
+      "predicted_class": "SİZ",
+      "count": 1
+    },
+    {
+      "true_class": "YEMƏK",
+      "predicted_class": "SİZ",
+      "count": 1
+    },
+    {
+      "true_class": "YEMƏK",
+      "predicted_class": "BAKI",
+      "count": 1
+    },
+    {
+      "true_class": "ALMAQ",
+      "predicted_class": "NECƏ",
+      "count": 1
+    },
+    {
+      "true_class": "OLMAQ",
+      "predicted_class": "SALAM",
+      "count": 1
+    },
+    {
+      "true_class": "OLMAQ",
+      "predicted_class": "ALMAQ",
+      "count": 1
+    },
+    {
+      "true_class": "EV",
+      "predicted_class": "BU",
+      "count": 1
+    },
+    {
+      "true_class": "BAKI",
+      "predicted_class": "YEMƏK",
+      "count": 1
+    },
+    {
+      "true_class": "BAKI",
+      "predicted_class": "TELEFON",
+      "count": 1
+    },
+    {
+      "true_class": "AZƏRBAYCAN",
+      "predicted_class": "OLMAQ",
+      "count": 1
+    },
+    {
+      "true_class": "TELEFON",
+      "predicted_class": "GƏLMƏK",
+      "count": 1
+    },
+    {
+      "true_class": "HARDA",
+      "predicted_class": "ALMAQ",
+      "count": 1
+    },
+    {
+      "true_class": "HARDA",
+      "predicted_class": "BURDA",
+      "count": 1
+    },
+    {
+      "true_class": "BURDA",
+      "predicted_class": "ALMAQ",
+      "count": 1
+    },
+    {
+      "true_class": "VAR",
+      "predicted_class": "ALMAQ",
+      "count": 1
+    },
+    {
+      "true_class": "VAR",
+      "predicted_class": "SABAH",
+      "count": 1
+    },
+    {
+      "true_class": "YOX",
+      "predicted_class": "AZƏRBAYCAN",
+      "count": 1
+    },
+    {
+      "true_class": "YOX",
+      "predicted_class": "SABAH",
+      "count": 1
+    },
+    {
+      "true_class": "BU",
+      "predicted_class": "HARDA",
+      "count": 1
+    }
+  ]
+}

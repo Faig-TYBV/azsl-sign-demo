@@ -1,0 +1,9 @@
+{
+  "best_epoch": 29,
+  "best_val_macro_f1": 0.731151,
+  "best_val_accuracy": 0.846154,
+  "total_epochs": 30,
+  "total_training_time_sec": 36.4,
+  "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "checkpoint": "outputs\\vocabulary_24_cap50\\checkpoints\\gru_24_cap50_best.pt"
+}

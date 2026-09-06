@@ -7,6 +7,7 @@ import asyncio
 import json
 import base64
 import sys
+import time
 from collections import deque
 from pathlib import Path
 from typing import Deque, Dict
@@ -35,31 +36,68 @@ from src.features.preprocess_sequence import (
 )
 from src.models.gru_classifier import GRUClassifier
 from src.inference.ambiguity_gate import is_ambiguous_prediction
-from src.inference.predict import (
-    get_device,
-    load_model,
-    EXPECTED_CONFIG,
-    CheckpointVerificationError,
-)
+from src.inference.alphabet_classifier import AlphabetClassifier, AlphabetStabilizer
+from src.data.normalization import FeatureNormalizer
+from src.inference.predict import get_device
 
 app = FastAPI(title="AzSLD Web Demo Backend")
 
-# Load the model once at startup
-print("Loading model...", flush=True)
+# Load the Experiment 8 (24-class Cap-50) word model and normalizer at startup
+print("Loading Experiment 8 word model and normalizer...", flush=True)
 device = get_device()
-checkpoint_path = PROJECT_ROOT / "outputs/checkpoints/gru_demo_25_balanced_best.pt"
+checkpoint_path = (
+    PROJECT_ROOT
+    / "outputs/vocabulary_24_cap50/checkpoints/gru_24_cap50_best.pt"
+)
+normalizer_path = (
+    PROJECT_ROOT
+    / "outputs/vocabulary_24_cap50/metadata/feature_normalization_stats_24.json"
+)
+
 try:
-    model, class_to_idx, idx_to_class, _ = load_model(checkpoint_path)
+    if not checkpoint_path.is_file():
+        raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+    if not normalizer_path.is_file():
+        raise FileNotFoundError(f"Normalizer stats not found: {normalizer_path}")
+
+    normalizer = FeatureNormalizer.load(normalizer_path)
+    if normalizer.mean.shape != (126,) or normalizer.std.shape != (126,):
+        raise ValueError(
+            f"Normalizer shape mismatch: mean={normalizer.mean.shape}, std={normalizer.std.shape} (expected 126)"
+        )
+
+    ckpt = torch.load(checkpoint_path, map_location=device, weights_only=False)
+    if "model_state_dict" not in ckpt or "model_config" not in ckpt:
+        raise KeyError("Checkpoint missing 'model_state_dict' or 'model_config'.")
+
+    cfg = ckpt["model_config"]
+    class_to_idx = ckpt["class_to_idx"]
+    idx_to_class = ckpt["idx_to_class"]
+
+    if len(class_to_idx) != 24 or len(idx_to_class) != 24:
+        raise ValueError(
+            f"Expected 24 classes, got {len(class_to_idx)} in class_to_idx and {len(idx_to_class)} in idx_to_class"
+        )
+
+    model = GRUClassifier(**cfg)
+    model.load_state_dict(ckpt["model_state_dict"])
     model.to(device)
     model.eval()
-    print(f"Model loaded successfully on {device}", flush=True)
+    print(
+        f"Experiment 8 model (24 classes) and normalizer loaded successfully on {device}",
+        flush=True,
+    )
 except Exception as e:
-    print(f"Failed to load model: {e}", flush=True)
+    print(f"Failed to load model or normalizer: {e}", flush=True)
     raise
+
+print("Loading alphabet classifier...", flush=True)
+alphabet_classifier = AlphabetClassifier()
+print("Alphabet classifier loaded successfully.", flush=True)
 
 # Constants for prediction smoothing
 WINDOW_SIZE = 5
-CONFIDENCE_THRESHOLD = 0.50
+CONFIDENCE_THRESHOLD = 0.35
 
 # Server-side logging verbosity.
 #   False (default): only operational / error / hand-presence events print
@@ -78,15 +116,15 @@ def _dbg(msg: str) -> None:
         print(msg, flush=True)
 
 # Temporal segmentation thresholds (additive layer; does not change inference).
-PRESENCE_ON_FRAMES = 3      # consecutive hand-present frames to enter SIGNING
-PRESENCE_OFF_FRAMES = 10    # consecutive end-condition frames to exit SIGNING
+PRESENCE_ON_FRAMES = 2      # consecutive hand-present frames to enter SIGNING
+PRESENCE_OFF_FRAMES = 6     # consecutive end-condition frames to exit SIGNING
 MOTION_DELTA_MIN = 0.02     # mean L2 feature delta required to start signing
 MOTION_WINDOW = 5           # number of frames to average the motion delta over
 MOTION_DELTA_FLOOR = 0.001  # below this motion we treat the hand as still
 IDLE_CONFIDENCE_MAX = 0.10  # minimum smoothed confidence to consider a segment valid
-STABLE_PRED_FRAMES = 3      # consecutive agreeing smoothed predictions required
-MIN_SEGMENT_FRAMES = 26     # minimum frames between consecutive emits
-COOLDOWN_FRAMES = 13        # minimum cooldown frames after an emit
+STABLE_PRED_FRAMES = 2      # consecutive agreeing smoothed predictions required
+MIN_SEGMENT_FRAMES = 15     # minimum frames between consecutive emits
+COOLDOWN_FRAMES = 8         # minimum cooldown frames after an emit
 
 # === Hand-presence gate (post-prediction, no retraining required) ============
 # The GRU was trained without an explicit "idle/background" class, so softmax
@@ -94,8 +132,8 @@ COOLDOWN_FRAMES = 13        # minimum cooldown frames after an emit
 # We compensate by NOT running inference when the buffer has no valid frames,
 # and by clamping the displayed fields when the most recent frame is not a
 # real hand detection. These thresholds are tuning knobs, not architecture.
-SEGMENT_CONFIDENCE_FLOOR = 0.70   # strict: smoothed conf must be >= this to emit
-DISPLAY_CONFIDENCE_FLOOR = 0.70   # below this we display "-" instead of the label
+SEGMENT_CONFIDENCE_FLOOR = 0.35   # smoothed conf must be >= this to emit
+DISPLAY_CONFIDENCE_FLOOR = 0.35   # below this we display "-" instead of the label
 MIN_VALID_FRAMES_IN_BUFFER = 1    # skip inference if buffer has 0 valid frames
 
 # Serve the frontend as static files
@@ -107,23 +145,41 @@ class ConnectionState:
     """State per WebSocket connection."""
 
     def __init__(self):
+        self.active_mode = "word"
+
+        # --- Word Mode Trial State Machine ---
+        self.word_state = "READY"  # "READY" | "COUNTDOWN" | "RECORDING" | "RESULT"
+        self.countdown_task = None
+        self.countdown_val = None
+        self.countdown_text = ""
+        self.countdown_title = ""
+        self.trial_seq = 0
+        self.recorded_features = []
+        self.recorded_validity = []
+        self.last_word_result = None
+
+        # --- Alphabet Mode Stabilization Engine ---
+        self.stabilizer = AlphabetStabilizer(min_confidence=0.55, stability_frames=3)
+
+        self.landmarker = None
+        self.last_timestamp_ms = 0
+        self.frame_count = 0
+
+        # Legacy buffers for compatibility
         self.feature_buffer = deque(maxlen=TARGET_SEQ_LEN)
         self.validity_buffer = deque(maxlen=TARGET_SEQ_LEN)
         self.pred_history = deque(maxlen=WINDOW_SIZE)
         self.smoothed_prediction = None
         self.smoothed_confidence = 0.0
-        self.landmarker = None
-        self.last_timestamp_ms = 0
-        self.frame_count = 0
 
-        # ---- Temporal segmentation state (additive) ----
-        self.seg_state = "IDLE"            # "IDLE" | "SIGNING"
-        self.presence_on_count = 0         # consecutive frames with a hand
-        self.presence_off_count = 0        # consecutive frames without a hand
+        # Temporal segmentation
+        self.seg_state = "IDLE"
+        self.presence_on_count = 0
+        self.presence_off_count = 0
         self.motion_window = deque(maxlen=MOTION_WINDOW)
-        self.last_segment_label = None     # last label we emitted as a segment
+        self.last_segment_label = None
         self.frames_since_last_emit = 10**9
-        self.stable_pred_count = 0         # consecutive windows agreeing on smoothed_prediction
+        self.stable_pred_count = 0
         self.prev_smoothed_prediction = None
         self.last_is_ambiguous = False
 
@@ -136,7 +192,10 @@ async def startup_event():
 @app.get("/")
 async def root():
     index_path = FRONTEND_DIR / "index.html"
-    return HTMLResponse(content=index_path.read_text(encoding="utf-8"))
+    return HTMLResponse(
+        content=index_path.read_text(encoding="utf-8"),
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+    )
 
 
 @app.websocket("/ws")
@@ -154,6 +213,139 @@ async def websocket_endpoint(websocket: WebSocket):
     state = ConnectionState()
     state.landmarker = landmarker
 
+    await websocket.send_text(json.dumps({
+        "status": "READY",
+        "word_state": "READY",
+        "mode": state.active_mode,
+        "frame_index": 0,
+        "total_frames": TARGET_SEQ_LEN,
+        "valid_frames": 0,
+        "buffer_progress": f"0/{TARGET_SEQ_LEN}",
+        "prediction": "-",
+        "confidence": 0.0,
+        "message": "Connected. Ready to start trial."
+    }))
+
+    async def run_countdown(this_seq: int):
+        try:
+            state.word_state = "COUNTDOWN"
+            state.last_word_result = None
+            state.recorded_features = []
+            state.recorded_validity = []
+            state.countdown_title = "HAZIRLAŞIN..."
+            state.countdown_text = "3"
+            state.countdown_val = 3
+            print(f"[WORD TRIAL {this_seq}] 3.0s countdown started: HAZIRLAŞIN... (3)", flush=True)
+            await websocket.send_text(json.dumps({
+                "mode": "word",
+                "word_state": "COUNTDOWN",
+                "countdown_title": "HAZIRLAŞIN...",
+                "countdown_text": "3",
+                "countdown_val": 3,
+                "frame_index": 0,
+                "total_frames": TARGET_SEQ_LEN,
+                "valid_frames": 0,
+                "buffer_progress": f"0/{TARGET_SEQ_LEN}",
+                "buffer_full": False,
+                "hand_present": False,
+                "prediction": "-",
+                "confidence": 0.0,
+                "raw_prediction": "-",
+                "raw_confidence": 0.0,
+                "smoothed_prediction": "-",
+                "smoothed_confidence": 0.0,
+            }))
+
+            await asyncio.sleep(1.0)
+            if state.trial_seq != this_seq or state.active_mode != "word":
+                return
+
+            print(f"[WORD TRIAL {this_seq}] 2.0s remaining: (2)", flush=True)
+            state.countdown_text = "2"
+            state.countdown_val = 2
+            await websocket.send_text(json.dumps({
+                "mode": "word",
+                "word_state": "COUNTDOWN",
+                "countdown_title": "HAZIRLAŞIN...",
+                "countdown_text": "2",
+                "countdown_val": 2,
+                "frame_index": 0,
+                "total_frames": TARGET_SEQ_LEN,
+                "valid_frames": 0,
+                "buffer_progress": f"0/{TARGET_SEQ_LEN}",
+                "buffer_full": False,
+                "hand_present": False,
+                "prediction": "-",
+                "confidence": 0.0,
+                "raw_prediction": "-",
+                "raw_confidence": 0.0,
+                "smoothed_prediction": "-",
+                "smoothed_confidence": 0.0,
+            }))
+
+            await asyncio.sleep(1.0)
+            if state.trial_seq != this_seq or state.active_mode != "word":
+                return
+
+            print(f"[WORD TRIAL {this_seq}] 1.0s remaining: (1)", flush=True)
+            state.countdown_text = "1"
+            state.countdown_val = 1
+            await websocket.send_text(json.dumps({
+                "mode": "word",
+                "word_state": "COUNTDOWN",
+                "countdown_title": "HAZIRLAŞIN...",
+                "countdown_text": "1",
+                "countdown_val": 1,
+                "frame_index": 0,
+                "total_frames": TARGET_SEQ_LEN,
+                "valid_frames": 0,
+                "buffer_progress": f"0/{TARGET_SEQ_LEN}",
+                "buffer_full": False,
+                "hand_present": False,
+                "prediction": "-",
+                "confidence": 0.0,
+                "raw_prediction": "-",
+                "raw_confidence": 0.0,
+                "smoothed_prediction": "-",
+                "smoothed_confidence": 0.0,
+            }))
+
+            await asyncio.sleep(1.0)
+            if state.trial_seq != this_seq or state.active_mode != "word":
+                return
+
+            # Countdown complete -> begin recording 26 frames
+            state.recorded_features = []
+            state.recorded_validity = []
+            state.countdown_title = "BAŞLA!"
+            state.countdown_text = "BAŞLA!"
+            state.countdown_val = 0
+            state.word_state = "RECORDING"
+            print(f"[WORD TRIAL {this_seq}] BAŞLA! Recording started (0/26 frames)", flush=True)
+            await websocket.send_text(json.dumps({
+                "mode": "word",
+                "word_state": "RECORDING",
+                "countdown_title": "BAŞLA!",
+                "countdown_text": "BAŞLA!",
+                "countdown_val": 0,
+                "frame_index": 0,
+                "total_frames": TARGET_SEQ_LEN,
+                "valid_frames": 0,
+                "buffer_progress": f"0/{TARGET_SEQ_LEN}",
+                "buffer_full": False,
+                "hand_present": False,
+                "prediction": "-",
+                "confidence": 0.0,
+                "raw_prediction": "-",
+                "raw_confidence": 0.0,
+                "smoothed_prediction": "-",
+                "smoothed_confidence": 0.0,
+            }))
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            print(f"[WORD TRIAL COUNTDOWN ERROR] {e}", flush=True)
+
     try:
         while True:
             data = await websocket.receive_text()
@@ -165,7 +357,209 @@ async def websocket_endpoint(websocket: WebSocket):
 
             msg_type = message.get("type")
 
-            if msg_type == "frame":
+            # Mode switch and state isolation
+            mode = message.get("mode", state.active_mode)
+            if mode != state.active_mode:
+                state.active_mode = mode
+                if state.countdown_task is not None and not state.countdown_task.done():
+                    state.countdown_task.cancel()
+                state.trial_seq += 1
+                state.word_state = "READY"
+                state.recorded_features = []
+                state.recorded_validity = []
+                state.last_word_result = None
+                state.countdown_val = None
+                state.countdown_text = ""
+                state.countdown_title = ""
+                state.stabilizer.reset()
+                _dbg(f"Mode switched to: {mode} (all states reset)")
+
+            # Control commands
+            if msg_type in ("start", "start_trial"):
+                if state.active_mode == "word":
+                    if state.word_state in ("COUNTDOWN", "RECORDING"):
+                        _dbg(f"Ignored start command while in {state.word_state}")
+                        continue
+                    if state.countdown_task is not None and not state.countdown_task.done():
+                        state.countdown_task.cancel()
+                    state.trial_seq += 1
+                    state.word_state = "COUNTDOWN"
+                    state.last_word_result = None
+                    state.recorded_features = []
+                    state.recorded_validity = []
+                    state.countdown_task = asyncio.create_task(run_countdown(state.trial_seq))
+                    continue
+
+            elif msg_type in ("skip", "reset"):
+                if state.active_mode == "word":
+                    if state.countdown_task is not None and not state.countdown_task.done():
+                        state.countdown_task.cancel()
+                    state.trial_seq += 1
+                    state.word_state = "READY"
+                    state.recorded_features = []
+                    state.recorded_validity = []
+                    state.last_word_result = None
+                    state.countdown_val = None
+                    state.countdown_text = ""
+                    state.countdown_title = ""
+                    await websocket.send_text(json.dumps({
+                        "mode": "word",
+                        "word_state": "READY",
+                        "status": "reset",
+                        "frame_index": 0,
+                        "total_frames": TARGET_SEQ_LEN,
+                        "valid_frames": 0,
+                        "buffer_progress": f"0/{TARGET_SEQ_LEN}",
+                        "buffer_full": False,
+                        "hand_present": False,
+                        "prediction": "-",
+                        "confidence": 0.0,
+                        "raw_prediction": "-",
+                        "raw_confidence": 0.0,
+                        "smoothed_prediction": "-",
+                        "smoothed_confidence": 0.0,
+                    }))
+                    continue
+                else:
+                    state.stabilizer.reset()
+                    await websocket.send_text(json.dumps({
+                        "mode": "alphabet",
+                        "status": "reset",
+                        "spelled_word": "",
+                        "accepted_letter": "-",
+                    }))
+                    continue
+
+            elif msg_type == "alphabet_action":
+                action = message.get("action")
+                if action == "clear":
+                    state.stabilizer.clear_word()
+                elif action == "backspace":
+                    state.stabilizer.backspace()
+                await websocket.send_text(json.dumps({
+                    "mode": "alphabet",
+                    "spelled_word": state.stabilizer.spelled_word,
+                    "accepted_letter": state.stabilizer.accepted_letter or "-",
+                }))
+                continue
+
+            elif msg_type == "get_state":
+                if state.active_mode == "word":
+                    res = state.last_word_result or {}
+                    pred = res.get("prediction", "-")
+                    conf = res.get("confidence", 0.0)
+                    vf = res.get("valid_frames", 0)
+                    cur_frames = len(state.recorded_features)
+                    await websocket.send_text(json.dumps({
+                        "mode": "word",
+                        "word_state": state.word_state,
+                        "frame_index": cur_frames,
+                        "total_frames": TARGET_SEQ_LEN,
+                        "valid_frames": vf,
+                        "buffer_progress": f"{cur_frames}/{TARGET_SEQ_LEN}",
+                        "prediction": pred,
+                        "confidence": conf,
+                        "raw_prediction": pred,
+                        "raw_confidence": conf,
+                    }))
+                else:
+                    await websocket.send_text(json.dumps({
+                        "mode": "alphabet",
+                        "spelled_word": state.stabilizer.spelled_word,
+                        "accepted_letter": state.stabilizer.accepted_letter or "-",
+                    }))
+                continue
+
+            elif msg_type == "frame":
+                # Check Word Mode states
+                if state.active_mode == "word":
+                    if state.word_state == "READY":
+                        await websocket.send_text(json.dumps({
+                            "mode": "word",
+                            "word_state": "READY",
+                            "status_text": "START TRIAL gözlənilir",
+                            "frame_index": 0,
+                            "total_frames": TARGET_SEQ_LEN,
+                            "valid_frames": 0,
+                            "buffer_progress": f"0/{TARGET_SEQ_LEN}",
+                            "buffer_full": False,
+                            "hand_present": False,
+                            "prediction": "-",
+                            "confidence": 0.0,
+                            "raw_prediction": "-",
+                            "raw_confidence": 0.0,
+                            "smoothed_prediction": "-",
+                            "smoothed_confidence": 0.0,
+                        }))
+                        continue
+
+                    elif state.word_state == "COUNTDOWN":
+                        await websocket.send_text(json.dumps({
+                            "mode": "word",
+                            "word_state": "COUNTDOWN",
+                            "countdown_title": state.countdown_title,
+                            "countdown_text": state.countdown_text,
+                            "countdown_val": state.countdown_val,
+                            "frame_index": 0,
+                            "total_frames": TARGET_SEQ_LEN,
+                            "valid_frames": 0,
+                            "buffer_progress": f"0/{TARGET_SEQ_LEN}",
+                            "buffer_full": False,
+                            "hand_present": False,
+                            "prediction": "-",
+                            "confidence": 0.0,
+                            "raw_prediction": "-",
+                            "raw_confidence": 0.0,
+                            "smoothed_prediction": "-",
+                            "smoothed_confidence": 0.0,
+                        }))
+                        continue
+
+                    elif state.word_state == "ANALYZING":
+                        await websocket.send_text(json.dumps({
+                            "mode": "word",
+                            "word_state": "ANALYZING",
+                            "frame_index": TARGET_SEQ_LEN,
+                            "total_frames": TARGET_SEQ_LEN,
+                            "valid_frames": int(sum(state.recorded_validity)) if state.recorded_validity else 0,
+                            "buffer_progress": f"{TARGET_SEQ_LEN}/{TARGET_SEQ_LEN}",
+                            "buffer_full": True,
+                            "hand_present": True,
+                            "prediction": "-",
+                            "confidence": 0.0,
+                            "raw_prediction": "-",
+                            "raw_confidence": 0.0,
+                            "smoothed_prediction": "-",
+                            "smoothed_confidence": 0.0,
+                        }))
+                        continue
+
+                    elif state.word_state == "RESULT":
+                        # In RESULT state, one inference has already completed.
+                        # Do NOT run new inference; return stable result.
+                        res = state.last_word_result or {}
+                        pred = res.get("prediction", "-")
+                        conf = res.get("confidence", 0.0)
+                        vf = res.get("valid_frames", 0)
+                        await websocket.send_text(json.dumps({
+                            "mode": "word",
+                            "word_state": "RESULT",
+                            "frame_index": TARGET_SEQ_LEN,
+                            "total_frames": TARGET_SEQ_LEN,
+                            "valid_frames": vf,
+                            "buffer_progress": f"{TARGET_SEQ_LEN}/{TARGET_SEQ_LEN}",
+                            "buffer_full": True,
+                            "hand_present": pred != "ƏL AŞKARLANMADI",
+                            "prediction": pred,
+                            "confidence": conf,
+                            "raw_prediction": pred,
+                            "raw_confidence": conf,
+                            "smoothed_prediction": pred,
+                            "smoothed_confidence": conf,
+                        }))
+                        continue
+
+                # Frame decoding for RECORDING (Word) or ALPHABET mode
                 base64_data = message.get("data", "")
                 if "," in base64_data:
                     base64_data = base64_data.split(",", 1)[1]
@@ -177,15 +571,11 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 nparr = np.frombuffer(image_bytes, np.uint8)
                 frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                _dbg("JPEG decoded")
-
                 if frame is None:
                     await websocket.send_text(json.dumps({"error": "Failed to decode image"}))
                     continue
 
                 state.frame_count += 1
-                _dbg(f"FRAME RECEIVED: {state.frame_count}")
-
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
 
@@ -194,244 +584,147 @@ async def websocket_endpoint(websocket: WebSocket):
                 state.last_timestamp_ms = timestamp_ms
 
                 result = state.landmarker.detect_for_video(mp_image, timestamp_ms)
-                _dbg("MediaPipe processed")
-
                 frame_result = _mp_result_to_frame_result(result)
-                if frame_result.num_hands > 0:
-                    features = normalize_frame(frame_result)
-                    valid = True
-                else:
-                    features = np.zeros(126, dtype=np.float32)
-                    valid = False
 
-                state.feature_buffer.append(features)
-                state.validity_buffer.append(valid)
+                # ALPHABET MODE: single-frame inference with temporal stabilization
+                if state.active_mode == "alphabet":
+                    t0 = time.perf_counter()
+                    has_hand = frame_result.num_hands > 0
+                    raw_letter = None
+                    raw_conf = 0.0
 
-                buffer_len = len(state.feature_buffer)
-                buffer_full = buffer_len >= TARGET_SEQ_LEN
-
-                # Hand-presence gate (latest frame).
-                # If MediaPipe did NOT detect a hand in this frame, do not let
-                # the model be the source of truth for the UI — clamp the
-                # displayed fields to "-" so the user sees idle state, not a
-                # bogus softmax argmax over a zero feature vector.
-                current_frame_valid = bool(state.validity_buffer[-1]) if state.validity_buffer else False
-
-                response = {
-                    "buffer_progress": f"{buffer_len}/{TARGET_SEQ_LEN}",
-                    "buffer_full": buffer_full,
-                    "hand_present": current_frame_valid,
-                    "raw_prediction": "-",
-                    "raw_confidence": 0.0,
-                    "smoothed_prediction": state.smoothed_prediction or "-",
-                    "smoothed_confidence": float(state.smoothed_confidence),
-                }
-
-                if buffer_full:
-                    # Skip inference entirely if the buffer has zero valid
-                    # hand frames (e.g. user just opened the page, no hand
-                    # shown yet, or background-only). Without this gate,
-                    # softmax over an all-zero 126-dim buffer would still
-                    # pick a top-1 class and the frontend would display a
-                    # false-positive prediction.
-                    n_valid_in_buffer = int(sum(state.validity_buffer))
-                    if n_valid_in_buffer < MIN_VALID_FRAMES_IN_BUFFER:
-                        print(f"INFERENCE SKIPPED: zero valid frames in buffer (valid={n_valid_in_buffer}/{buffer_len})", flush=True)
-                        # Keep state.smoothed_prediction / smoothed_confidence
-                        # as they were (do NOT reset — the user may still want
-                        # to see the last word they signed before backing off).
-                    else:
-                        _dbg("INFERENCE")
-                        frame_features = np.stack(list(state.feature_buffer), axis=0)
-                        frame_valid = np.array(list(state.validity_buffer), dtype=bool)
-                        seq_features, mask = preprocess_sequence(frame_features, frame_valid)
-
-                        input_tensor = torch.from_numpy(seq_features).unsqueeze(0).to(device)
-                        mask_tensor = torch.from_numpy(mask).unsqueeze(0).to(device)
-
-                        with torch.no_grad():
-                            logits = model(input_tensor)
-                            probs = torch.softmax(logits, dim=1)[0]
-
-                        top2_probs, top2_indices = torch.topk(probs, k=2)
-                        top1_prob = float(top2_probs[0].item())
-                        top2_prob = float(top2_probs[1].item())
-                        top1_class = idx_to_class[int(top2_indices[0].item())]
-                        top2_class = idx_to_class[int(top2_indices[1].item())]
-
-                        confidence = top1_prob
-                        predicted_idx = int(top2_indices[0].item())
-                        pred_class = top1_class
-
-                        is_ambiguous = is_ambiguous_prediction(
-                            top1_class, top2_class, top1_prob, top2_prob, margin_threshold=0.15
+                    if has_hand:
+                        hand_lm = frame_result.landmarks[0]
+                        hand_label = frame_result.handedness[0] if frame_result.handedness else "Right"
+                        raw_letter, raw_conf = alphabet_classifier.predict_frame(
+                            hand_lm, handedness=hand_label, min_confidence=0.55
                         )
-                        state.last_is_ambiguous = is_ambiguous
 
-                        _dbg(f"Prediction: {pred_class} Confidence: {confidence:.2f} (ambiguous={is_ambiguous})")
-
-                        if confidence >= CONFIDENCE_THRESHOLD and not is_ambiguous:
-                            state.pred_history.append((predicted_idx, confidence))
-
-                        if state.pred_history:
-                            votes = {}
-                            for idx, conf in state.pred_history:
-                                votes[idx] = votes.get(idx, 0.0) + conf
-                            smoothed_idx = max(votes, key=votes.get)
-                            smoothed_confidence = votes[smoothed_idx] / len(state.pred_history)
-                            state.smoothed_prediction = idx_to_class[smoothed_idx]
-                            state.smoothed_confidence = smoothed_confidence
-                        else:
-                            state.smoothed_prediction = None
-                            state.smoothed_confidence = 0.0
-
-                        response.update({
-                            "raw_prediction": pred_class,
-                            "raw_confidence": float(confidence),
-                            "smoothed_prediction": state.smoothed_prediction or "-",
-                            "smoothed_confidence": float(state.smoothed_confidence),
-                        })
-
-                    # Confidence-floor clamp: if the *displayed* smoothed
-                    # confidence is below the floor, show "-" instead. This
-                    # prevents low-confidence noise from rendering as a real
-                    # prediction in the UI even when the segmenter already
-                    # decided not to emit (the segmenter uses a stricter
-                    # SEGMENT_CONFIDENCE_FLOOR).
-                    if float(response["smoothed_confidence"]) < DISPLAY_CONFIDENCE_FLOOR:
-                        response["smoothed_prediction"] = "-"
-                        response["smoothed_confidence"] = 0.0
-
-                # If the latest frame had no hand, ALWAYS force idle display,
-                # regardless of what the buffer-based inference above said.
-                # (Inference is skipped when valid_count==0, but even a few
-                # valid frames in the past do not justify showing a label
-                # when the *current* moment is "no hand".)
-                if not current_frame_valid:
-                    response["raw_prediction"] = "-"
-                    response["raw_confidence"] = 0.0
-                    response["smoothed_prediction"] = "-"
-                    response["smoothed_confidence"] = 0.0
-
-                # --- Temporal segmentation (additive layer) -----------------
-                # 1) Hand-presence counters
-                if state.validity_buffer[-1]:
-                    state.presence_on_count += 1
-                    state.presence_off_count = 0
-                else:
-                    state.presence_off_count += 1
-                    state.presence_on_count = 0
-
-                # 2) Frame-to-frame L2 motion, maintained in a rolling window
-                if len(state.feature_buffer) >= 2:
-                    motion_delta = float(np.linalg.norm(
-                        state.feature_buffer[-1] - state.feature_buffer[-2]
-                    ))
-                else:
-                    motion_delta = 0.0
-                state.motion_window.append(motion_delta)
-                motion_mean = float(np.mean(state.motion_window)) if state.motion_window else 0.0
-
-                # 3) IDLE -> SIGNING (only after debounced presence + motion)
-                if (
-                    state.seg_state == "IDLE"
-                    and state.presence_on_count >= PRESENCE_ON_FRAMES
-                    and motion_mean >= MOTION_DELTA_MIN
-                ):
-                    state.seg_state = "SIGNING"
-                    state.stable_pred_count = 0
-                    state.prev_smoothed_prediction = None
-                    print(
-                        f"SEGMENT STATE: IDLE -> SIGNING  (presence={state.presence_on_count}, motion={motion_mean:.4f})",
-                        flush=True,
+                    stab_result = state.stabilizer.update(
+                        raw_letter=raw_letter,
+                        raw_confidence=raw_conf,
+                        hand_present=has_hand,
                     )
+                    total_ms = (time.perf_counter() - t0) * 1000.0
 
-                # 4) SIGNING -> IDLE (debounced end condition)
-                if (
-                    state.seg_state == "SIGNING"
-                    and (
-                        state.presence_off_count >= PRESENCE_OFF_FRAMES
-                        or motion_mean < MOTION_DELTA_FLOOR
-                    )
-                ):
-                    state.seg_state = "IDLE"
-                    state.stable_pred_count = 0
-                    state.prev_smoothed_prediction = None
-                    print(
-                        f"SEGMENT STATE: SIGNING -> IDLE  (presence_off={state.presence_off_count}, motion={motion_mean:.4f})",
-                        flush=True,
-                    )
-
-                # 5) Track consecutive identical smoothed predictions (only while buffer full)
-                if buffer_full and state.smoothed_prediction not in (None, "-"):
-                    if state.smoothed_prediction == state.prev_smoothed_prediction:
-                        state.stable_pred_count += 1
-                    else:
-                        state.stable_pred_count = 1
-                        state.prev_smoothed_prediction = state.smoothed_prediction
-                else:
-                    # Without a valid smoothed prediction we don't increment stability.
-                    state.prev_smoothed_prediction = state.smoothed_prediction
-
-                # 6) Emit decision
-                state.frames_since_last_emit += 1
-                segment_event = None
-                if (
-                    state.seg_state == "IDLE"
-                    and state.smoothed_prediction not in (None, "-")
-                    and float(state.smoothed_confidence) >= SEGMENT_CONFIDENCE_FLOOR
-                    and state.stable_pred_count >= STABLE_PRED_FRAMES
-                    and state.frames_since_last_emit >= MIN_SEGMENT_FRAMES
-                    and state.frames_since_last_emit >= COOLDOWN_FRAMES
-                    and state.smoothed_prediction != state.last_segment_label
-                    and current_frame_valid   # do NOT emit on a hand-absent frame
-                    and not state.last_is_ambiguous   # suppress emission if prediction is ambiguous
-                ):
-                    state.last_segment_label = state.smoothed_prediction
-                    state.frames_since_last_emit = 0
-                    segment_event = {
-                        "label": state.smoothed_prediction,
-                        "confidence": float(state.smoothed_confidence),
+                    response = {
+                        "mode": "alphabet",
+                        "hand_present": has_hand,
+                        "raw_prediction": stab_result["raw_letter"],
+                        "raw_confidence": round(stab_result["raw_confidence"], 2),
+                        "stable_candidate": stab_result["stable_candidate"],
+                        "candidate_progress": stab_result["candidate_progress"],
+                        "accepted_letter": stab_result["accepted_letter"],
+                        "just_accepted": stab_result["just_accepted"],
+                        "spelled_word": stab_result["spelled_word"],
+                        "alphabet_prediction": stab_result["accepted_letter"],
+                        "alphabet_confidence": round(stab_result["raw_confidence"], 2),
+                        "smoothed_prediction": stab_result["accepted_letter"],
+                        "smoothed_confidence": round(stab_result["raw_confidence"], 2),
+                        "latency_ms": round(total_ms, 2),
                     }
-                    print(
-                        f"SEGMENT EMIT: {segment_event['label']} conf={segment_event['confidence']:.2f}",
-                        flush=True,
-                    )
+                    await websocket.send_text(json.dumps(response))
+                    continue
 
-                # 7) Additive response fields (existing six fields unchanged)
-                response["segmentation"] = {
-                    "state": state.seg_state,
-                    "hand_present": bool(state.validity_buffer[-1]),
-                    "motion_mean": motion_mean,
-                    "frames_since_last_emit": int(state.frames_since_last_emit),
-                    "stable_count": int(state.stable_pred_count),
-                    "last_emitted_label": state.last_segment_label,
-                }
-                if segment_event is not None:
-                    response["segment_event"] = segment_event
-                # --- end temporal segmentation ------------------------------
+                # WORD MODE: RECORDING STATE (collecting exactly 26 frames)
+                if frame_result.num_hands > 0:
+                    feat_126 = normalize_frame(frame_result)
+                    valid = 1.0
+                else:
+                    feat_126 = np.zeros(126, dtype=np.float32)
+                    valid = 0.0
 
-                await websocket.send_text(json.dumps(response))
-                _dbg("Response sent")
+                state.recorded_features.append(feat_126)
+                state.recorded_validity.append(valid)
+                rec_len = len(state.recorded_features)
 
-            elif msg_type == "reset":
-                state.feature_buffer.clear()
-                state.validity_buffer.clear()
-                state.pred_history.clear()
-                state.smoothed_prediction = None
-                state.smoothed_confidence = 0.0
-                # Segmentation state reset (additive)
-                state.seg_state = "IDLE"
-                state.presence_on_count = 0
-                state.presence_off_count = 0
-                state.motion_window.clear()
-                state.stable_pred_count = 0
-                state.prev_smoothed_prediction = None
-                state.last_is_ambiguous = False
-                state.frames_since_last_emit = 10**9
-                # last_segment_label is intentionally preserved so the user
-                # can still see the most recent emitted word.
-                await websocket.send_text(json.dumps({"status": "reset"}))
+                if rec_len < TARGET_SEQ_LEN:
+                    vf_so_far = int(sum(state.recorded_validity))
+                    response = {
+                        "mode": "word",
+                        "word_state": "RECORDING",
+                        "frame_index": rec_len,
+                        "total_frames": TARGET_SEQ_LEN,
+                        "valid_frames": vf_so_far,
+                        "buffer_progress": f"{rec_len}/{TARGET_SEQ_LEN}",
+                        "buffer_full": False,
+                        "hand_present": bool(valid),
+                        "prediction": "-",
+                        "confidence": 0.0,
+                        "raw_prediction": "-",
+                        "raw_confidence": 0.0,
+                        "smoothed_prediction": "-",
+                        "smoothed_confidence": 0.0,
+                    }
+                    await websocket.send_text(json.dumps(response))
+                    continue
+                else:
+                    # Exactly 26 frames collected! Send ANALYZING first, then run ONE inference
+                    trial_feats = np.array(state.recorded_features, dtype=np.float32)
+                    trial_val = np.array(state.recorded_validity, dtype=np.float32)
+                    vf_count = int(trial_val.sum())
+
+                    state.word_state = "ANALYZING"
+                    await websocket.send_text(json.dumps({
+                        "mode": "word",
+                        "word_state": "ANALYZING",
+                        "frame_index": TARGET_SEQ_LEN,
+                        "total_frames": TARGET_SEQ_LEN,
+                        "valid_frames": vf_count,
+                        "buffer_progress": f"{TARGET_SEQ_LEN}/{TARGET_SEQ_LEN}",
+                        "buffer_full": True,
+                        "hand_present": vf_count >= 5,
+                        "prediction": "-",
+                        "confidence": 0.0,
+                        "raw_prediction": "-",
+                        "raw_confidence": 0.0,
+                        "smoothed_prediction": "-",
+                        "smoothed_confidence": 0.0,
+                    }))
+
+                    if vf_count < 5:
+                        pred_class = "ƏL AŞKARLANMADI"
+                        confidence = 0.0
+                        print(f"[WORD TRIAL COMPLETE] Result: ƏL AŞKARLANMADI (valid_frames: {vf_count}/26)", flush=True)
+                    else:
+                        norm_feats = normalizer(trial_feats, trial_val)
+                        inp = torch.from_numpy(norm_feats).unsqueeze(0).to(device)
+                        with torch.no_grad():
+                            logits = model(inp)
+                            probs = torch.softmax(logits, dim=1)[0]
+                        top_prob, top_idx = torch.topk(probs, k=1)
+                        pred_class = idx_to_class[int(top_idx[0].item())]
+                        confidence = float(top_prob[0].item())
+                        print(f"[WORD TRIAL COMPLETE] Prediction: {pred_class} ({confidence*100:.2f}%) | valid_frames: {vf_count}/26", flush=True)
+
+                    state.word_state = "RESULT"
+                    state.last_word_result = {
+                        "prediction": pred_class,
+                        "confidence": float(confidence),
+                        "valid_frames": vf_count,
+                    }
+                    response = {
+                        "mode": "word",
+                        "word_state": "RESULT",
+                        "frame_index": TARGET_SEQ_LEN,
+                        "total_frames": TARGET_SEQ_LEN,
+                        "valid_frames": vf_count,
+                        "buffer_progress": f"{TARGET_SEQ_LEN}/{TARGET_SEQ_LEN}",
+                        "buffer_full": True,
+                        "hand_present": pred_class != "ƏL AŞKARLANMADI",
+                        "prediction": pred_class,
+                        "confidence": float(confidence),
+                        "raw_prediction": pred_class,
+                        "raw_confidence": float(confidence),
+                        "smoothed_prediction": pred_class,
+                        "smoothed_confidence": float(confidence),
+                        "segment_event": {
+                            "label": pred_class,
+                            "confidence": float(confidence),
+                        } if pred_class != "ƏL AŞKARLANMADI" else None,
+                    }
+                    await websocket.send_text(json.dumps(response))
+                    continue
 
             else:
                 await websocket.send_text(json.dumps({"error": "Unknown message type"}))
@@ -444,3 +737,6 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.send_text(json.dumps({"error": str(e)}))
         except Exception:
             pass
+    finally:
+        if state.countdown_task is not None and not state.countdown_task.done():
+            state.countdown_task.cancel()

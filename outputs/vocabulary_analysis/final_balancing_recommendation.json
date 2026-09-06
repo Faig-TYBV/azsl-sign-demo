@@ -1,0 +1,31 @@
+{
+  "recommended_vocabulary_size": 24,
+  "primary_recommendation": {
+    "training_cap": 50,
+    "rationale": "Provides the most balanced distribution (max/min ratio 2.63:1) while retaining 866 training sequences. Minimizes false-positive pull of high-frequency words during real-time sliding window inference.",
+    "training_samples_retained": 866,
+    "min_class_count": 19,
+    "median_class_count": 32.5,
+    "max_class_count": 50,
+    "max_to_min_ratio": 2.63,
+    "num_classes_capped": 8,
+    "pct_classes_capped": 33.3,
+    "pct_original_train_data_retained": 27.3,
+    "validation_samples": 676,
+    "test_samples": 676,
+    "validation_handling": "Untouched existing split (676 samples)",
+    "test_handling": "Untouched existing split (676 samples)"
+  },
+  "alternative_recommendation": {
+    "training_cap": 75,
+    "rationale": "Alternative if higher data volume is desired for temporal regularization. Retains 1,039 training sequences with a 3.95:1 max/min ratio.",
+    "training_samples_retained": 1039,
+    "min_class_count": 19,
+    "median_class_count": 32.5,
+    "max_class_count": 75,
+    "max_to_min_ratio": 3.95,
+    "num_classes_capped": 5,
+    "pct_classes_capped": 20.8,
+    "pct_original_train_data_retained": 32.8
+  }
+}

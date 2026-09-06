@@ -1,0 +1,543 @@
+{
+  "cap_25": {
+    "label": "Cap = 25",
+    "cap": 25,
+    "total_train_samples": 669,
+    "val_samples": 733,
+    "test_samples": 733,
+    "min_samples": 13,
+    "median_samples": 25.0,
+    "max_samples": 25,
+    "mean_samples": 23.89,
+    "std_samples": 2.91,
+    "imbalance_ratio": 1.92,
+    "num_classes_capped": 21,
+    "pct_classes_capped": 75.0,
+    "capped_classes": [
+      {
+        "word": "MƏN",
+        "original": 1769,
+        "capped": 25
+      },
+      {
+        "word": "SƏN",
+        "original": 34,
+        "capped": 25
+      },
+      {
+        "word": "BİZ",
+        "original": 117,
+        "capped": 25
+      },
+      {
+        "word": "SİZ",
+        "original": 308,
+        "capped": 25
+      },
+      {
+        "word": "O",
+        "original": 213,
+        "capped": 25
+      },
+      {
+        "word": "SAĞLAM",
+        "original": 39,
+        "capped": 25
+      },
+      {
+        "word": "İSTƏMƏK",
+        "original": 73,
+        "capped": 25
+      },
+      {
+        "word": "GETMƏK",
+        "original": 34,
+        "capped": 25
+      },
+      {
+        "word": "YEMƏK",
+        "original": 26,
+        "capped": 25
+      },
+      {
+        "word": "ALMAQ",
+        "original": 31,
+        "capped": 25
+      },
+      {
+        "word": "OLMAQ",
+        "original": 28,
+        "capped": 25
+      },
+      {
+        "word": "EV",
+        "original": 53,
+        "capped": 25
+      },
+      {
+        "word": "İŞ",
+        "original": 27,
+        "capped": 25
+      },
+      {
+        "word": "BAKI",
+        "original": 44,
+        "capped": 25
+      },
+      {
+        "word": "TELEFON",
+        "original": 28,
+        "capped": 25
+      },
+      {
+        "word": "HARDA",
+        "original": 26,
+        "capped": 25
+      },
+      {
+        "word": "BURDA",
+        "original": 72,
+        "capped": 25
+      },
+      {
+        "word": "SABAH",
+        "original": 31,
+        "capped": 25
+      },
+      {
+        "word": "VAR",
+        "original": 78,
+        "capped": 25
+      },
+      {
+        "word": "YOX",
+        "original": 30,
+        "capped": 25
+      },
+      {
+        "word": "BU",
+        "original": 234,
+        "capped": 25
+      }
+    ],
+    "per_class_train_samples": {
+      "MƏN": 25,
+      "SƏN": 25,
+      "BİZ": 25,
+      "SİZ": 25,
+      "O": 25,
+      "SALAM": 22,
+      "SAĞLAM": 25,
+      "İSTƏMƏK": 25,
+      "GETMƏK": 25,
+      "GƏLMƏK": 24,
+      "BİLMƏK": 16,
+      "GÖRMƏK": 13,
+      "YEMƏK": 25,
+      "ALMAQ": 25,
+      "OLMAQ": 25,
+      "EV": 25,
+      "İŞ": 25,
+      "BAKI": 25,
+      "AZƏRBAYCAN": 25,
+      "TELEFON": 25,
+      "HARDA": 25,
+      "NECƏ": 19,
+      "BURDA": 25,
+      "BU GÜN": 25,
+      "SABAH": 25,
+      "VAR": 25,
+      "YOX": 25,
+      "BU": 25
+    }
+  },
+  "cap_35": {
+    "label": "Cap = 35",
+    "cap": 35,
+    "total_train_samples": 824,
+    "val_samples": 733,
+    "test_samples": 733,
+    "min_samples": 13,
+    "median_samples": 31.0,
+    "max_samples": 35,
+    "mean_samples": 29.43,
+    "std_samples": 6.28,
+    "imbalance_ratio": 2.69,
+    "num_classes_capped": 11,
+    "pct_classes_capped": 39.3,
+    "capped_classes": [
+      {
+        "word": "MƏN",
+        "original": 1769,
+        "capped": 35
+      },
+      {
+        "word": "BİZ",
+        "original": 117,
+        "capped": 35
+      },
+      {
+        "word": "SİZ",
+        "original": 308,
+        "capped": 35
+      },
+      {
+        "word": "O",
+        "original": 213,
+        "capped": 35
+      },
+      {
+        "word": "SAĞLAM",
+        "original": 39,
+        "capped": 35
+      },
+      {
+        "word": "İSTƏMƏK",
+        "original": 73,
+        "capped": 35
+      },
+      {
+        "word": "EV",
+        "original": 53,
+        "capped": 35
+      },
+      {
+        "word": "BAKI",
+        "original": 44,
+        "capped": 35
+      },
+      {
+        "word": "BURDA",
+        "original": 72,
+        "capped": 35
+      },
+      {
+        "word": "VAR",
+        "original": 78,
+        "capped": 35
+      },
+      {
+        "word": "BU",
+        "original": 234,
+        "capped": 35
+      }
+    ],
+    "per_class_train_samples": {
+      "MƏN": 35,
+      "SƏN": 34,
+      "BİZ": 35,
+      "SİZ": 35,
+      "O": 35,
+      "SALAM": 22,
+      "SAĞLAM": 35,
+      "İSTƏMƏK": 35,
+      "GETMƏK": 34,
+      "GƏLMƏK": 24,
+      "BİLMƏK": 16,
+      "GÖRMƏK": 13,
+      "YEMƏK": 26,
+      "ALMAQ": 31,
+      "OLMAQ": 28,
+      "EV": 35,
+      "İŞ": 27,
+      "BAKI": 35,
+      "AZƏRBAYCAN": 25,
+      "TELEFON": 28,
+      "HARDA": 26,
+      "NECƏ": 19,
+      "BURDA": 35,
+      "BU GÜN": 25,
+      "SABAH": 31,
+      "VAR": 35,
+      "YOX": 30,
+      "BU": 35
+    }
+  },
+  "cap_50": {
+    "label": "Cap = 50",
+    "cap": 50,
+    "total_train_samples": 972,
+    "val_samples": 733,
+    "test_samples": 733,
+    "min_samples": 13,
+    "median_samples": 31.0,
+    "max_samples": 50,
+    "mean_samples": 34.71,
+    "std_samples": 12.09,
+    "imbalance_ratio": 3.85,
+    "num_classes_capped": 9,
+    "pct_classes_capped": 32.1,
+    "capped_classes": [
+      {
+        "word": "MƏN",
+        "original": 1769,
+        "capped": 50
+      },
+      {
+        "word": "BİZ",
+        "original": 117,
+        "capped": 50
+      },
+      {
+        "word": "SİZ",
+        "original": 308,
+        "capped": 50
+      },
+      {
+        "word": "O",
+        "original": 213,
+        "capped": 50
+      },
+      {
+        "word": "İSTƏMƏK",
+        "original": 73,
+        "capped": 50
+      },
+      {
+        "word": "EV",
+        "original": 53,
+        "capped": 50
+      },
+      {
+        "word": "BURDA",
+        "original": 72,
+        "capped": 50
+      },
+      {
+        "word": "VAR",
+        "original": 78,
+        "capped": 50
+      },
+      {
+        "word": "BU",
+        "original": 234,
+        "capped": 50
+      }
+    ],
+    "per_class_train_samples": {
+      "MƏN": 50,
+      "SƏN": 34,
+      "BİZ": 50,
+      "SİZ": 50,
+      "O": 50,
+      "SALAM": 22,
+      "SAĞLAM": 39,
+      "İSTƏMƏK": 50,
+      "GETMƏK": 34,
+      "GƏLMƏK": 24,
+      "BİLMƏK": 16,
+      "GÖRMƏK": 13,
+      "YEMƏK": 26,
+      "ALMAQ": 31,
+      "OLMAQ": 28,
+      "EV": 50,
+      "İŞ": 27,
+      "BAKI": 44,
+      "AZƏRBAYCAN": 25,
+      "TELEFON": 28,
+      "HARDA": 26,
+      "NECƏ": 19,
+      "BURDA": 50,
+      "BU GÜN": 25,
+      "SABAH": 31,
+      "VAR": 50,
+      "YOX": 30,
+      "BU": 50
+    }
+  },
+  "cap_75": {
+    "label": "Cap = 75",
+    "cap": 75,
+    "total_train_samples": 1170,
+    "val_samples": 733,
+    "test_samples": 733,
+    "min_samples": 13,
+    "median_samples": 31.0,
+    "max_samples": 75,
+    "mean_samples": 41.79,
+    "std_samples": 21.97,
+    "imbalance_ratio": 5.77,
+    "num_classes_capped": 6,
+    "pct_classes_capped": 21.4,
+    "capped_classes": [
+      {
+        "word": "MƏN",
+        "original": 1769,
+        "capped": 75
+      },
+      {
+        "word": "BİZ",
+        "original": 117,
+        "capped": 75
+      },
+      {
+        "word": "SİZ",
+        "original": 308,
+        "capped": 75
+      },
+      {
+        "word": "O",
+        "original": 213,
+        "capped": 75
+      },
+      {
+        "word": "VAR",
+        "original": 78,
+        "capped": 75
+      },
+      {
+        "word": "BU",
+        "original": 234,
+        "capped": 75
+      }
+    ],
+    "per_class_train_samples": {
+      "MƏN": 75,
+      "SƏN": 34,
+      "BİZ": 75,
+      "SİZ": 75,
+      "O": 75,
+      "SALAM": 22,
+      "SAĞLAM": 39,
+      "İSTƏMƏK": 73,
+      "GETMƏK": 34,
+      "GƏLMƏK": 24,
+      "BİLMƏK": 16,
+      "GÖRMƏK": 13,
+      "YEMƏK": 26,
+      "ALMAQ": 31,
+      "OLMAQ": 28,
+      "EV": 53,
+      "İŞ": 27,
+      "BAKI": 44,
+      "AZƏRBAYCAN": 25,
+      "TELEFON": 28,
+      "HARDA": 26,
+      "NECƏ": 19,
+      "BURDA": 72,
+      "BU GÜN": 25,
+      "SABAH": 31,
+      "VAR": 75,
+      "YOX": 30,
+      "BU": 75
+    }
+  },
+  "cap_100": {
+    "label": "Cap = 100",
+    "cap": 100,
+    "total_train_samples": 1298,
+    "val_samples": 733,
+    "test_samples": 733,
+    "min_samples": 13,
+    "median_samples": 31.0,
+    "max_samples": 100,
+    "mean_samples": 46.36,
+    "std_samples": 29.62,
+    "imbalance_ratio": 7.69,
+    "num_classes_capped": 5,
+    "pct_classes_capped": 17.9,
+    "capped_classes": [
+      {
+        "word": "MƏN",
+        "original": 1769,
+        "capped": 100
+      },
+      {
+        "word": "BİZ",
+        "original": 117,
+        "capped": 100
+      },
+      {
+        "word": "SİZ",
+        "original": 308,
+        "capped": 100
+      },
+      {
+        "word": "O",
+        "original": 213,
+        "capped": 100
+      },
+      {
+        "word": "BU",
+        "original": 234,
+        "capped": 100
+      }
+    ],
+    "per_class_train_samples": {
+      "MƏN": 100,
+      "SƏN": 34,
+      "BİZ": 100,
+      "SİZ": 100,
+      "O": 100,
+      "SALAM": 22,
+      "SAĞLAM": 39,
+      "İSTƏMƏK": 73,
+      "GETMƏK": 34,
+      "GƏLMƏK": 24,
+      "BİLMƏK": 16,
+      "GÖRMƏK": 13,
+      "YEMƏK": 26,
+      "ALMAQ": 31,
+      "OLMAQ": 28,
+      "EV": 53,
+      "İŞ": 27,
+      "BAKI": 44,
+      "AZƏRBAYCAN": 25,
+      "TELEFON": 28,
+      "HARDA": 26,
+      "NECƏ": 19,
+      "BURDA": 72,
+      "BU GÜN": 25,
+      "SABAH": 31,
+      "VAR": 78,
+      "YOX": 30,
+      "BU": 100
+    }
+  },
+  "uncapped": {
+    "label": "Uncapped",
+    "cap": null,
+    "total_train_samples": 3439,
+    "val_samples": 733,
+    "test_samples": 733,
+    "min_samples": 13,
+    "median_samples": 31.0,
+    "max_samples": 1769,
+    "mean_samples": 122.82,
+    "std_samples": 324.61,
+    "imbalance_ratio": 136.08,
+    "num_classes_capped": 0,
+    "pct_classes_capped": 0.0,
+    "capped_classes": [],
+    "per_class_train_samples": {
+      "MƏN": 1769,
+      "SƏN": 34,
+      "BİZ": 117,
+      "SİZ": 308,
+      "O": 213,
+      "SALAM": 22,
+      "SAĞLAM": 39,
+      "İSTƏMƏK": 73,
+      "GETMƏK": 34,
+      "GƏLMƏK": 24,
+      "BİLMƏK": 16,
+      "GÖRMƏK": 13,
+      "YEMƏK": 26,
+      "ALMAQ": 31,
+      "OLMAQ": 28,
+      "EV": 53,
+      "İŞ": 27,
+      "BAKI": 44,
+      "AZƏRBAYCAN": 25,
+      "TELEFON": 28,
+      "HARDA": 26,
+      "NECƏ": 19,
+      "BURDA": 72,
+      "BU GÜN": 25,
+      "SABAH": 31,
+      "VAR": 78,
+      "YOX": 30,
+      "BU": 234
+    }
+  }
+}

@@ -1,0 +1,121 @@
+[
+  {
+    "cluster_name": "1st Person Pronouns",
+    "root_class": "MƏN",
+    "confused_variants": [
+      "MƏNİM",
+      "MƏNƏ"
+    ],
+    "rationale": "MƏN had 96 outgoing misclassifications into MƏNƏ (52) and MƏNİM (44). Eliminating MƏNİM and MƏNƏ isolates the base pronoun MƏN cleanly.",
+    "pairwise_confusions": [
+      {
+        "pair": "MƏN <-> MƏNƏ",
+        "count": 55
+      },
+      {
+        "pair": "MƏN <-> MƏNİM",
+        "count": 55
+      }
+    ]
+  },
+  {
+    "cluster_name": "3rd Person Pronouns",
+    "root_class": "O",
+    "confused_variants": [
+      "ONUN",
+      "ONLAR"
+    ],
+    "rationale": "O had 26 of its 45 test samples misclassified as ONUN. Eliminating ONUN restores distinct recognition for base pronoun O.",
+    "pairwise_confusions": [
+      {
+        "pair": "O <-> ONUN",
+        "count": 29
+      }
+    ]
+  },
+  {
+    "cluster_name": "2nd Person Plural / Polite",
+    "root_class": "SİZ",
+    "confused_variants": [
+      "SİZİN"
+    ],
+    "rationale": "SİZ had 13 test samples misclassified as SİZİN. Retaining SİZ alone removes possessive ambiguity.",
+    "pairwise_confusions": [
+      {
+        "pair": "SİZ <-> SİZİN",
+        "count": 15
+      }
+    ]
+  },
+  {
+    "cluster_name": "Want/Desire Verb",
+    "root_class": "İSTƏMƏK",
+    "confused_variants": [
+      "İSTƏYİRƏM"
+    ],
+    "rationale": "İSTƏMƏK had 8 of 16 test samples misclassified as conjugated form İSTƏYİRƏM. Retaining infinitive İSTƏMƏK removes 50% of its test errors.",
+    "pairwise_confusions": [
+      {
+        "pair": "İSTƏMƏK <-> İSTƏYİRƏM",
+        "count": 11
+      }
+    ]
+  },
+  {
+    "cluster_name": "Existential & Polarity",
+    "root_class": "VAR / YOX",
+    "confused_variants": [
+      "YOXDUR"
+    ],
+    "rationale": "YOXDUR has 0% F1 and is absorbed by YOX. Retaining VAR and YOX provides a robust positive/negative polarity pair.",
+    "pairwise_confusions": [
+      {
+        "pair": "YOX <-> YOXDUR",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "cluster_name": "Knowledge Verbs",
+    "root_class": "BİLMƏK",
+    "confused_variants": [
+      "BİLMİR",
+      "BİLƏR"
+    ],
+    "rationale": "BİLMİR and BİLƏR are inflected/modal variants. Retaining BİLMƏK unifies the knowledge predicate.",
+    "pairwise_confusions": [
+      {
+        "pair": "BİLMƏK <-> BİLMİR",
+        "count": 0
+      }
+    ]
+  },
+  {
+    "cluster_name": "Action / Transaction Verbs",
+    "root_class": "ALMAQ",
+    "confused_variants": [
+      "ALMIŞAM"
+    ],
+    "rationale": "ALMIŞAM has 0% F1. Retaining ALMAQ covers both buying and receiving.",
+    "pairwise_confusions": [
+      {
+        "pair": "ALMAQ <-> ALMIŞAM",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "cluster_name": "Movement Verbs",
+    "root_class": "GETMƏK / GƏLMƏK",
+    "confused_variants": [
+      "GEDƏ"
+    ],
+    "rationale": "GEDƏ has 0% F1. GETMƏK and GƏLMƏK provide clear reciprocal directional predicates.",
+    "pairwise_confusions": [
+      {
+        "pair": "GETMƏK <-> GEDƏ",
+        "count": 2
+      }
+    ]
+  }
+]

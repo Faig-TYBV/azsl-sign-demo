@@ -10,9 +10,10 @@ venv/
 # --- Downloaded model artifacts ---
 models/*.task
 # AzSL alphabet (fingerspelling) model bundled for the web demo
-src/web_demo/frontend/models/
+src/web_demo/frontend/models/*
+!src/web_demo/frontend/models/azsl_hierarchical_model.json
 
-# --- Trained model checkpoints (NEVER commit) ---
+# --- Trained model checkpoints ---
 *.pt
 *.pth
 /models/
@@ -23,6 +24,29 @@ outputs/inference/
 outputs/inference_backup/
 outputs/inference_subset/
 outputs/inference_test/
+
+# --- Production model exception (Experiment 8, 2.45 MB) ---
+!outputs/vocabulary_24_cap50/checkpoints/gru_24_cap50_best.pt
+
+# --- Experiment 8 temporary / local / experimental outputs ---
+outputs/vocabulary_24_cap50/realtime_validation/
+outputs/vocabulary_24_cap50/test_scratch/
+outputs/vocabulary_24_cap50/metadata/*_clean.json
+outputs/backups/
+shared_model/
+
+# --- Curate scripts: ignore scratch/one-off analysis scripts ---
+scripts/check_*.py
+scripts/inspect_*.py
+scripts/test_*.py
+scripts/top_word_candidates.py
+scripts/verify_proposed_vocab.py
+scripts/vocab_internal_confusion.py
+scripts/audit_28_classes.py
+scripts/calculate_subset_metrics.py
+scripts/eval_sizes_and_caps.py
+scripts/build_final_*.py
+scripts/preflight_test_24.py
 
 # --- Generated training / analysis outputs (JSON, CSV, TXT) ---
 outputs/*.json

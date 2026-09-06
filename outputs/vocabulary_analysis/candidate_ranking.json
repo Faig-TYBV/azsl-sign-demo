@@ -1,0 +1,7256 @@
+[
+  {
+    "index": 35,
+    "class_name": "BİLMİR",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.9525,
+    "sample_score": 0.6833,
+    "confusion_score": 1.0,
+    "tier": "Tier 1 (High Quality)",
+    "support": 6,
+    "train_samples": 29,
+    "val_samples": 6,
+    "test_samples": 6,
+    "total_samples": 41,
+    "true_positives": 6,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 1,
+    "candidate_rank": 1
+  },
+  {
+    "index": 150,
+    "class_name": "VAR",
+    "is_word": true,
+    "precision": 0.9375,
+    "recall": 0.9375,
+    "f1_score": 0.9375,
+    "quality_score": 0.9469,
+    "sample_score": 1.0,
+    "confusion_score": 0.9375,
+    "tier": "Tier 1 (High Quality)",
+    "support": 16,
+    "train_samples": 78,
+    "val_samples": 16,
+    "test_samples": 16,
+    "total_samples": 110,
+    "true_positives": 15,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "BAKI",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "DEYİL",
+        "count": 1
+      }
+    ],
+    "overall_rank": 2,
+    "candidate_rank": 2
+  },
+  {
+    "index": 153,
+    "class_name": "VİZA",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.945,
+    "sample_score": 0.6333,
+    "confusion_score": 1.0,
+    "tier": "Tier 1 (High Quality)",
+    "support": 6,
+    "train_samples": 26,
+    "val_samples": 6,
+    "test_samples": 6,
+    "total_samples": 38,
+    "true_positives": 6,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 3,
+    "candidate_rank": 3
+  },
+  {
+    "index": 10,
+    "class_name": "ANA",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.9375,
+    "sample_score": 0.5833,
+    "confusion_score": 1.0,
+    "tier": "Tier 1 (High Quality)",
+    "support": 5,
+    "train_samples": 25,
+    "val_samples": 5,
+    "test_samples": 5,
+    "total_samples": 35,
+    "true_positives": 5,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 4,
+    "candidate_rank": 4
+  },
+  {
+    "index": 126,
+    "class_name": "SAĞLAM",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.875,
+    "f1_score": 0.9333,
+    "quality_score": 0.9267,
+    "sample_score": 0.9167,
+    "confusion_score": 0.9375,
+    "tier": "Tier 1 (High Quality)",
+    "support": 8,
+    "train_samples": 39,
+    "val_samples": 8,
+    "test_samples": 8,
+    "total_samples": 55,
+    "true_positives": 7,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SALAM",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 5,
+    "candidate_rank": 5
+  },
+  {
+    "index": 109,
+    "class_name": "PENSİYA",
+    "is_word": true,
+    "precision": 0.9,
+    "recall": 0.9,
+    "f1_score": 0.9,
+    "quality_score": 0.915,
+    "sample_score": 1.0,
+    "confusion_score": 0.9,
+    "tier": "Tier 1 (High Quality)",
+    "support": 10,
+    "train_samples": 47,
+    "val_samples": 10,
+    "test_samples": 10,
+    "total_samples": 67,
+    "true_positives": 9,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SƏNƏD",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SƏNƏD",
+        "count": 1
+      }
+    ],
+    "overall_rank": 6,
+    "candidate_rank": 6
+  },
+  {
+    "index": 181,
+    "class_name": "ÜNVANLİ",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.915,
+    "sample_score": 0.4333,
+    "confusion_score": 1.0,
+    "tier": "Tier 1 (High Quality)",
+    "support": 4,
+    "train_samples": 18,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 26,
+    "true_positives": 4,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 7,
+    "candidate_rank": 7
+  },
+  {
+    "index": 85,
+    "class_name": "MƏKTƏB",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.9125,
+    "sample_score": 0.4167,
+    "confusion_score": 1.0,
+    "tier": "Tier 1 (High Quality)",
+    "support": 4,
+    "train_samples": 17,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 25,
+    "true_positives": 4,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 8,
+    "candidate_rank": 8
+  },
+  {
+    "index": 73,
+    "class_name": "HƏR GÜN",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.905,
+    "sample_score": 0.3667,
+    "confusion_score": 1.0,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 16,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 22,
+    "true_positives": 3,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 9,
+    "candidate_rank": 9
+  },
+  {
+    "index": 147,
+    "class_name": "UĞUR",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.8975,
+    "sample_score": 0.3167,
+    "confusion_score": 1.0,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 13,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 19,
+    "true_positives": 3,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 10,
+    "candidate_rank": 10
+  },
+  {
+    "index": 161,
+    "class_name": "YAXŞI",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.8975,
+    "sample_score": 0.3167,
+    "confusion_score": 1.0,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 13,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 19,
+    "true_positives": 3,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 11,
+    "candidate_rank": 11
+  },
+  {
+    "index": 56,
+    "class_name": "EŞİTMƏ APARATI",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.8925,
+    "sample_score": 0.2833,
+    "confusion_score": 1.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 11,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 17,
+    "true_positives": 3,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 12,
+    "candidate_rank": 12
+  },
+  {
+    "index": 117,
+    "class_name": "QƏLƏM",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.8925,
+    "sample_score": 0.2833,
+    "confusion_score": 1.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 11,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 17,
+    "true_positives": 3,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 13,
+    "candidate_rank": 13
+  },
+  {
+    "index": 25,
+    "class_name": "BAYRAM",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.89,
+    "sample_score": 0.2667,
+    "confusion_score": 1.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 12,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 16,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 14,
+    "candidate_rank": 14
+  },
+  {
+    "index": 93,
+    "class_name": "NÖVBƏ",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.885,
+    "sample_score": 0.2333,
+    "confusion_score": 1.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 10,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 14,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 15,
+    "candidate_rank": 15
+  },
+  {
+    "index": 170,
+    "class_name": "YOLDAŞIM",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.8775,
+    "sample_score": 0.1833,
+    "confusion_score": 1.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 16,
+    "candidate_rank": 16
+  },
+  {
+    "index": 178,
+    "class_name": "ÖLƏN",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.8775,
+    "sample_score": 0.1833,
+    "confusion_score": 1.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 17,
+    "candidate_rank": 17
+  },
+  {
+    "index": 110,
+    "class_name": "PROBLEM",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.875,
+    "sample_score": 0.1667,
+    "confusion_score": 1.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 18,
+    "candidate_rank": 18
+  },
+  {
+    "index": 154,
+    "class_name": "VƏ",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.875,
+    "sample_score": 0.1667,
+    "confusion_score": 1.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 19,
+    "candidate_rank": 19
+  },
+  {
+    "index": 21,
+    "class_name": "BACI",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "quality_score": 0.8725,
+    "sample_score": 0.15,
+    "confusion_score": 1.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 1,
+    "train_samples": 7,
+    "val_samples": 1,
+    "test_samples": 1,
+    "total_samples": 9,
+    "true_positives": 1,
+    "false_negatives": 0,
+    "false_positives": 0,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [],
+    "overall_rank": 20,
+    "candidate_rank": 20
+  },
+  {
+    "index": 29,
+    "class_name": "BU",
+    "is_word": true,
+    "precision": 0.925,
+    "recall": 0.74,
+    "f1_score": 0.8222,
+    "quality_score": 0.8455,
+    "sample_score": 1.0,
+    "confusion_score": 0.84,
+    "tier": "Tier 1 (High Quality)",
+    "support": 50,
+    "train_samples": 234,
+    "val_samples": 50,
+    "test_samples": 50,
+    "total_samples": 334,
+    "true_positives": 37,
+    "false_negatives": 13,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "GÖRƏ",
+        "count": 4
+      },
+      {
+        "target_class": "ÜÇÜN",
+        "count": 3
+      },
+      {
+        "target_class": "BURDA",
+        "count": 3
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "ÜÇÜN",
+        "count": 1
+      },
+      {
+        "source_class": "GÖRƏ",
+        "count": 1
+      },
+      {
+        "source_class": "BU HƏFTƏ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 21,
+    "candidate_rank": 21
+  },
+  {
+    "index": 123,
+    "class_name": "SALAM",
+    "is_word": true,
+    "precision": 0.8,
+    "recall": 1.0,
+    "f1_score": 0.8889,
+    "quality_score": 0.8436,
+    "sample_score": 0.5,
+    "confusion_score": 0.875,
+    "tier": "Tier 1 (High Quality)",
+    "support": 4,
+    "train_samples": 22,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 30,
+    "true_positives": 4,
+    "false_negatives": 0,
+    "false_positives": 1,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SAĞLAM",
+        "count": 1
+      }
+    ],
+    "overall_rank": 22,
+    "candidate_rank": 22
+  },
+  {
+    "index": 198,
+    "class_name": "ƏLİL",
+    "is_word": true,
+    "precision": 0.8667,
+    "recall": 0.7647,
+    "f1_score": 0.8125,
+    "quality_score": 0.8379,
+    "sample_score": 1.0,
+    "confusion_score": 0.8235,
+    "tier": "Tier 1 (High Quality)",
+    "support": 17,
+    "train_samples": 77,
+    "val_samples": 17,
+    "test_samples": 17,
+    "total_samples": 111,
+    "true_positives": 13,
+    "false_negatives": 4,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "QAPI",
+        "count": 2
+      },
+      {
+        "target_class": "VERMƏK",
+        "count": 1
+      },
+      {
+        "target_class": "BAYRAQ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "MƏNƏ",
+        "count": 1
+      },
+      {
+        "source_class": "MƏNİM",
+        "count": 1
+      }
+    ],
+    "overall_rank": 23,
+    "candidate_rank": 23
+  },
+  {
+    "index": 32,
+    "class_name": "BU HƏFTƏ",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.8,
+    "f1_score": 0.8889,
+    "quality_score": 0.8311,
+    "sample_score": 0.5333,
+    "confusion_score": 0.9,
+    "tier": "Tier 1 (High Quality)",
+    "support": 5,
+    "train_samples": 22,
+    "val_samples": 5,
+    "test_samples": 5,
+    "total_samples": 32,
+    "true_positives": 4,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "BU",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 24,
+    "candidate_rank": 24
+  },
+  {
+    "index": 86,
+    "class_name": "MƏN",
+    "is_word": true,
+    "precision": 0.9181,
+    "recall": 0.7098,
+    "f1_score": 0.8006,
+    "quality_score": 0.8277,
+    "sample_score": 1.0,
+    "confusion_score": 0.8232,
+    "tier": "Tier 1 (High Quality)",
+    "support": 379,
+    "train_samples": 1769,
+    "val_samples": 379,
+    "test_samples": 379,
+    "total_samples": 2527,
+    "true_positives": 269,
+    "false_negatives": 110,
+    "false_positives": 24,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "MƏNƏ",
+        "count": 52
+      },
+      {
+        "target_class": "MƏNİM",
+        "count": 44
+      },
+      {
+        "target_class": "EDİR",
+        "count": 4
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "MƏNİM",
+        "count": 11
+      },
+      {
+        "source_class": "BİZ",
+        "count": 6
+      },
+      {
+        "source_class": "SİZ",
+        "count": 3
+      }
+    ],
+    "overall_rank": 25,
+    "candidate_rank": 25
+  },
+  {
+    "index": 157,
+    "class_name": "XEYİR",
+    "is_word": true,
+    "precision": 0.75,
+    "recall": 1.0,
+    "f1_score": 0.8571,
+    "quality_score": 0.7983,
+    "sample_score": 0.35,
+    "confusion_score": 0.8333,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 15,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 21,
+    "true_positives": 3,
+    "false_negatives": 0,
+    "false_positives": 1,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "AĞRIMAQ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 26,
+    "candidate_rank": 26
+  },
+  {
+    "index": 39,
+    "class_name": "BİZ",
+    "is_word": true,
+    "precision": 0.9412,
+    "recall": 0.64,
+    "f1_score": 0.7619,
+    "quality_score": 0.7978,
+    "sample_score": 1.0,
+    "confusion_score": 0.8,
+    "tier": "Tier 1 (High Quality)",
+    "support": 25,
+    "train_samples": 117,
+    "val_samples": 25,
+    "test_samples": 25,
+    "total_samples": 167,
+    "true_positives": 16,
+    "false_negatives": 9,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "MƏN",
+        "count": 6
+      },
+      {
+        "target_class": "BAYRAQ",
+        "count": 1
+      },
+      {
+        "target_class": "GƏLMƏK",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "HAMI",
+        "count": 1
+      }
+    ],
+    "overall_rank": 27,
+    "candidate_rank": 27
+  },
+  {
+    "index": 192,
+    "class_name": "İŞARƏ",
+    "is_word": true,
+    "precision": 0.75,
+    "recall": 1.0,
+    "f1_score": 0.8571,
+    "quality_score": 0.7958,
+    "sample_score": 0.3333,
+    "confusion_score": 0.8333,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 14,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 20,
+    "true_positives": 3,
+    "false_negatives": 0,
+    "false_positives": 1,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "ÇOX",
+        "count": 1
+      }
+    ],
+    "overall_rank": 28,
+    "candidate_rank": 28
+  },
+  {
+    "index": 139,
+    "class_name": "SƏRGİ",
+    "is_word": true,
+    "precision": 0.75,
+    "recall": 1.0,
+    "f1_score": 0.8571,
+    "quality_score": 0.7933,
+    "sample_score": 0.3167,
+    "confusion_score": 0.8333,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 13,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 19,
+    "true_positives": 3,
+    "false_negatives": 0,
+    "false_positives": 1,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BİLƏR",
+        "count": 1
+      }
+    ],
+    "overall_rank": 29,
+    "candidate_rank": 29
+  },
+  {
+    "index": 13,
+    "class_name": "AVTOBUS",
+    "is_word": true,
+    "precision": 0.75,
+    "recall": 1.0,
+    "f1_score": 0.8571,
+    "quality_score": 0.7908,
+    "sample_score": 0.3,
+    "confusion_score": 0.8333,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 12,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 18,
+    "true_positives": 3,
+    "false_negatives": 0,
+    "false_positives": 1,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "EV",
+        "count": 1
+      }
+    ],
+    "overall_rank": 30,
+    "candidate_rank": 30
+  },
+  {
+    "index": 124,
+    "class_name": "SATICI",
+    "is_word": true,
+    "precision": 0.75,
+    "recall": 1.0,
+    "f1_score": 0.8571,
+    "quality_score": 0.7908,
+    "sample_score": 0.3,
+    "confusion_score": 0.8333,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 12,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 18,
+    "true_positives": 3,
+    "false_negatives": 0,
+    "false_positives": 1,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "FUTBOL",
+        "count": 1
+      }
+    ],
+    "overall_rank": 31,
+    "candidate_rank": 31
+  },
+  {
+    "index": 162,
+    "class_name": "YAZDA",
+    "is_word": true,
+    "precision": 0.75,
+    "recall": 1.0,
+    "f1_score": 0.8571,
+    "quality_score": 0.7883,
+    "sample_score": 0.2833,
+    "confusion_score": 0.8333,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 11,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 17,
+    "true_positives": 3,
+    "false_negatives": 0,
+    "false_positives": 1,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SİZ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 32,
+    "candidate_rank": 32
+  },
+  {
+    "index": 81,
+    "class_name": "LAZIM",
+    "is_word": true,
+    "precision": 0.6667,
+    "recall": 1.0,
+    "f1_score": 0.8,
+    "quality_score": 0.775,
+    "sample_score": 0.4667,
+    "confusion_score": 0.75,
+    "tier": "Tier 1 (High Quality)",
+    "support": 4,
+    "train_samples": 20,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 28,
+    "true_positives": 4,
+    "false_negatives": 0,
+    "false_positives": 2,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "GUN",
+        "count": 1
+      },
+      {
+        "source_class": "NƏDİR",
+        "count": 1
+      }
+    ],
+    "overall_rank": 33,
+    "candidate_rank": 33
+  },
+  {
+    "index": 165,
+    "class_name": "YAŞAMAQ",
+    "is_word": true,
+    "precision": 0.8,
+    "recall": 0.8,
+    "f1_score": 0.8,
+    "quality_score": 0.76,
+    "sample_score": 0.5333,
+    "confusion_score": 0.8,
+    "tier": "Tier 1 (High Quality)",
+    "support": 5,
+    "train_samples": 22,
+    "val_samples": 5,
+    "test_samples": 5,
+    "total_samples": 32,
+    "true_positives": 4,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "GECİKMƏK",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "NƏDİR",
+        "count": 1
+      }
+    ],
+    "overall_rank": 34,
+    "candidate_rank": 34
+  },
+  {
+    "index": 18,
+    "class_name": "AZƏRBAYCAN",
+    "is_word": true,
+    "precision": 0.7143,
+    "recall": 0.8333,
+    "f1_score": 0.7692,
+    "quality_score": 0.7522,
+    "sample_score": 0.6167,
+    "confusion_score": 0.75,
+    "tier": "Tier 1 (High Quality)",
+    "support": 6,
+    "train_samples": 25,
+    "val_samples": 6,
+    "test_samples": 6,
+    "total_samples": 37,
+    "true_positives": 5,
+    "false_negatives": 1,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İŞ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SRAĞAGÜN",
+        "count": 1
+      },
+      {
+        "source_class": "SAYLI",
+        "count": 1
+      }
+    ],
+    "overall_rank": 35,
+    "candidate_rank": 35
+  },
+  {
+    "index": 138,
+    "class_name": "SƏNƏD",
+    "is_word": true,
+    "precision": 0.6364,
+    "recall": 0.7778,
+    "f1_score": 0.7,
+    "quality_score": 0.7516,
+    "sample_score": 1.0,
+    "confusion_score": 0.6667,
+    "tier": "Tier 1 (High Quality)",
+    "support": 9,
+    "train_samples": 42,
+    "val_samples": 9,
+    "test_samples": 9,
+    "total_samples": 60,
+    "true_positives": 7,
+    "false_negatives": 2,
+    "false_positives": 4,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "ALMAQ",
+        "count": 1
+      },
+      {
+        "target_class": "PENSİYA",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "YAZI",
+        "count": 2
+      },
+      {
+        "source_class": "PENSİYA",
+        "count": 1
+      },
+      {
+        "source_class": "ETİBARNAMƏ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 36,
+    "candidate_rank": 36
+  },
+  {
+    "index": 54,
+    "class_name": "EV",
+    "is_word": true,
+    "precision": 0.7273,
+    "recall": 0.6667,
+    "f1_score": 0.6957,
+    "quality_score": 0.7401,
+    "sample_score": 1.0,
+    "confusion_score": 0.7083,
+    "tier": "Tier 1 (High Quality)",
+    "support": 12,
+    "train_samples": 53,
+    "val_samples": 12,
+    "test_samples": 12,
+    "total_samples": 77,
+    "true_positives": 8,
+    "false_negatives": 4,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "AVTOBUS",
+        "count": 1
+      },
+      {
+        "target_class": "MƏTBƏX",
+        "count": 1
+      },
+      {
+        "target_class": "HANSI",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "XAHİŞ",
+        "count": 2
+      },
+      {
+        "source_class": "KƏND",
+        "count": 1
+      }
+    ],
+    "overall_rank": 37,
+    "candidate_rank": 37
+  },
+  {
+    "index": 101,
+    "class_name": "ONLAR",
+    "is_word": true,
+    "precision": 0.6667,
+    "recall": 1.0,
+    "f1_score": 0.8,
+    "quality_score": 0.7325,
+    "sample_score": 0.1833,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 1,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "GƏLMƏK",
+        "count": 1
+      }
+    ],
+    "overall_rank": 38,
+    "candidate_rank": 38
+  },
+  {
+    "index": 179,
+    "class_name": "ÖYRƏNMƏK",
+    "is_word": true,
+    "precision": 0.6667,
+    "recall": 1.0,
+    "f1_score": 0.8,
+    "quality_score": 0.73,
+    "sample_score": 0.1667,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 1,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "UNİVERSİTET",
+        "count": 1
+      }
+    ],
+    "overall_rank": 39,
+    "candidate_rank": 39
+  },
+  {
+    "index": 193,
+    "class_name": "İŞLƏMİR",
+    "is_word": true,
+    "precision": 0.6667,
+    "recall": 1.0,
+    "f1_score": 0.8,
+    "quality_score": 0.73,
+    "sample_score": 0.1667,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 1,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "OĞUL",
+        "count": 1
+      }
+    ],
+    "overall_rank": 40,
+    "candidate_rank": 40
+  },
+  {
+    "index": 28,
+    "class_name": "BAĞ",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.6667,
+    "f1_score": 0.8,
+    "quality_score": 0.7275,
+    "sample_score": 0.3167,
+    "confusion_score": 0.8333,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 13,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 19,
+    "true_positives": 2,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "AİLƏ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 41,
+    "candidate_rank": 41
+  },
+  {
+    "index": 7,
+    "class_name": "AD GÜNÜ",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.6667,
+    "f1_score": 0.8,
+    "quality_score": 0.725,
+    "sample_score": 0.3,
+    "confusion_score": 0.8333,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 12,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 18,
+    "true_positives": 2,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İŞ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 42,
+    "candidate_rank": 42
+  },
+  {
+    "index": 57,
+    "class_name": "EŞİTMƏ MƏHDÜDİYYƏTLİ",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.6667,
+    "f1_score": 0.8,
+    "quality_score": 0.725,
+    "sample_score": 0.3,
+    "confusion_score": 0.8333,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 12,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 18,
+    "true_positives": 2,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "EŞİTMƏ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 43,
+    "candidate_rank": 43
+  },
+  {
+    "index": 53,
+    "class_name": "ETİBARNAMƏ",
+    "is_word": true,
+    "precision": 0.8,
+    "recall": 0.6667,
+    "f1_score": 0.7273,
+    "quality_score": 0.7237,
+    "sample_score": 0.7167,
+    "confusion_score": 0.75,
+    "tier": "Tier 1 (High Quality)",
+    "support": 6,
+    "train_samples": 31,
+    "val_samples": 6,
+    "test_samples": 6,
+    "total_samples": 43,
+    "true_positives": 4,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SƏNƏD",
+        "count": 1
+      },
+      {
+        "target_class": "HARDA",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "AİLƏ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 44,
+    "candidate_rank": 44
+  },
+  {
+    "index": 185,
+    "class_name": "İL",
+    "is_word": true,
+    "precision": 0.5714,
+    "recall": 1.0,
+    "f1_score": 0.7273,
+    "quality_score": 0.7203,
+    "sample_score": 0.45,
+    "confusion_score": 0.625,
+    "tier": "Tier 1 (High Quality)",
+    "support": 4,
+    "train_samples": 19,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 27,
+    "true_positives": 4,
+    "false_negatives": 0,
+    "false_positives": 3,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "TOYA",
+        "count": 1
+      },
+      {
+        "source_class": "COVİD",
+        "count": 1
+      },
+      {
+        "source_class": "FUTBOL",
+        "count": 1
+      }
+    ],
+    "overall_rank": 45,
+    "candidate_rank": 45
+  },
+  {
+    "index": 166,
+    "class_name": "YEMƏK",
+    "is_word": true,
+    "precision": 0.6667,
+    "recall": 0.8,
+    "f1_score": 0.7273,
+    "quality_score": 0.7145,
+    "sample_score": 0.6,
+    "confusion_score": 0.7,
+    "tier": "Tier 1 (High Quality)",
+    "support": 5,
+    "train_samples": 26,
+    "val_samples": 5,
+    "test_samples": 5,
+    "total_samples": 36,
+    "true_positives": 4,
+    "false_negatives": 1,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "2",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "2",
+        "count": 1
+      },
+      {
+        "source_class": "GÖZƏL",
+        "count": 1
+      }
+    ],
+    "overall_rank": 46,
+    "candidate_rank": 46
+  },
+  {
+    "index": 114,
+    "class_name": "QATAR",
+    "is_word": true,
+    "precision": 0.75,
+    "recall": 0.75,
+    "f1_score": 0.75,
+    "quality_score": 0.7025,
+    "sample_score": 0.4333,
+    "confusion_score": 0.75,
+    "tier": "Tier 1 (High Quality)",
+    "support": 4,
+    "train_samples": 18,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 26,
+    "true_positives": 3,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "QAPI",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "YOL",
+        "count": 1
+      }
+    ],
+    "overall_rank": 47,
+    "candidate_rank": 47
+  },
+  {
+    "index": 8,
+    "class_name": "ALMAQ",
+    "is_word": true,
+    "precision": 0.5455,
+    "recall": 0.8571,
+    "f1_score": 0.6667,
+    "quality_score": 0.6991,
+    "sample_score": 0.75,
+    "confusion_score": 0.5714,
+    "tier": "Tier 1 (High Quality)",
+    "support": 7,
+    "train_samples": 31,
+    "val_samples": 7,
+    "test_samples": 7,
+    "total_samples": 45,
+    "true_positives": 6,
+    "false_negatives": 1,
+    "false_positives": 5,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "OYNAMAQ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SƏNƏD",
+        "count": 1
+      },
+      {
+        "source_class": "BU",
+        "count": 1
+      },
+      {
+        "source_class": "NOTARİAL",
+        "count": 1
+      }
+    ],
+    "overall_rank": 48,
+    "candidate_rank": 48
+  },
+  {
+    "index": 148,
+    "class_name": "UŞAQ",
+    "is_word": true,
+    "precision": 0.8333,
+    "recall": 0.5,
+    "f1_score": 0.625,
+    "quality_score": 0.6887,
+    "sample_score": 1.0,
+    "confusion_score": 0.7,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 10,
+    "train_samples": 49,
+    "val_samples": 10,
+    "test_samples": 10,
+    "total_samples": 69,
+    "true_positives": 5,
+    "false_negatives": 5,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "ÇƏKMƏK",
+        "count": 1
+      },
+      {
+        "target_class": "UŞAQLAR",
+        "count": 1
+      },
+      {
+        "target_class": "ÇOX",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "IKI",
+        "count": 1
+      }
+    ],
+    "overall_rank": 49,
+    "candidate_rank": 49
+  },
+  {
+    "index": 58,
+    "class_name": "FUTBOL",
+    "is_word": true,
+    "precision": 0.625,
+    "recall": 0.7143,
+    "f1_score": 0.6667,
+    "quality_score": 0.6849,
+    "sample_score": 0.7667,
+    "confusion_score": 0.6429,
+    "tier": "Tier 1 (High Quality)",
+    "support": 7,
+    "train_samples": 32,
+    "val_samples": 7,
+    "test_samples": 7,
+    "total_samples": 46,
+    "true_positives": 5,
+    "false_negatives": 2,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İL",
+        "count": 1
+      },
+      {
+        "target_class": "SATICI",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "MƏNƏ",
+        "count": 1
+      },
+      {
+        "source_class": "AC",
+        "count": 1
+      },
+      {
+        "source_class": "MƏN",
+        "count": 1
+      }
+    ],
+    "overall_rank": 50,
+    "candidate_rank": 50
+  },
+  {
+    "index": 98,
+    "class_name": "OLMAQ",
+    "is_word": true,
+    "precision": 0.6667,
+    "recall": 0.6667,
+    "f1_score": 0.6667,
+    "quality_score": 0.6667,
+    "sample_score": 0.6667,
+    "confusion_score": 0.6667,
+    "tier": "Tier 1 (High Quality)",
+    "support": 6,
+    "train_samples": 28,
+    "val_samples": 6,
+    "test_samples": 6,
+    "total_samples": 40,
+    "true_positives": 4,
+    "false_negatives": 2,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "XİRDA",
+        "count": 1
+      },
+      {
+        "target_class": "GEDƏ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "OĞUL",
+        "count": 1
+      },
+      {
+        "source_class": "OLMUSUZ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 51,
+    "candidate_rank": 51
+  },
+  {
+    "index": 134,
+    "class_name": "SİZ",
+    "is_word": true,
+    "precision": 0.8529,
+    "recall": 0.4394,
+    "f1_score": 0.58,
+    "quality_score": 0.659,
+    "sample_score": 1.0,
+    "confusion_score": 0.6818,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 66,
+    "train_samples": 308,
+    "val_samples": 66,
+    "test_samples": 66,
+    "total_samples": 440,
+    "true_positives": 29,
+    "false_negatives": 37,
+    "false_positives": 5,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SİZİN",
+        "count": 13
+      },
+      {
+        "target_class": "BAKI",
+        "count": 6
+      },
+      {
+        "target_class": "MƏN",
+        "count": 3
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SİZİN",
+        "count": 2
+      },
+      {
+        "source_class": "UŞAQLAR",
+        "count": 1
+      },
+      {
+        "source_class": "DONDURMA",
+        "count": 1
+      }
+    ],
+    "overall_rank": 52,
+    "candidate_rank": 52
+  },
+  {
+    "index": 183,
+    "class_name": "İ",
+    "is_word": false,
+    "precision": 0.5714,
+    "recall": 0.8,
+    "f1_score": 0.6667,
+    "quality_score": 0.659,
+    "sample_score": 0.5333,
+    "confusion_score": 0.6,
+    "tier": "Tier 1 (High Quality)",
+    "support": 5,
+    "train_samples": 22,
+    "val_samples": 5,
+    "test_samples": 5,
+    "total_samples": 32,
+    "true_positives": 4,
+    "false_negatives": 1,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "M",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "O",
+        "count": 1
+      },
+      {
+        "source_class": "D",
+        "count": 1
+      },
+      {
+        "source_class": "HƏKİM",
+        "count": 1
+      }
+    ],
+    "overall_rank": 53,
+    "candidate_rank": null
+  },
+  {
+    "index": 119,
+    "class_name": "RƏSİM",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 1.0,
+    "f1_score": 0.6667,
+    "quality_score": 0.6558,
+    "sample_score": 0.3167,
+    "confusion_score": 0.5,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 13,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 19,
+    "true_positives": 3,
+    "false_negatives": 0,
+    "false_positives": 3,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "IKI",
+        "count": 1
+      },
+      {
+        "source_class": "GÖRMƏK",
+        "count": 1
+      },
+      {
+        "source_class": "OYNAMAQ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 54,
+    "candidate_rank": 53
+  },
+  {
+    "index": 31,
+    "class_name": "BU GÜN",
+    "is_word": true,
+    "precision": 0.75,
+    "recall": 0.6,
+    "f1_score": 0.6667,
+    "quality_score": 0.6533,
+    "sample_score": 0.5833,
+    "confusion_score": 0.7,
+    "tier": "Tier 1 (High Quality)",
+    "support": 5,
+    "train_samples": 25,
+    "val_samples": 5,
+    "test_samples": 5,
+    "total_samples": 35,
+    "true_positives": 3,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "HANSI",
+        "count": 2
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "İNDİ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 55,
+    "candidate_rank": 54
+  },
+  {
+    "index": 163,
+    "class_name": "YAZI",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6483,
+    "sample_score": 0.4333,
+    "confusion_score": 0.75,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 4,
+    "train_samples": 18,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 26,
+    "true_positives": 2,
+    "false_negatives": 2,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SƏNƏD",
+        "count": 2
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 56,
+    "candidate_rank": 55
+  },
+  {
+    "index": 105,
+    "class_name": "OXUMAQ",
+    "is_word": true,
+    "precision": 0.6,
+    "recall": 0.75,
+    "f1_score": 0.6667,
+    "quality_score": 0.6408,
+    "sample_score": 0.45,
+    "confusion_score": 0.625,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 4,
+    "train_samples": 19,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 27,
+    "true_positives": 3,
+    "false_negatives": 1,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "HANSI",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "YENİ",
+        "count": 1
+      },
+      {
+        "source_class": "AC",
+        "count": 1
+      }
+    ],
+    "overall_rank": 57,
+    "candidate_rank": 56
+  },
+  {
+    "index": 42,
+    "class_name": "D",
+    "is_word": false,
+    "precision": 0.5556,
+    "recall": 0.625,
+    "f1_score": 0.5882,
+    "quality_score": 0.6392,
+    "sample_score": 0.9167,
+    "confusion_score": 0.5625,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 8,
+    "train_samples": 39,
+    "val_samples": 8,
+    "test_samples": 8,
+    "total_samples": 55,
+    "true_positives": 5,
+    "false_negatives": 3,
+    "false_positives": 4,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "VAXT",
+        "count": 1
+      },
+      {
+        "target_class": "İ",
+        "count": 1
+      },
+      {
+        "target_class": "J",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SİZ",
+        "count": 1
+      },
+      {
+        "source_class": "BU",
+        "count": 1
+      },
+      {
+        "source_class": "AVTOMOBİL",
+        "count": 1
+      }
+    ],
+    "overall_rank": 58,
+    "candidate_rank": null
+  },
+  {
+    "index": 79,
+    "class_name": "KÖYNƏK",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 1.0,
+    "f1_score": 0.6667,
+    "quality_score": 0.6383,
+    "sample_score": 0.2,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 2,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "İDMAN",
+        "count": 1
+      },
+      {
+        "source_class": "BALACA",
+        "count": 1
+      }
+    ],
+    "overall_rank": 59,
+    "candidate_rank": 57
+  },
+  {
+    "index": 82,
+    "class_name": "M",
+    "is_word": false,
+    "precision": 0.5,
+    "recall": 1.0,
+    "f1_score": 0.6667,
+    "quality_score": 0.6358,
+    "sample_score": 0.1833,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 2,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "İ",
+        "count": 1
+      },
+      {
+        "source_class": "O",
+        "count": 1
+      }
+    ],
+    "overall_rank": 60,
+    "candidate_rank": null
+  },
+  {
+    "index": 133,
+    "class_name": "SİFARİŞ",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 1.0,
+    "f1_score": 0.6667,
+    "quality_score": 0.6358,
+    "sample_score": 0.1833,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 2,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "ÇƏKMƏK",
+        "count": 1
+      },
+      {
+        "source_class": "BAZAR",
+        "count": 1
+      }
+    ],
+    "overall_rank": 61,
+    "candidate_rank": 58
+  },
+  {
+    "index": 171,
+    "class_name": "YOX",
+    "is_word": true,
+    "precision": 0.5714,
+    "recall": 0.6667,
+    "f1_score": 0.6154,
+    "quality_score": 0.6311,
+    "sample_score": 0.7,
+    "confusion_score": 0.5833,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 6,
+    "train_samples": 30,
+    "val_samples": 6,
+    "test_samples": 6,
+    "total_samples": 42,
+    "true_positives": 4,
+    "false_negatives": 2,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SƏHƏR",
+        "count": 1
+      },
+      {
+        "target_class": "DEYİL",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "YOXDUR",
+        "count": 1
+      },
+      {
+        "source_class": "GÖZƏL",
+        "count": 1
+      },
+      {
+        "source_class": "EDİR",
+        "count": 1
+      }
+    ],
+    "overall_rank": 62,
+    "candidate_rank": 59
+  },
+  {
+    "index": 34,
+    "class_name": "BURDA",
+    "is_word": true,
+    "precision": 0.5294,
+    "recall": 0.6,
+    "f1_score": 0.5625,
+    "quality_score": 0.6296,
+    "sample_score": 1.0,
+    "confusion_score": 0.5333,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 15,
+    "train_samples": 72,
+    "val_samples": 15,
+    "test_samples": 15,
+    "total_samples": 102,
+    "true_positives": 9,
+    "false_negatives": 6,
+    "false_positives": 8,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SƏN",
+        "count": 3
+      },
+      {
+        "target_class": "BURA",
+        "count": 1
+      },
+      {
+        "target_class": "OLAR",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BU",
+        "count": 3
+      },
+      {
+        "source_class": "MƏN",
+        "count": 1
+      },
+      {
+        "source_class": "AYAQ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 63,
+    "candidate_rank": 60
+  },
+  {
+    "index": 199,
+    "class_name": "ƏRZAQ",
+    "is_word": true,
+    "precision": 0.6667,
+    "recall": 0.6667,
+    "f1_score": 0.6667,
+    "quality_score": 0.6242,
+    "sample_score": 0.3833,
+    "confusion_score": 0.6667,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 17,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 23,
+    "true_positives": 2,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "BAKI",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "YOXDUR",
+        "count": 1
+      }
+    ],
+    "overall_rank": 64,
+    "candidate_rank": 61
+  },
+  {
+    "index": 173,
+    "class_name": "ZƏHMƏT OLMASA",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6233,
+    "sample_score": 0.2667,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 12,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 16,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "AĞRIMAQ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 65,
+    "candidate_rank": 62
+  },
+  {
+    "index": 30,
+    "class_name": "BU AY",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6208,
+    "sample_score": 0.25,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 11,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 15,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "DOST",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 66,
+    "candidate_rank": 63
+  },
+  {
+    "index": 12,
+    "class_name": "ATA",
+    "is_word": true,
+    "precision": 0.6667,
+    "recall": 0.6667,
+    "f1_score": 0.6667,
+    "quality_score": 0.6192,
+    "sample_score": 0.35,
+    "confusion_score": 0.6667,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 15,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 21,
+    "true_positives": 2,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "ÇOX",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "İSTİ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 67,
+    "candidate_rank": 64
+  },
+  {
+    "index": 38,
+    "class_name": "BİTMƏK",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6183,
+    "sample_score": 0.2333,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 10,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 14,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İTMİŞ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 68,
+    "candidate_rank": 65
+  },
+  {
+    "index": 175,
+    "class_name": "ÇANTA",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6183,
+    "sample_score": 0.2333,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 10,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 14,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "ETMƏK",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 69,
+    "candidate_rank": 66
+  },
+  {
+    "index": 156,
+    "class_name": "XATIRLADIM",
+    "is_word": true,
+    "precision": 0.6667,
+    "recall": 0.6667,
+    "f1_score": 0.6667,
+    "quality_score": 0.6167,
+    "sample_score": 0.3333,
+    "confusion_score": 0.6667,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 14,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 20,
+    "true_positives": 2,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "S",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "AYAQYOLU",
+        "count": 1
+      }
+    ],
+    "overall_rank": 70,
+    "candidate_rank": 67
+  },
+  {
+    "index": 177,
+    "class_name": "ÇƏKMƏK",
+    "is_word": true,
+    "precision": 0.6667,
+    "recall": 0.6667,
+    "f1_score": 0.6667,
+    "quality_score": 0.6167,
+    "sample_score": 0.3333,
+    "confusion_score": 0.6667,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 14,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 20,
+    "true_positives": 2,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SİFARİŞ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "UŞAQ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 71,
+    "candidate_rank": 68
+  },
+  {
+    "index": 67,
+    "class_name": "HALALDIR",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6158,
+    "sample_score": 0.2167,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 9,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 13,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "HARDA",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 72,
+    "candidate_rank": 69
+  },
+  {
+    "index": 118,
+    "class_name": "RAYONLARDA",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6158,
+    "sample_score": 0.2167,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 9,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 13,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "AİLƏ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 73,
+    "candidate_rank": 70
+  },
+  {
+    "index": 141,
+    "class_name": "TELEFON",
+    "is_word": true,
+    "precision": 0.75,
+    "recall": 0.5,
+    "f1_score": 0.6,
+    "quality_score": 0.6142,
+    "sample_score": 0.6667,
+    "confusion_score": 0.6667,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 6,
+    "train_samples": 28,
+    "val_samples": 6,
+    "test_samples": 6,
+    "total_samples": 40,
+    "true_positives": 3,
+    "false_negatives": 3,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "ZƏNG",
+        "count": 2
+      },
+      {
+        "target_class": "1",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "ZƏNG",
+        "count": 1
+      }
+    ],
+    "overall_rank": 74,
+    "candidate_rank": 71
+  },
+  {
+    "index": 51,
+    "class_name": "EDƏ BİLMƏK",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6133,
+    "sample_score": 0.2,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "BİLƏR",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 75,
+    "candidate_rank": 72
+  },
+  {
+    "index": 111,
+    "class_name": "PUL",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6133,
+    "sample_score": 0.2,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "GÖRMƏK",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 76,
+    "candidate_rank": 73
+  },
+  {
+    "index": 125,
+    "class_name": "SAYLI",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6133,
+    "sample_score": 0.2,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "AZƏRBAYCAN",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 77,
+    "candidate_rank": 74
+  },
+  {
+    "index": 140,
+    "class_name": "TAKSİ",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6133,
+    "sample_score": 0.2,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "UNİVERSİTET",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 78,
+    "candidate_rank": 75
+  },
+  {
+    "index": 196,
+    "class_name": "İŞİGİ",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6133,
+    "sample_score": 0.2,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "HARDA",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 79,
+    "candidate_rank": 76
+  },
+  {
+    "index": 46,
+    "class_name": "DÖVLƏT",
+    "is_word": true,
+    "precision": 0.6667,
+    "recall": 0.6667,
+    "f1_score": 0.6667,
+    "quality_score": 0.6117,
+    "sample_score": 0.3,
+    "confusion_score": 0.6667,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 12,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 18,
+    "true_positives": 2,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "S",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "AYAQYOLU",
+        "count": 1
+      }
+    ],
+    "overall_rank": 80,
+    "candidate_rank": 77
+  },
+  {
+    "index": 9,
+    "class_name": "ALMIŞAM",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6108,
+    "sample_score": 0.1833,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "ALMAQ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 81,
+    "candidate_rank": 78
+  },
+  {
+    "index": 49,
+    "class_name": "DƏYİŞMƏK",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6108,
+    "sample_score": 0.1833,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "KOMANDA",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 82,
+    "candidate_rank": 79
+  },
+  {
+    "index": 142,
+    "class_name": "TOYA",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6108,
+    "sample_score": 0.1833,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İL",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 83,
+    "candidate_rank": 80
+  },
+  {
+    "index": 160,
+    "class_name": "YATMAQ",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6108,
+    "sample_score": 0.1833,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "OLACAQ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 84,
+    "candidate_rank": 81
+  },
+  {
+    "index": 169,
+    "class_name": "YOL",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6108,
+    "sample_score": 0.1833,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "QATAR",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 85,
+    "candidate_rank": 82
+  },
+  {
+    "index": 62,
+    "class_name": "GUN",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6083,
+    "sample_score": 0.1667,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "LAZIM",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 86,
+    "candidate_rank": 83
+  },
+  {
+    "index": 71,
+    "class_name": "HAVA",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6083,
+    "sample_score": 0.1667,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "MƏTBƏX",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 87,
+    "candidate_rank": 84
+  },
+  {
+    "index": 92,
+    "class_name": "NOTARİAL",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6083,
+    "sample_score": 0.1667,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "ALMAQ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 88,
+    "candidate_rank": 85
+  },
+  {
+    "index": 116,
+    "class_name": "QONŞU",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6083,
+    "sample_score": 0.1667,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "AD",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 89,
+    "candidate_rank": 86
+  },
+  {
+    "index": 180,
+    "class_name": "ÖZÜMÜ",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "quality_score": 0.6083,
+    "sample_score": 0.1667,
+    "confusion_score": 0.75,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İSTİ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 90,
+    "candidate_rank": 87
+  },
+  {
+    "index": 61,
+    "class_name": "GETMƏK",
+    "is_word": true,
+    "precision": 0.5714,
+    "recall": 0.5714,
+    "f1_score": 0.5714,
+    "quality_score": 0.6057,
+    "sample_score": 0.8,
+    "confusion_score": 0.5714,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 7,
+    "train_samples": 34,
+    "val_samples": 7,
+    "test_samples": 7,
+    "total_samples": 48,
+    "true_positives": 4,
+    "false_negatives": 3,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "METRO",
+        "count": 2
+      },
+      {
+        "target_class": "MƏTBƏX",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "GEDƏ",
+        "count": 2
+      },
+      {
+        "source_class": "AVTOMOBİL",
+        "count": 1
+      }
+    ],
+    "overall_rank": 91,
+    "candidate_rank": 88
+  },
+  {
+    "index": 22,
+    "class_name": "BAKI",
+    "is_word": true,
+    "precision": 0.4118,
+    "recall": 0.7,
+    "f1_score": 0.5185,
+    "quality_score": 0.6032,
+    "sample_score": 1.0,
+    "confusion_score": 0.35,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 10,
+    "train_samples": 44,
+    "val_samples": 10,
+    "test_samples": 10,
+    "total_samples": 64,
+    "true_positives": 7,
+    "false_negatives": 3,
+    "false_positives": 10,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "DİL",
+        "count": 1
+      },
+      {
+        "target_class": "3",
+        "count": 1
+      },
+      {
+        "target_class": "ONUN",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SİZ",
+        "count": 6
+      },
+      {
+        "source_class": "ƏRZAQ",
+        "count": 1
+      },
+      {
+        "source_class": "UCUZDUR",
+        "count": 1
+      }
+    ],
+    "overall_rank": 92,
+    "candidate_rank": 89
+  },
+  {
+    "index": 84,
+    "class_name": "MÜRACİƏT",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.4,
+    "f1_score": 0.5714,
+    "quality_score": 0.6025,
+    "sample_score": 0.55,
+    "confusion_score": 0.7,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 5,
+    "train_samples": 23,
+    "val_samples": 5,
+    "test_samples": 5,
+    "total_samples": 33,
+    "true_positives": 2,
+    "false_negatives": 3,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "ÇOX",
+        "count": 1
+      },
+      {
+        "target_class": "XİRDA",
+        "count": 1
+      },
+      {
+        "target_class": "İSTƏMƏK",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 93,
+    "candidate_rank": 90
+  },
+  {
+    "index": 176,
+    "class_name": "ÇOX",
+    "is_word": true,
+    "precision": 0.4444,
+    "recall": 0.8,
+    "f1_score": 0.5714,
+    "quality_score": 0.5917,
+    "sample_score": 0.5667,
+    "confusion_score": 0.4,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 5,
+    "train_samples": 24,
+    "val_samples": 5,
+    "test_samples": 5,
+    "total_samples": 34,
+    "true_positives": 4,
+    "false_negatives": 1,
+    "false_positives": 5,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İŞARƏ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "UNUTMUŞAM",
+        "count": 1
+      },
+      {
+        "source_class": "UŞAQ",
+        "count": 1
+      },
+      {
+        "source_class": "MÜRACİƏT",
+        "count": 1
+      }
+    ],
+    "overall_rank": 94,
+    "candidate_rank": 91
+  },
+  {
+    "index": 14,
+    "class_name": "AVTOMOBİL",
+    "is_word": true,
+    "precision": 0.6,
+    "recall": 0.6,
+    "f1_score": 0.6,
+    "quality_score": 0.59,
+    "sample_score": 0.5333,
+    "confusion_score": 0.6,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 5,
+    "train_samples": 22,
+    "val_samples": 5,
+    "test_samples": 5,
+    "total_samples": 32,
+    "true_positives": 3,
+    "false_negatives": 2,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "GETMƏK",
+        "count": 1
+      },
+      {
+        "target_class": "D",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "UCUZDUR",
+        "count": 1
+      },
+      {
+        "source_class": "EDİR",
+        "count": 1
+      }
+    ],
+    "overall_rank": 95,
+    "candidate_rank": 92
+  },
+  {
+    "index": 91,
+    "class_name": "NECƏ",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.75,
+    "f1_score": 0.6,
+    "quality_score": 0.59,
+    "sample_score": 0.45,
+    "confusion_score": 0.5,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 4,
+    "train_samples": 19,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 27,
+    "true_positives": 3,
+    "false_negatives": 1,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "UNİVERSİTET",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "HANSI",
+        "count": 3
+      }
+    ],
+    "overall_rank": 96,
+    "candidate_rank": 93
+  },
+  {
+    "index": 69,
+    "class_name": "HANSI",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1_score": 0.5,
+    "quality_score": 0.575,
+    "sample_score": 1.0,
+    "confusion_score": 0.5,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 10,
+    "train_samples": 48,
+    "val_samples": 10,
+    "test_samples": 10,
+    "total_samples": 68,
+    "true_positives": 5,
+    "false_negatives": 5,
+    "false_positives": 5,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "NECƏ",
+        "count": 3
+      },
+      {
+        "target_class": "İNDİ",
+        "count": 1
+      },
+      {
+        "target_class": "NƏDİR",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BU GÜN",
+        "count": 2
+      },
+      {
+        "source_class": "MƏN",
+        "count": 1
+      },
+      {
+        "source_class": "OXUMAQ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 97,
+    "candidate_rank": 94
+  },
+  {
+    "index": 190,
+    "class_name": "İTMİŞ",
+    "is_word": true,
+    "precision": 0.4,
+    "recall": 1.0,
+    "f1_score": 0.5714,
+    "quality_score": 0.575,
+    "sample_score": 0.2667,
+    "confusion_score": 0.25,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 12,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 16,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 3,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SİZ",
+        "count": 1
+      },
+      {
+        "source_class": "BİTMƏK",
+        "count": 1
+      },
+      {
+        "source_class": "GECİKMƏK",
+        "count": 1
+      }
+    ],
+    "overall_rank": 98,
+    "candidate_rank": 95
+  },
+  {
+    "index": 90,
+    "class_name": "N",
+    "is_word": false,
+    "precision": 0.4,
+    "recall": 1.0,
+    "f1_score": 0.5714,
+    "quality_score": 0.5725,
+    "sample_score": 0.25,
+    "confusion_score": 0.25,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 11,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 15,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 3,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "VAXT",
+        "count": 1
+      },
+      {
+        "source_class": "SU",
+        "count": 1
+      },
+      {
+        "source_class": "YAŞ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 99,
+    "candidate_rank": null
+  },
+  {
+    "index": 131,
+    "class_name": "SUBAY",
+    "is_word": true,
+    "precision": 0.4,
+    "recall": 1.0,
+    "f1_score": 0.5714,
+    "quality_score": 0.57,
+    "sample_score": 0.2333,
+    "confusion_score": 0.25,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 10,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 14,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 3,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "MƏN",
+        "count": 2
+      },
+      {
+        "source_class": "İSTƏMƏK",
+        "count": 1
+      }
+    ],
+    "overall_rank": 100,
+    "candidate_rank": 96
+  },
+  {
+    "index": 83,
+    "class_name": "METRO",
+    "is_word": true,
+    "precision": 0.4,
+    "recall": 1.0,
+    "f1_score": 0.5714,
+    "quality_score": 0.565,
+    "sample_score": 0.2,
+    "confusion_score": 0.25,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 3,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "GETMƏK",
+        "count": 2
+      },
+      {
+        "source_class": "AİLƏ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 101,
+    "candidate_rank": 97
+  },
+  {
+    "index": 15,
+    "class_name": "AXŞAM",
+    "is_word": true,
+    "precision": 0.6667,
+    "recall": 0.5,
+    "f1_score": 0.5714,
+    "quality_score": 0.555,
+    "sample_score": 0.45,
+    "confusion_score": 0.625,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 4,
+    "train_samples": 19,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 27,
+    "true_positives": 2,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "XAHİŞ",
+        "count": 1
+      },
+      {
+        "target_class": "KƏND",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SÖNDURƏ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 102,
+    "candidate_rank": 98
+  },
+  {
+    "index": 3,
+    "class_name": "A",
+    "is_word": false,
+    "precision": 0.6667,
+    "recall": 0.5,
+    "f1_score": 0.5714,
+    "quality_score": 0.5475,
+    "sample_score": 0.4,
+    "confusion_score": 0.625,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 4,
+    "train_samples": 16,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 24,
+    "true_positives": 2,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "DİL",
+        "count": 1
+      },
+      {
+        "target_class": "SABAH",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "ORA",
+        "count": 1
+      }
+    ],
+    "overall_rank": 103,
+    "candidate_rank": null
+  },
+  {
+    "index": 23,
+    "class_name": "BALACA",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.3333,
+    "f1_score": 0.5,
+    "quality_score": 0.5225,
+    "sample_score": 0.3167,
+    "confusion_score": 0.6667,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 13,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 19,
+    "true_positives": 1,
+    "false_negatives": 2,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "J",
+        "count": 1
+      },
+      {
+        "target_class": "KÖYNƏK",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 104,
+    "candidate_rank": 99
+  },
+  {
+    "index": 167,
+    "class_name": "YENİ",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.3333,
+    "f1_score": 0.5,
+    "quality_score": 0.5225,
+    "sample_score": 0.3167,
+    "confusion_score": 0.6667,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 13,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 19,
+    "true_positives": 1,
+    "false_negatives": 2,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "BURA",
+        "count": 1
+      },
+      {
+        "target_class": "OXUMAQ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 105,
+    "candidate_rank": 100
+  },
+  {
+    "index": 66,
+    "class_name": "GƏLMƏK",
+    "is_word": true,
+    "precision": 0.6667,
+    "recall": 0.4,
+    "f1_score": 0.5,
+    "quality_score": 0.52,
+    "sample_score": 0.5667,
+    "confusion_score": 0.6,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 5,
+    "train_samples": 24,
+    "val_samples": 5,
+    "test_samples": 5,
+    "total_samples": 34,
+    "true_positives": 2,
+    "false_negatives": 3,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "UŞAQLAR",
+        "count": 1
+      },
+      {
+        "target_class": "ONLAR",
+        "count": 1
+      },
+      {
+        "target_class": "HAMI",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BİZ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 106,
+    "candidate_rank": 101
+  },
+  {
+    "index": 70,
+    "class_name": "HARDA",
+    "is_word": true,
+    "precision": 0.4286,
+    "recall": 0.6,
+    "f1_score": 0.5,
+    "quality_score": 0.5193,
+    "sample_score": 0.6,
+    "confusion_score": 0.4,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 5,
+    "train_samples": 26,
+    "val_samples": 5,
+    "test_samples": 5,
+    "total_samples": 36,
+    "true_positives": 3,
+    "false_negatives": 2,
+    "false_positives": 4,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "ALMAQ",
+        "count": 1
+      },
+      {
+        "target_class": "ORA",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "İŞİGİ",
+        "count": 1
+      },
+      {
+        "source_class": "SƏN",
+        "count": 1
+      },
+      {
+        "source_class": "ETİBARNAMƏ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 107,
+    "candidate_rank": 102
+  },
+  {
+    "index": 122,
+    "class_name": "SABAH",
+    "is_word": true,
+    "precision": 0.3636,
+    "recall": 0.6667,
+    "f1_score": 0.4706,
+    "quality_score": 0.5184,
+    "sample_score": 0.7167,
+    "confusion_score": 0.25,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 6,
+    "train_samples": 31,
+    "val_samples": 6,
+    "test_samples": 6,
+    "total_samples": 43,
+    "true_positives": 4,
+    "false_negatives": 2,
+    "false_positives": 7,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SƏHƏR",
+        "count": 1
+      },
+      {
+        "target_class": "DOST",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "DÜNƏN",
+        "count": 4
+      },
+      {
+        "source_class": "A",
+        "count": 1
+      },
+      {
+        "source_class": "PAROL",
+        "count": 1
+      }
+    ],
+    "overall_rank": 108,
+    "candidate_rank": 103
+  },
+  {
+    "index": 37,
+    "class_name": "BİLƏR",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.4286,
+    "f1_score": 0.4615,
+    "quality_score": 0.5162,
+    "sample_score": 0.8167,
+    "confusion_score": 0.5,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 7,
+    "train_samples": 35,
+    "val_samples": 7,
+    "test_samples": 7,
+    "total_samples": 49,
+    "true_positives": 3,
+    "false_negatives": 4,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "BİLMƏK",
+        "count": 2
+      },
+      {
+        "target_class": "UŞAQLAR",
+        "count": 1
+      },
+      {
+        "target_class": "SƏRGİ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SÖNDURƏ",
+        "count": 1
+      },
+      {
+        "source_class": "BİLMƏK",
+        "count": 1
+      },
+      {
+        "source_class": "EDƏ BİLMƏK",
+        "count": 1
+      }
+    ],
+    "overall_rank": 109,
+    "candidate_rank": 104
+  },
+  {
+    "index": 89,
+    "class_name": "MƏTBƏX",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 1.0,
+    "f1_score": 0.5,
+    "quality_score": 0.5075,
+    "sample_score": 0.2167,
+    "confusion_score": 0.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 9,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 13,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 4,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "GETMƏK",
+        "count": 1
+      },
+      {
+        "source_class": "EV",
+        "count": 1
+      },
+      {
+        "source_class": "2",
+        "count": 1
+      }
+    ],
+    "overall_rank": 110,
+    "candidate_rank": 105
+  },
+  {
+    "index": 137,
+    "class_name": "SƏN",
+    "is_word": true,
+    "precision": 0.3125,
+    "recall": 0.7143,
+    "f1_score": 0.4348,
+    "quality_score": 0.5048,
+    "sample_score": 0.8,
+    "confusion_score": 0.0714,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 7,
+    "train_samples": 34,
+    "val_samples": 7,
+    "test_samples": 7,
+    "total_samples": 48,
+    "true_positives": 5,
+    "false_negatives": 2,
+    "false_positives": 11,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "HARDA",
+        "count": 1
+      },
+      {
+        "target_class": "ONUN",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BURDA",
+        "count": 3
+      },
+      {
+        "source_class": "O",
+        "count": 3
+      },
+      {
+        "source_class": "ONUN",
+        "count": 2
+      }
+    ],
+    "overall_rank": 111,
+    "candidate_rank": 106
+  },
+  {
+    "index": 76,
+    "class_name": "KOMANDA",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 1.0,
+    "f1_score": 0.5,
+    "quality_score": 0.5,
+    "sample_score": 0.1667,
+    "confusion_score": 0.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 4,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "DƏYİŞMƏK",
+        "count": 1
+      },
+      {
+        "source_class": "EV",
+        "count": 1
+      },
+      {
+        "source_class": "AİLƏ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 112,
+    "candidate_rank": 107
+  },
+  {
+    "index": 1,
+    "class_name": "2",
+    "is_word": false,
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1_score": 0.5,
+    "quality_score": 0.495,
+    "sample_score": 0.4667,
+    "confusion_score": 0.5,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 4,
+    "train_samples": 20,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 28,
+    "true_positives": 2,
+    "false_negatives": 2,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "YEMƏK",
+        "count": 1
+      },
+      {
+        "target_class": "MƏTBƏX",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "Ə",
+        "count": 1
+      },
+      {
+        "source_class": "YEMƏK",
+        "count": 1
+      }
+    ],
+    "overall_rank": 113,
+    "candidate_rank": null
+  },
+  {
+    "index": 68,
+    "class_name": "HAMI",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1_score": 0.5,
+    "quality_score": 0.4925,
+    "sample_score": 0.45,
+    "confusion_score": 0.5,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 4,
+    "train_samples": 19,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 27,
+    "true_positives": 2,
+    "false_negatives": 2,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "BİZ",
+        "count": 1
+      },
+      {
+        "target_class": "BURDA",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BİZ",
+        "count": 1
+      },
+      {
+        "source_class": "GƏLMƏK",
+        "count": 1
+      }
+    ],
+    "overall_rank": 114,
+    "candidate_rank": 108
+  },
+  {
+    "index": 164,
+    "class_name": "YAŞ",
+    "is_word": true,
+    "precision": 0.4,
+    "recall": 0.6667,
+    "f1_score": 0.5,
+    "quality_score": 0.4925,
+    "sample_score": 0.3833,
+    "confusion_score": 0.3333,
+    "tier": "Tier 2 (Viable Candidate)",
+    "support": 3,
+    "train_samples": 17,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 23,
+    "true_positives": 2,
+    "false_negatives": 1,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "N",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "VAXT",
+        "count": 1
+      },
+      {
+        "source_class": "SAAT",
+        "count": 1
+      },
+      {
+        "source_class": "S",
+        "count": 1
+      }
+    ],
+    "overall_rank": 115,
+    "candidate_rank": 109
+  },
+  {
+    "index": 75,
+    "class_name": "J",
+    "is_word": false,
+    "precision": 0.25,
+    "recall": 1.0,
+    "f1_score": 0.4,
+    "quality_score": 0.4675,
+    "sample_score": 0.2667,
+    "confusion_score": 0.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 12,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 16,
+    "true_positives": 2,
+    "false_negatives": 0,
+    "false_positives": 6,
+    "top_outgoing_confusions": [],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SİZ",
+        "count": 2
+      },
+      {
+        "source_class": "DÜNƏN",
+        "count": 1
+      },
+      {
+        "source_class": "BALACA",
+        "count": 1
+      }
+    ],
+    "overall_rank": 116,
+    "candidate_rank": null
+  },
+  {
+    "index": 6,
+    "class_name": "AD",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1_score": 0.5,
+    "quality_score": 0.465,
+    "sample_score": 0.2667,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 12,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 16,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "ETMƏK",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "QONŞU",
+        "count": 1
+      }
+    ],
+    "overall_rank": 117,
+    "candidate_rank": 110
+  },
+  {
+    "index": 152,
+    "class_name": "VERMƏK",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1_score": 0.5,
+    "quality_score": 0.465,
+    "sample_score": 0.2667,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 12,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 16,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "MƏNƏ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "ƏLİL",
+        "count": 1
+      }
+    ],
+    "overall_rank": 118,
+    "candidate_rank": 111
+  },
+  {
+    "index": 78,
+    "class_name": "KÖMƏK",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1_score": 0.5,
+    "quality_score": 0.4625,
+    "sample_score": 0.25,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 11,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 15,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "QAPI",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "XİRDA",
+        "count": 1
+      }
+    ],
+    "overall_rank": 119,
+    "candidate_rank": 112
+  },
+  {
+    "index": 121,
+    "class_name": "SAAT",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1_score": 0.5,
+    "quality_score": 0.4625,
+    "sample_score": 0.25,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 11,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 15,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "YAŞ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BURDA",
+        "count": 1
+      }
+    ],
+    "overall_rank": 120,
+    "candidate_rank": 113
+  },
+  {
+    "index": 11,
+    "class_name": "APARAT",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1_score": 0.5,
+    "quality_score": 0.455,
+    "sample_score": 0.2,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "GÖRMƏK",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SİZ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 121,
+    "candidate_rank": 114
+  },
+  {
+    "index": 106,
+    "class_name": "OYNAMAQ",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1_score": 0.5,
+    "quality_score": 0.455,
+    "sample_score": 0.2,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "RƏSİM",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "ALMAQ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 122,
+    "candidate_rank": 115
+  },
+  {
+    "index": 184,
+    "class_name": "İDMAN",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1_score": 0.5,
+    "quality_score": 0.455,
+    "sample_score": 0.2,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "KÖYNƏK",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BAXMAQ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 123,
+    "candidate_rank": 116
+  },
+  {
+    "index": 188,
+    "class_name": "İSTƏMƏK",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.25,
+    "f1_score": 0.3333,
+    "quality_score": 0.4542,
+    "sample_score": 1.0,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 16,
+    "train_samples": 73,
+    "val_samples": 16,
+    "test_samples": 16,
+    "total_samples": 105,
+    "true_positives": 4,
+    "false_negatives": 12,
+    "false_positives": 4,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İSTƏYİRƏM",
+        "count": 8
+      },
+      {
+        "target_class": "SUBAY",
+        "count": 1
+      },
+      {
+        "target_class": "MƏN",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "İSTƏYİRƏM",
+        "count": 3
+      },
+      {
+        "source_class": "MÜRACİƏT",
+        "count": 1
+      }
+    ],
+    "overall_rank": 124,
+    "candidate_rank": 117
+  },
+  {
+    "index": 80,
+    "class_name": "KƏND",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1_score": 0.5,
+    "quality_score": 0.4525,
+    "sample_score": 0.1833,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "EV",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "AXŞAM",
+        "count": 1
+      }
+    ],
+    "overall_rank": 125,
+    "candidate_rank": 118
+  },
+  {
+    "index": 16,
+    "class_name": "AYAQ",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1_score": 0.5,
+    "quality_score": 0.45,
+    "sample_score": 0.1667,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "BURDA",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BURA",
+        "count": 1
+      }
+    ],
+    "overall_rank": 126,
+    "candidate_rank": 119
+  },
+  {
+    "index": 41,
+    "class_name": "COVİD",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1_score": 0.5,
+    "quality_score": 0.45,
+    "sample_score": 0.1667,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İL",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SU",
+        "count": 1
+      }
+    ],
+    "overall_rank": 127,
+    "candidate_rank": 120
+  },
+  {
+    "index": 145,
+    "class_name": "UNUTMUŞAM",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1_score": 0.5,
+    "quality_score": 0.45,
+    "sample_score": 0.1667,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "ÇOX",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SİZ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 128,
+    "candidate_rank": 121
+  },
+  {
+    "index": 47,
+    "class_name": "DÜNƏN",
+    "is_word": true,
+    "precision": 1.0,
+    "recall": 0.1667,
+    "f1_score": 0.2857,
+    "quality_score": 0.4475,
+    "sample_score": 0.65,
+    "confusion_score": 0.5833,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 6,
+    "train_samples": 27,
+    "val_samples": 6,
+    "test_samples": 6,
+    "total_samples": 39,
+    "true_positives": 1,
+    "false_negatives": 5,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SABAH",
+        "count": 4
+      },
+      {
+        "target_class": "J",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 129,
+    "candidate_rank": 122
+  },
+  {
+    "index": 191,
+    "class_name": "İŞ",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.3333,
+    "f1_score": 0.4,
+    "quality_score": 0.4458,
+    "sample_score": 0.65,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 6,
+    "train_samples": 27,
+    "val_samples": 6,
+    "test_samples": 6,
+    "total_samples": 39,
+    "true_positives": 2,
+    "false_negatives": 4,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İŞSİZ",
+        "count": 1
+      },
+      {
+        "target_class": "İSTİ",
+        "count": 1
+      },
+      {
+        "target_class": "UNİVERSİTET",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "AD GÜNÜ",
+        "count": 1
+      },
+      {
+        "source_class": "AZƏRBAYCAN",
+        "count": 1
+      }
+    ],
+    "overall_rank": 130,
+    "candidate_rank": 123
+  },
+  {
+    "index": 102,
+    "class_name": "ONUN",
+    "is_word": true,
+    "precision": 0.2439,
+    "recall": 0.5556,
+    "f1_score": 0.339,
+    "quality_score": 0.4441,
+    "sample_score": 1.0,
+    "confusion_score": 0.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 18,
+    "train_samples": 82,
+    "val_samples": 18,
+    "test_samples": 18,
+    "total_samples": 118,
+    "true_positives": 10,
+    "false_negatives": 8,
+    "false_positives": 31,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "O",
+        "count": 3
+      },
+      {
+        "target_class": "SƏN",
+        "count": 2
+      },
+      {
+        "target_class": "ORDA",
+        "count": 2
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "O",
+        "count": 26
+      },
+      {
+        "source_class": "ORDA",
+        "count": 3
+      },
+      {
+        "source_class": "SƏN",
+        "count": 1
+      }
+    ],
+    "overall_rank": 131,
+    "candidate_rank": 124
+  },
+  {
+    "index": 186,
+    "class_name": "İNDİ",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 0.6667,
+    "f1_score": 0.4444,
+    "quality_score": 0.4389,
+    "sample_score": 0.3333,
+    "confusion_score": 0.1667,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 14,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 20,
+    "true_positives": 2,
+    "false_negatives": 1,
+    "false_positives": 4,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "BU GÜN",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BƏLİ",
+        "count": 2
+      },
+      {
+        "source_class": "SİZ",
+        "count": 1
+      },
+      {
+        "source_class": "HANSI",
+        "count": 1
+      }
+    ],
+    "overall_rank": 132,
+    "candidate_rank": 125
+  },
+  {
+    "index": 63,
+    "class_name": "GÖRMƏK",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 0.6667,
+    "f1_score": 0.4444,
+    "quality_score": 0.4364,
+    "sample_score": 0.3167,
+    "confusion_score": 0.1667,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 13,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 19,
+    "true_positives": 2,
+    "false_negatives": 1,
+    "false_positives": 4,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "RƏSİM",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "İSTƏYİRƏM",
+        "count": 1
+      },
+      {
+        "source_class": "APARAT",
+        "count": 1
+      },
+      {
+        "source_class": "PUL",
+        "count": 1
+      }
+    ],
+    "overall_rank": 133,
+    "candidate_rank": 126
+  },
+  {
+    "index": 55,
+    "class_name": "EŞİTMƏ",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 0.6667,
+    "f1_score": 0.4444,
+    "quality_score": 0.4339,
+    "sample_score": 0.3,
+    "confusion_score": 0.1667,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 12,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 18,
+    "true_positives": 2,
+    "false_negatives": 1,
+    "false_positives": 4,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "QARABAĞ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "İŞSİZ",
+        "count": 1
+      },
+      {
+        "source_class": "İŞ",
+        "count": 1
+      },
+      {
+        "source_class": "EŞİTMƏ MƏHDÜDİYYƏTLİ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 134,
+    "candidate_rank": 127
+  },
+  {
+    "index": 52,
+    "class_name": "ETMƏK",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 0.6667,
+    "f1_score": 0.4444,
+    "quality_score": 0.4314,
+    "sample_score": 0.2833,
+    "confusion_score": 0.1667,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 11,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 17,
+    "true_positives": 2,
+    "false_negatives": 1,
+    "false_positives": 4,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "PAROL",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SOYUQ",
+        "count": 1
+      },
+      {
+        "source_class": "ÇANTA",
+        "count": 1
+      },
+      {
+        "source_class": "EDİR",
+        "count": 1
+      }
+    ],
+    "overall_rank": 135,
+    "candidate_rank": 128
+  },
+  {
+    "index": 97,
+    "class_name": "OLAR",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.3333,
+    "f1_score": 0.4,
+    "quality_score": 0.4058,
+    "sample_score": 0.3833,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 17,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 23,
+    "true_positives": 1,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SƏN",
+        "count": 1
+      },
+      {
+        "target_class": "QARABAĞ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BURDA",
+        "count": 1
+      }
+    ],
+    "overall_rank": 136,
+    "candidate_rank": 129
+  },
+  {
+    "index": 127,
+    "class_name": "SONRA",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.3333,
+    "f1_score": 0.4,
+    "quality_score": 0.4033,
+    "sample_score": 0.3667,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 16,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 22,
+    "true_positives": 1,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "D",
+        "count": 1
+      },
+      {
+        "target_class": "OLUR",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "OĞUL",
+        "count": 1
+      }
+    ],
+    "overall_rank": 137,
+    "candidate_rank": 130
+  },
+  {
+    "index": 19,
+    "class_name": "AĞRIMAQ",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.3333,
+    "f1_score": 0.4,
+    "quality_score": 0.3958,
+    "sample_score": 0.3167,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 13,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 19,
+    "true_positives": 1,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "XEYİR",
+        "count": 1
+      },
+      {
+        "target_class": "QIZ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "ZƏHMƏT OLMASA",
+        "count": 1
+      }
+    ],
+    "overall_rank": 138,
+    "candidate_rank": 131
+  },
+  {
+    "index": 94,
+    "class_name": "NƏDİR",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.3333,
+    "f1_score": 0.4,
+    "quality_score": 0.3958,
+    "sample_score": 0.3167,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 13,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 19,
+    "true_positives": 1,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "YAŞAMAQ",
+        "count": 1
+      },
+      {
+        "target_class": "LAZIM",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "HANSI",
+        "count": 1
+      }
+    ],
+    "overall_rank": 139,
+    "candidate_rank": 132
+  },
+  {
+    "index": 74,
+    "class_name": "IKI",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.3333,
+    "f1_score": 0.4,
+    "quality_score": 0.3908,
+    "sample_score": 0.2833,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 11,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 17,
+    "true_positives": 1,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "UŞAQ",
+        "count": 1
+      },
+      {
+        "target_class": "RƏSİM",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "3",
+        "count": 1
+      }
+    ],
+    "overall_rank": 140,
+    "candidate_rank": 133
+  },
+  {
+    "index": 155,
+    "class_name": "XAHİŞ",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.3333,
+    "f1_score": 0.4,
+    "quality_score": 0.3908,
+    "sample_score": 0.2833,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 11,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 17,
+    "true_positives": 1,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "EV",
+        "count": 2
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "AXŞAM",
+        "count": 1
+      }
+    ],
+    "overall_rank": 141,
+    "candidate_rank": 134
+  },
+  {
+    "index": 45,
+    "class_name": "DOST",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 0.5,
+    "f1_score": 0.4,
+    "quality_score": 0.38,
+    "sample_score": 0.2667,
+    "confusion_score": 0.25,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 12,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 16,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SABAH",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BU AY",
+        "count": 1
+      },
+      {
+        "source_class": "SABAH",
+        "count": 1
+      }
+    ],
+    "overall_rank": 142,
+    "candidate_rank": 135
+  },
+  {
+    "index": 108,
+    "class_name": "PAROL",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 0.5,
+    "f1_score": 0.4,
+    "quality_score": 0.3775,
+    "sample_score": 0.25,
+    "confusion_score": 0.25,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 11,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 15,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SABAH",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "ETMƏK",
+        "count": 1
+      },
+      {
+        "source_class": "BAZAR",
+        "count": 1
+      }
+    ],
+    "overall_rank": 143,
+    "candidate_rank": 136
+  },
+  {
+    "index": 158,
+    "class_name": "XOŞU GƏLMƏK",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 0.5,
+    "f1_score": 0.4,
+    "quality_score": 0.3775,
+    "sample_score": 0.25,
+    "confusion_score": 0.25,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 11,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 15,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "GÖRƏ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BAXMAQ",
+        "count": 1
+      },
+      {
+        "source_class": "MƏN",
+        "count": 1
+      }
+    ],
+    "overall_rank": 144,
+    "candidate_rank": 137
+  },
+  {
+    "index": 95,
+    "class_name": "O",
+    "is_word": true,
+    "precision": 0.5556,
+    "recall": 0.1111,
+    "f1_score": 0.1852,
+    "quality_score": 0.377,
+    "sample_score": 1.0,
+    "confusion_score": 0.5111,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 45,
+    "train_samples": 213,
+    "val_samples": 45,
+    "test_samples": 45,
+    "total_samples": 303,
+    "true_positives": 5,
+    "false_negatives": 40,
+    "false_positives": 4,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "ONUN",
+        "count": 26
+      },
+      {
+        "target_class": "SƏN",
+        "count": 3
+      },
+      {
+        "target_class": "ORA",
+        "count": 3
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "ONUN",
+        "count": 3
+      },
+      {
+        "source_class": "ORA",
+        "count": 1
+      }
+    ],
+    "overall_rank": 145,
+    "candidate_rank": 138
+  },
+  {
+    "index": 112,
+    "class_name": "QAPI",
+    "is_word": true,
+    "precision": 0.25,
+    "recall": 0.6667,
+    "f1_score": 0.3636,
+    "quality_score": 0.3764,
+    "sample_score": 0.3,
+    "confusion_score": 0.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 12,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 18,
+    "true_positives": 2,
+    "false_negatives": 1,
+    "false_positives": 6,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "KOMANDA",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "ƏLİL",
+        "count": 2
+      },
+      {
+        "source_class": "XİRDA",
+        "count": 1
+      },
+      {
+        "source_class": "KÖMƏK",
+        "count": 1
+      }
+    ],
+    "overall_rank": 146,
+    "candidate_rank": 139
+  },
+  {
+    "index": 96,
+    "class_name": "OLACAQ",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 0.5,
+    "f1_score": 0.4,
+    "quality_score": 0.37,
+    "sample_score": 0.2,
+    "confusion_score": 0.25,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "HƏKİM",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "UŞAQ",
+        "count": 1
+      },
+      {
+        "source_class": "YATMAQ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 147,
+    "candidate_rank": 140
+  },
+  {
+    "index": 136,
+    "class_name": "SƏHƏR",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 0.5,
+    "f1_score": 0.4,
+    "quality_score": 0.37,
+    "sample_score": 0.2,
+    "confusion_score": 0.25,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "QIZ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "YOX",
+        "count": 1
+      },
+      {
+        "source_class": "SABAH",
+        "count": 1
+      }
+    ],
+    "overall_rank": 148,
+    "candidate_rank": 141
+  },
+  {
+    "index": 168,
+    "class_name": "YER",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 0.5,
+    "f1_score": 0.4,
+    "quality_score": 0.3675,
+    "sample_score": 0.1833,
+    "confusion_score": 0.25,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "KOMPÜTER",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "KOMPÜTER",
+        "count": 2
+      }
+    ],
+    "overall_rank": 149,
+    "candidate_rank": 142
+  },
+  {
+    "index": 130,
+    "class_name": "SU",
+    "is_word": true,
+    "precision": 0.5,
+    "recall": 0.25,
+    "f1_score": 0.3333,
+    "quality_score": 0.3667,
+    "sample_score": 0.4167,
+    "confusion_score": 0.5,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 4,
+    "train_samples": 17,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 25,
+    "true_positives": 1,
+    "false_negatives": 3,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "N",
+        "count": 1
+      },
+      {
+        "target_class": "COVİD",
+        "count": 1
+      },
+      {
+        "target_class": "HƏKİM",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "S",
+        "count": 1
+      }
+    ],
+    "overall_rank": 150,
+    "candidate_rank": 143
+  },
+  {
+    "index": 43,
+    "class_name": "DEYİL",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 0.5,
+    "f1_score": 0.4,
+    "quality_score": 0.365,
+    "sample_score": 0.1667,
+    "confusion_score": 0.25,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "VAR",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "YOX",
+        "count": 1
+      },
+      {
+        "source_class": "OLUR",
+        "count": 1
+      }
+    ],
+    "overall_rank": 151,
+    "candidate_rank": 144
+  },
+  {
+    "index": 36,
+    "class_name": "BİLMƏK",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 0.3333,
+    "f1_score": 0.3333,
+    "quality_score": 0.3383,
+    "sample_score": 0.3667,
+    "confusion_score": 0.3333,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 16,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 22,
+    "true_positives": 1,
+    "false_negatives": 2,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SRAĞAGÜN",
+        "count": 1
+      },
+      {
+        "target_class": "BİLƏR",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BİLƏR",
+        "count": 2
+      }
+    ],
+    "overall_rank": 152,
+    "candidate_rank": 145
+  },
+  {
+    "index": 59,
+    "class_name": "GECİKMƏK",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 0.3333,
+    "f1_score": 0.3333,
+    "quality_score": 0.3358,
+    "sample_score": 0.35,
+    "confusion_score": 0.3333,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 15,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 21,
+    "true_positives": 1,
+    "false_negatives": 2,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İTMİŞ",
+        "count": 1
+      },
+      {
+        "target_class": "BAYRAQ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "YAŞAMAQ",
+        "count": 1
+      },
+      {
+        "source_class": "BAYRAQ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 153,
+    "candidate_rank": 146
+  },
+  {
+    "index": 87,
+    "class_name": "MƏNİM",
+    "is_word": true,
+    "precision": 0.1509,
+    "recall": 0.32,
+    "f1_score": 0.2051,
+    "quality_score": 0.3244,
+    "sample_score": 1.0,
+    "confusion_score": 0.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 25,
+    "train_samples": 118,
+    "val_samples": 25,
+    "test_samples": 25,
+    "total_samples": 168,
+    "true_positives": 8,
+    "false_negatives": 17,
+    "false_positives": 45,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "MƏN",
+        "count": 11
+      },
+      {
+        "target_class": "MƏNƏ",
+        "count": 5
+      },
+      {
+        "target_class": "ƏLİL",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "MƏN",
+        "count": 44
+      },
+      {
+        "source_class": "İSTƏMƏK",
+        "count": 1
+      }
+    ],
+    "overall_rank": 154,
+    "candidate_rank": 147
+  },
+  {
+    "index": 20,
+    "class_name": "AİLƏ",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 0.25,
+    "f1_score": 0.2857,
+    "quality_score": 0.3125,
+    "sample_score": 0.4167,
+    "confusion_score": 0.375,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 4,
+    "train_samples": 17,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 25,
+    "true_positives": 1,
+    "false_negatives": 3,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "METRO",
+        "count": 1
+      },
+      {
+        "target_class": "ETİBARNAMƏ",
+        "count": 1
+      },
+      {
+        "target_class": "KOMANDA",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BAĞ",
+        "count": 1
+      },
+      {
+        "source_class": "RAYONLARDA",
+        "count": 1
+      }
+    ],
+    "overall_rank": 155,
+    "candidate_rank": 148
+  },
+  {
+    "index": 174,
+    "class_name": "ZƏNG",
+    "is_word": true,
+    "precision": 0.25,
+    "recall": 0.5,
+    "f1_score": 0.3333,
+    "quality_score": 0.3117,
+    "sample_score": 0.2167,
+    "confusion_score": 0.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 9,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 13,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "TELEFON",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "TELEFON",
+        "count": 2
+      },
+      {
+        "source_class": "SİZ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 156,
+    "candidate_rank": 149
+  },
+  {
+    "index": 151,
+    "class_name": "VAXT",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 0.25,
+    "f1_score": 0.2857,
+    "quality_score": 0.31,
+    "sample_score": 0.4,
+    "confusion_score": 0.375,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 4,
+    "train_samples": 16,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 24,
+    "true_positives": 1,
+    "false_negatives": 3,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "YAŞ",
+        "count": 1
+      },
+      {
+        "target_class": "HƏKİM",
+        "count": 1
+      },
+      {
+        "target_class": "N",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "D",
+        "count": 1
+      },
+      {
+        "source_class": "QIZ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 157,
+    "candidate_rank": 150
+  },
+  {
+    "index": 194,
+    "class_name": "İŞLƏMƏK",
+    "is_word": true,
+    "precision": 0.3333,
+    "recall": 0.25,
+    "f1_score": 0.2857,
+    "quality_score": 0.31,
+    "sample_score": 0.4,
+    "confusion_score": 0.375,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 4,
+    "train_samples": 16,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 24,
+    "true_positives": 1,
+    "false_negatives": 3,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İŞSİZ",
+        "count": 1
+      },
+      {
+        "target_class": "İSTİ",
+        "count": 1
+      },
+      {
+        "target_class": "UNİVERSİTET",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "QARABAĞ",
+        "count": 2
+      }
+    ],
+    "overall_rank": 158,
+    "candidate_rank": 151
+  },
+  {
+    "index": 72,
+    "class_name": "HƏKİM",
+    "is_word": true,
+    "precision": 0.25,
+    "recall": 0.5,
+    "f1_score": 0.3333,
+    "quality_score": 0.3067,
+    "sample_score": 0.1833,
+    "confusion_score": 0.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "VAXT",
+        "count": 1
+      },
+      {
+        "source_class": "SU",
+        "count": 1
+      },
+      {
+        "source_class": "OLACAQ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 159,
+    "candidate_rank": 152
+  },
+  {
+    "index": 129,
+    "class_name": "SRAĞAGÜN",
+    "is_word": true,
+    "precision": 0.2,
+    "recall": 0.5,
+    "f1_score": 0.2857,
+    "quality_score": 0.2925,
+    "sample_score": 0.25,
+    "confusion_score": 0.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 11,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 15,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 4,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "AZƏRBAYCAN",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "TƏHSİL",
+        "count": 1
+      },
+      {
+        "source_class": "BİLMƏK",
+        "count": 1
+      },
+      {
+        "source_class": "O",
+        "count": 1
+      }
+    ],
+    "overall_rank": 160,
+    "candidate_rank": 153
+  },
+  {
+    "index": 33,
+    "class_name": "BURA",
+    "is_word": true,
+    "precision": 0.25,
+    "recall": 0.3333,
+    "f1_score": 0.2857,
+    "quality_score": 0.2875,
+    "sample_score": 0.3333,
+    "confusion_score": 0.1667,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 14,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 20,
+    "true_positives": 1,
+    "false_negatives": 2,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "BURDA",
+        "count": 1
+      },
+      {
+        "target_class": "AYAQ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "YENİ",
+        "count": 1
+      },
+      {
+        "source_class": "O",
+        "count": 1
+      },
+      {
+        "source_class": "BURDA",
+        "count": 1
+      }
+    ],
+    "overall_rank": 161,
+    "candidate_rank": 154
+  },
+  {
+    "index": 44,
+    "class_name": "DONDURMA",
+    "is_word": true,
+    "precision": 0.25,
+    "recall": 0.3333,
+    "f1_score": 0.2857,
+    "quality_score": 0.2875,
+    "sample_score": 0.3333,
+    "confusion_score": 0.1667,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 14,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 20,
+    "true_positives": 1,
+    "false_negatives": 2,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SİZ",
+        "count": 1
+      },
+      {
+        "target_class": "EŞİTMƏ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "TƏHSİL",
+        "count": 1
+      },
+      {
+        "source_class": "O",
+        "count": 1
+      },
+      {
+        "source_class": "BAZAR",
+        "count": 1
+      }
+    ],
+    "overall_rank": 162,
+    "candidate_rank": 155
+  },
+  {
+    "index": 104,
+    "class_name": "ORDA",
+    "is_word": true,
+    "precision": 0.25,
+    "recall": 0.1667,
+    "f1_score": 0.2,
+    "quality_score": 0.275,
+    "sample_score": 0.6167,
+    "confusion_score": 0.3333,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 6,
+    "train_samples": 25,
+    "val_samples": 6,
+    "test_samples": 6,
+    "total_samples": 37,
+    "true_positives": 1,
+    "false_negatives": 5,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "ONUN",
+        "count": 3
+      },
+      {
+        "target_class": "ORA",
+        "count": 2
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "ONUN",
+        "count": 2
+      },
+      {
+        "source_class": "O",
+        "count": 1
+      }
+    ],
+    "overall_rank": 163,
+    "candidate_rank": 156
+  },
+  {
+    "index": 149,
+    "class_name": "UŞAQLAR",
+    "is_word": true,
+    "precision": 0.1667,
+    "recall": 0.5,
+    "f1_score": 0.25,
+    "quality_score": 0.275,
+    "sample_score": 0.25,
+    "confusion_score": 0.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 11,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 15,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 5,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SİZ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "UŞAQ",
+        "count": 1
+      },
+      {
+        "source_class": "SİZ",
+        "count": 1
+      },
+      {
+        "source_class": "İSTİ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 164,
+    "candidate_rank": 157
+  },
+  {
+    "index": 64,
+    "class_name": "GÖRƏ",
+    "is_word": true,
+    "precision": 0.125,
+    "recall": 0.5,
+    "f1_score": 0.2,
+    "quality_score": 0.2437,
+    "sample_score": 0.2,
+    "confusion_score": 0.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 1,
+    "false_negatives": 1,
+    "false_positives": 7,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "BU",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BU",
+        "count": 4
+      },
+      {
+        "source_class": "ÜÇÜN",
+        "count": 2
+      },
+      {
+        "source_class": "XOŞU GƏLMƏK",
+        "count": 1
+      }
+    ],
+    "overall_rank": 165,
+    "candidate_rank": 158
+  },
+  {
+    "index": 26,
+    "class_name": "BAYRAQ",
+    "is_word": true,
+    "precision": 0.2,
+    "recall": 0.3333,
+    "f1_score": 0.25,
+    "quality_score": 0.2433,
+    "sample_score": 0.2833,
+    "confusion_score": 0.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 11,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 17,
+    "true_positives": 1,
+    "false_negatives": 2,
+    "false_positives": 4,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "GECİKMƏK",
+        "count": 1
+      },
+      {
+        "target_class": "QAPI",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "ƏLİL",
+        "count": 1
+      },
+      {
+        "source_class": "SİZ",
+        "count": 1
+      },
+      {
+        "source_class": "GECİKMƏK",
+        "count": 1
+      }
+    ],
+    "overall_rank": 166,
+    "candidate_rank": 159
+  },
+  {
+    "index": 27,
+    "class_name": "BAZAR",
+    "is_word": true,
+    "precision": 0.2,
+    "recall": 0.25,
+    "f1_score": 0.2222,
+    "quality_score": 0.2428,
+    "sample_score": 0.4,
+    "confusion_score": 0.125,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 4,
+    "train_samples": 16,
+    "val_samples": 4,
+    "test_samples": 4,
+    "total_samples": 24,
+    "true_positives": 1,
+    "false_negatives": 3,
+    "false_positives": 4,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SİFARİŞ",
+        "count": 1
+      },
+      {
+        "target_class": "PAROL",
+        "count": 1
+      },
+      {
+        "target_class": "DONDURMA",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "O",
+        "count": 2
+      },
+      {
+        "source_class": "UŞAQ",
+        "count": 1
+      },
+      {
+        "source_class": "ONUN",
+        "count": 1
+      }
+    ],
+    "overall_rank": 167,
+    "candidate_rank": 160
+  },
+  {
+    "index": 88,
+    "class_name": "MƏNƏ",
+    "is_word": true,
+    "precision": 0.0328,
+    "recall": 0.2857,
+    "f1_score": 0.0588,
+    "quality_score": 0.2119,
+    "sample_score": 0.7667,
+    "confusion_score": 0.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 7,
+    "train_samples": 32,
+    "val_samples": 7,
+    "test_samples": 7,
+    "total_samples": 46,
+    "true_positives": 2,
+    "false_negatives": 5,
+    "false_positives": 59,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "MƏN",
+        "count": 3
+      },
+      {
+        "target_class": "ƏLİL",
+        "count": 1
+      },
+      {
+        "target_class": "FUTBOL",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "MƏN",
+        "count": 52
+      },
+      {
+        "source_class": "MƏNİM",
+        "count": 5
+      },
+      {
+        "source_class": "VERMƏK",
+        "count": 1
+      }
+    ],
+    "overall_rank": 168,
+    "candidate_rank": 161
+  },
+  {
+    "index": 103,
+    "class_name": "ORA",
+    "is_word": true,
+    "precision": 0.1111,
+    "recall": 0.3333,
+    "f1_score": 0.1667,
+    "quality_score": 0.2108,
+    "sample_score": 0.35,
+    "confusion_score": 0.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 15,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 21,
+    "true_positives": 1,
+    "false_negatives": 2,
+    "false_positives": 8,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "A",
+        "count": 1
+      },
+      {
+        "target_class": "O",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "O",
+        "count": 3
+      },
+      {
+        "source_class": "ORDA",
+        "count": 2
+      },
+      {
+        "source_class": "SİZ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 169,
+    "candidate_rank": 162
+  },
+  {
+    "index": 189,
+    "class_name": "İSTƏYİRƏM",
+    "is_word": true,
+    "precision": 0.1,
+    "recall": 0.2,
+    "f1_score": 0.1333,
+    "quality_score": 0.1967,
+    "sample_score": 0.5667,
+    "confusion_score": 0.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 5,
+    "train_samples": 24,
+    "val_samples": 5,
+    "test_samples": 5,
+    "total_samples": 34,
+    "true_positives": 1,
+    "false_negatives": 4,
+    "false_positives": 9,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İSTƏMƏK",
+        "count": 3
+      },
+      {
+        "target_class": "GÖRMƏK",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "İSTƏMƏK",
+        "count": 8
+      },
+      {
+        "source_class": "MƏN",
+        "count": 1
+      }
+    ],
+    "overall_rank": 170,
+    "candidate_rank": 163
+  },
+  {
+    "index": 135,
+    "class_name": "SİZİN",
+    "is_word": true,
+    "precision": 0.0667,
+    "recall": 0.3333,
+    "f1_score": 0.1111,
+    "quality_score": 0.1747,
+    "sample_score": 0.2833,
+    "confusion_score": 0.0,
+    "tier": "Tier 3 (Marginal Quality)",
+    "support": 3,
+    "train_samples": 11,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 17,
+    "true_positives": 1,
+    "false_negatives": 2,
+    "false_positives": 14,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SİZ",
+        "count": 2
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SİZ",
+        "count": 13
+      },
+      {
+        "source_class": "MƏN",
+        "count": 1
+      }
+    ],
+    "overall_rank": 171,
+    "candidate_rank": 164
+  },
+  {
+    "index": 107,
+    "class_name": "OĞUL",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.0975,
+    "sample_score": 0.3167,
+    "confusion_score": 0.5,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 3,
+    "train_samples": 13,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 19,
+    "true_positives": 0,
+    "false_negatives": 3,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İŞLƏMİR",
+        "count": 1
+      },
+      {
+        "target_class": "SONRA",
+        "count": 1
+      },
+      {
+        "target_class": "OLMAQ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 172,
+    "candidate_rank": null
+  },
+  {
+    "index": 4,
+    "class_name": "ABŞERON RAYON",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.09,
+    "sample_score": 0.2667,
+    "confusion_score": 0.5,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 12,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 16,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "BURDA",
+        "count": 1
+      },
+      {
+        "target_class": "ORA",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 173,
+    "candidate_rank": null
+  },
+  {
+    "index": 40,
+    "class_name": "BƏLİ",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.085,
+    "sample_score": 0.2333,
+    "confusion_score": 0.5,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 10,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 14,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İNDİ",
+        "count": 2
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 174,
+    "candidate_rank": null
+  },
+  {
+    "index": 65,
+    "class_name": "GÖZƏL",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.08,
+    "sample_score": 0.2,
+    "confusion_score": 0.5,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "YOX",
+        "count": 1
+      },
+      {
+        "target_class": "YEMƏK",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 175,
+    "candidate_rank": null
+  },
+  {
+    "index": 172,
+    "class_name": "YOXDUR",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.08,
+    "sample_score": 0.2,
+    "confusion_score": 0.5,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "ƏRZAQ",
+        "count": 1
+      },
+      {
+        "target_class": "YOX",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 176,
+    "candidate_rank": null
+  },
+  {
+    "index": 5,
+    "class_name": "AC",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.0775,
+    "sample_score": 0.1833,
+    "confusion_score": 0.5,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "FUTBOL",
+        "count": 1
+      },
+      {
+        "target_class": "OXUMAQ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 177,
+    "candidate_rank": null
+  },
+  {
+    "index": 17,
+    "class_name": "AYAQYOLU",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.0775,
+    "sample_score": 0.1833,
+    "confusion_score": 0.5,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "XATIRLADIM",
+        "count": 1
+      },
+      {
+        "target_class": "DÖVLƏT",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 178,
+    "candidate_rank": null
+  },
+  {
+    "index": 144,
+    "class_name": "UCUZDUR",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.075,
+    "sample_score": 0.1667,
+    "confusion_score": 0.5,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "AVTOMOBİL",
+        "count": 1
+      },
+      {
+        "target_class": "BAKI",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 179,
+    "candidate_rank": null
+  },
+  {
+    "index": 99,
+    "class_name": "OLMUSUZ",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.0725,
+    "sample_score": 0.15,
+    "confusion_score": 0.5,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 1,
+    "train_samples": 7,
+    "val_samples": 1,
+    "test_samples": 1,
+    "total_samples": 9,
+    "true_positives": 0,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "OLMAQ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 180,
+    "candidate_rank": null
+  },
+  {
+    "index": 128,
+    "class_name": "SOYUQ",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.0725,
+    "sample_score": 0.15,
+    "confusion_score": 0.5,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 1,
+    "train_samples": 7,
+    "val_samples": 1,
+    "test_samples": 1,
+    "total_samples": 9,
+    "true_positives": 0,
+    "false_negatives": 1,
+    "false_positives": 0,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "ETMƏK",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [],
+    "overall_rank": 181,
+    "candidate_rank": null
+  },
+  {
+    "index": 77,
+    "class_name": "KOMPÜTER",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.065,
+    "sample_score": 0.2667,
+    "confusion_score": 0.25,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 12,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 16,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "YER",
+        "count": 2
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "YER",
+        "count": 1
+      }
+    ],
+    "overall_rank": 182,
+    "candidate_rank": null
+  },
+  {
+    "index": 113,
+    "class_name": "QARABAĞ",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.0642,
+    "sample_score": 0.3167,
+    "confusion_score": 0.1667,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 3,
+    "train_samples": 13,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 19,
+    "true_positives": 0,
+    "false_negatives": 3,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İŞLƏMƏK",
+        "count": 2
+      },
+      {
+        "target_class": "SRAĞAGÜN",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "EŞİTMƏ",
+        "count": 1
+      },
+      {
+        "source_class": "OLAR",
+        "count": 1
+      }
+    ],
+    "overall_rank": 183,
+    "candidate_rank": null
+  },
+  {
+    "index": 143,
+    "class_name": "TƏHSİL",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.0625,
+    "sample_score": 0.25,
+    "confusion_score": 0.25,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 11,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 15,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SRAĞAGÜN",
+        "count": 1
+      },
+      {
+        "target_class": "DONDURMA",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "UNİVERSİTET",
+        "count": 1
+      }
+    ],
+    "overall_rank": 184,
+    "candidate_rank": null
+  },
+  {
+    "index": 197,
+    "class_name": "Ə",
+    "is_word": false,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.06,
+    "sample_score": 0.2333,
+    "confusion_score": 0.25,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 10,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 14,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "2",
+        "count": 1
+      },
+      {
+        "target_class": "QIZ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SİZ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 185,
+    "candidate_rank": null
+  },
+  {
+    "index": 0,
+    "class_name": "1",
+    "is_word": false,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.0575,
+    "sample_score": 0.2167,
+    "confusion_score": 0.25,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 9,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 13,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "DİL",
+        "count": 1
+      },
+      {
+        "target_class": "BAXMAQ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "TELEFON",
+        "count": 1
+      }
+    ],
+    "overall_rank": 186,
+    "candidate_rank": null
+  },
+  {
+    "index": 50,
+    "class_name": "EDİR",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.0525,
+    "sample_score": 0.35,
+    "confusion_score": 0.0,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 3,
+    "train_samples": 15,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 21,
+    "true_positives": 0,
+    "false_negatives": 3,
+    "false_positives": 4,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "YOX",
+        "count": 1
+      },
+      {
+        "target_class": "AVTOMOBİL",
+        "count": 1
+      },
+      {
+        "target_class": "ETMƏK",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "MƏN",
+        "count": 4
+      }
+    ],
+    "overall_rank": 187,
+    "candidate_rank": null
+  },
+  {
+    "index": 60,
+    "class_name": "GEDƏ",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.0525,
+    "sample_score": 0.1833,
+    "confusion_score": 0.25,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "GETMƏK",
+        "count": 2
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "OLMAQ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 188,
+    "candidate_rank": null
+  },
+  {
+    "index": 132,
+    "class_name": "SÖNDURƏ",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.0525,
+    "sample_score": 0.1833,
+    "confusion_score": 0.25,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "BİLƏR",
+        "count": 1
+      },
+      {
+        "target_class": "AXŞAM",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "OLUR",
+        "count": 1
+      }
+    ],
+    "overall_rank": 189,
+    "candidate_rank": null
+  },
+  {
+    "index": 100,
+    "class_name": "OLUR",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.05,
+    "sample_score": 0.1667,
+    "confusion_score": 0.25,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 1,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SÖNDURƏ",
+        "count": 1
+      },
+      {
+        "target_class": "DEYİL",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SONRA",
+        "count": 1
+      }
+    ],
+    "overall_rank": 190,
+    "candidate_rank": null
+  },
+  {
+    "index": 182,
+    "class_name": "ÜÇÜN",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.05,
+    "sample_score": 0.3333,
+    "confusion_score": 0.0,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 3,
+    "train_samples": 14,
+    "val_samples": 3,
+    "test_samples": 3,
+    "total_samples": 20,
+    "true_positives": 0,
+    "false_negatives": 3,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "GÖRƏ",
+        "count": 2
+      },
+      {
+        "target_class": "BU",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BU",
+        "count": 3
+      }
+    ],
+    "overall_rank": 191,
+    "candidate_rank": null
+  },
+  {
+    "index": 48,
+    "class_name": "DİL",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.04,
+    "sample_score": 0.2667,
+    "confusion_score": 0.0,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 12,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 16,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "BAKI",
+        "count": 1
+      },
+      {
+        "target_class": "BAXMAQ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "BAKI",
+        "count": 1
+      },
+      {
+        "source_class": "A",
+        "count": 1
+      },
+      {
+        "source_class": "1",
+        "count": 1
+      }
+    ],
+    "overall_rank": 192,
+    "candidate_rank": null
+  },
+  {
+    "index": 120,
+    "class_name": "S",
+    "is_word": false,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.04,
+    "sample_score": 0.2667,
+    "confusion_score": 0.0,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 12,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 16,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SU",
+        "count": 1
+      },
+      {
+        "target_class": "YAŞ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "XATIRLADIM",
+        "count": 1
+      },
+      {
+        "source_class": "DÖVLƏT",
+        "count": 1
+      }
+    ],
+    "overall_rank": 193,
+    "candidate_rank": null
+  },
+  {
+    "index": 2,
+    "class_name": "3",
+    "is_word": false,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.03,
+    "sample_score": 0.2,
+    "confusion_score": 0.0,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "SİZ",
+        "count": 1
+      },
+      {
+        "target_class": "IKI",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "SİZ",
+        "count": 1
+      },
+      {
+        "source_class": "BAKI",
+        "count": 1
+      }
+    ],
+    "overall_rank": 194,
+    "candidate_rank": null
+  },
+  {
+    "index": 24,
+    "class_name": "BAXMAQ",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.03,
+    "sample_score": 0.2,
+    "confusion_score": 0.0,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 8,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 12,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "XOŞU GƏLMƏK",
+        "count": 1
+      },
+      {
+        "target_class": "İDMAN",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "DİL",
+        "count": 1
+      },
+      {
+        "source_class": "1",
+        "count": 1
+      }
+    ],
+    "overall_rank": 195,
+    "candidate_rank": null
+  },
+  {
+    "index": 115,
+    "class_name": "QIZ",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.0275,
+    "sample_score": 0.1833,
+    "confusion_score": 0.0,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 3,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "VAXT",
+        "count": 1
+      },
+      {
+        "target_class": "GÖRMƏK",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "Ə",
+        "count": 1
+      },
+      {
+        "source_class": "SƏHƏR",
+        "count": 1
+      },
+      {
+        "source_class": "AĞRIMAQ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 196,
+    "candidate_rank": null
+  },
+  {
+    "index": 146,
+    "class_name": "UNİVERSİTET",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.0275,
+    "sample_score": 0.1833,
+    "confusion_score": 0.0,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 4,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "TƏHSİL",
+        "count": 1
+      },
+      {
+        "target_class": "ÖYRƏNMƏK",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "İŞLƏMƏK",
+        "count": 1
+      },
+      {
+        "source_class": "İŞ",
+        "count": 1
+      },
+      {
+        "source_class": "TAKSİ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 197,
+    "candidate_rank": null
+  },
+  {
+    "index": 195,
+    "class_name": "İŞSİZ",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.0275,
+    "sample_score": 0.1833,
+    "confusion_score": 0.0,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 7,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 11,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "İSTİ",
+        "count": 1
+      },
+      {
+        "target_class": "EŞİTMƏ",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "İŞLƏMƏK",
+        "count": 1
+      },
+      {
+        "source_class": "İŞ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 198,
+    "candidate_rank": null
+  },
+  {
+    "index": 159,
+    "class_name": "XİRDA",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.025,
+    "sample_score": 0.1667,
+    "confusion_score": 0.0,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 2,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "KÖMƏK",
+        "count": 1
+      },
+      {
+        "target_class": "QAPI",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "MÜRACİƏT",
+        "count": 1
+      },
+      {
+        "source_class": "OLMAQ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 199,
+    "candidate_rank": null
+  },
+  {
+    "index": 187,
+    "class_name": "İSTİ",
+    "is_word": true,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "quality_score": 0.025,
+    "sample_score": 0.1667,
+    "confusion_score": 0.0,
+    "tier": "Tier 4 (Zero Performance)",
+    "support": 2,
+    "train_samples": 6,
+    "val_samples": 2,
+    "test_samples": 2,
+    "total_samples": 10,
+    "true_positives": 0,
+    "false_negatives": 2,
+    "false_positives": 4,
+    "top_outgoing_confusions": [
+      {
+        "target_class": "UŞAQLAR",
+        "count": 1
+      },
+      {
+        "target_class": "ATA",
+        "count": 1
+      }
+    ],
+    "top_incoming_confusions": [
+      {
+        "source_class": "İŞLƏMƏK",
+        "count": 1
+      },
+      {
+        "source_class": "İŞSİZ",
+        "count": 1
+      },
+      {
+        "source_class": "ÖZÜMÜ",
+        "count": 1
+      }
+    ],
+    "overall_rank": 200,
+    "candidate_rank": null
+  }
+]

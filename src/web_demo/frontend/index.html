@@ -134,6 +134,193 @@ main {
     height: 100%;
     pointer-events: none;
 }
+.countdown-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.72);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: #ffffff;
+    z-index: 9;
+    backdrop-filter: blur(2px);
+    pointer-events: none;
+    transition: opacity var(--transition);
+}
+.countdown-title {
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+.countdown-num {
+    font-size: 5.5rem;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
+    animation: countPulse 0.45s ease-out;
+}
+@keyframes countPulse {
+    0% { transform: scale(1.4); opacity: 0.5; }
+    100% { transform: scale(1.0); opacity: 1; }
+}
+.trial-progress-card {
+    position: sticky;
+    top: 0;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 100;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: var(--border-radius);
+    padding: 0.85rem 1.25rem;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    border: 1px solid rgba(56, 189, 248, 0.28);
+}
+.trial-progress-card.hidden {
+    display: none !important;
+}
+.trial-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+.trial-badge {
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.75rem;
+    border-radius: 6px;
+    display: inline-block;
+    user-select: none;
+}
+.trial-badge.ready {
+    background: #334155;
+    color: #94a3b8;
+}
+.trial-badge.countdown {
+    background: #f59e0b;
+    color: #000;
+}
+.trial-badge.recording {
+    background: #ef4444;
+    color: #fff;
+    animation: pulseBadge 0.8s infinite alternate;
+}
+.trial-badge.analyzing {
+    background: #3b82f6;
+    color: #fff;
+    animation: pulseBadge 0.5s infinite alternate;
+}
+.trial-badge.result {
+    background: #10b981;
+    color: #001017;
+}
+@keyframes pulseBadge {
+    0% { transform: scale(1.0); opacity: 0.85; }
+    100% { transform: scale(1.04); opacity: 1; }
+}
+.trial-counter {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+.trial-progress-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    width: 100%;
+}
+.trial-progress-track {
+    flex: 1;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    overflow: hidden;
+}
+.trial-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%);
+    border-radius: 5px;
+    transition: width 0.05s ease-out;
+}
+.trial-ascii-bar {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #38bdf8;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    text-align: center;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    user-select: none;
+    white-space: nowrap;
+}
+.trial-controls-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    width: 100%;
+}
+.btn-trial-start {
+    flex: 1;
+    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+    color: #001017;
+    font-size: 1.05rem;
+    font-weight: 700;
+    padding: 0.75rem 1.4rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all var(--transition);
+    box-shadow: 0 2px 10px rgba(0, 242, 254, 0.25);
+    text-align: center;
+}
+.btn-trial-start:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 242, 254, 0.4);
+}
+.btn-trial-start:disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+    transform: none;
+}
+.btn-trial-skip {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all var(--transition);
+}
+.btn-trial-skip:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.16);
+    transform: translateY(-2px);
+}
+.btn-trial-skip:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
 .prediction-card, .status-panel, .controls-panel {
     background-color: var(--bg-card);
     border-radius: var(--border-radius);
@@ -489,16 +676,73 @@ main {
     border-top: 1px solid rgba(255, 255, 255, 0.06);
     padding-top: 0.75rem;
 }
-.alphabet-help b { color: var(--text-primary); }
 .hidden { display: none !important; }
-</style>
 
-<!-- ===== BEGIN ALPHABET MODE INTEGRATION =====
- * Load the alphabet inference engine (pure JS, no DOM dependency).
- * Loaded via <script src=...> rather than ES module because the rest of
- * this page is a single inline <script> block.
- * ===== END ALPHABET MODE INTEGRATION ===== -->
-<script src="/static/js/azsl_alphabet.js"></script>
+@media (max-width: 768px) {
+    .container {
+        padding: 0.5rem;
+        gap: 0.75rem;
+    }
+    header {
+        padding: 0.5rem 0;
+    }
+    .title {
+        font-size: 1.35rem;
+        margin-bottom: 0.2rem;
+    }
+    .subtitle {
+        font-size: 0.85rem;
+        margin-bottom: 0.2rem;
+    }
+    .classes-info {
+        display: none;
+    }
+    .mode-toggle {
+        margin: 0 auto 0.5rem;
+        padding: 0.25rem;
+    }
+    .mode-toggle button {
+        padding: 0.5rem 0.85rem;
+        font-size: 0.88rem;
+    }
+    .trial-progress-card {
+        padding: 0.65rem 0.85rem;
+        gap: 0.5rem;
+        margin-bottom: 0.65rem;
+        border-radius: 10px;
+    }
+    .trial-counter {
+        font-size: 1.05rem;
+    }
+    .trial-progress-bar-row {
+        gap: 0.5rem;
+    }
+    .trial-ascii-bar {
+        font-size: 0.85rem;
+        padding: 0.25rem 0.5rem;
+    }
+    .btn-trial-start {
+        font-size: 0.95rem;
+        padding: 0.65rem 0.9rem;
+    }
+    .btn-trial-skip {
+        font-size: 0.9rem;
+        padding: 0.65rem 0.85rem;
+    }
+    .video-container {
+        max-height: 44vh;
+    }
+    #video, #landmark-canvas {
+        object-fit: cover;
+    }
+    .countdown-title {
+        font-size: 1.7rem;
+    }
+    .countdown-num {
+        font-size: 4rem;
+    }
+}
+</style>
 </head>
 <body>
 <div class="container">
@@ -520,6 +764,27 @@ main {
                 aria-selected="false">Alphabet Mode</button>
     </div>
 
+    <!-- Word Trial Progress Bar & Stage HUD (Sticky at top of screen) -->
+    <section class="trial-progress-card" id="trial-progress-card">
+        <div class="trial-progress-header">
+            <div style="display:flex; align-items:center; gap:0.6rem;">
+                <span id="trial-stage-badge" class="trial-badge ready">READY</span>
+                <span id="trial-stage-desc" style="font-weight:600; color:var(--text-secondary); font-size:0.95rem;">START TRIAL [SPACE]</span>
+            </div>
+            <span id="trial-frame-counter" class="trial-counter">FRAME 0 / 26</span>
+        </div>
+        <div class="trial-progress-bar-row">
+            <div class="trial-progress-track">
+                <div id="trial-progress-fill" class="trial-progress-fill" style="width: 0%;"></div>
+            </div>
+            <div id="trial-progress-ascii" class="trial-ascii-bar">░░░░░░░░░░░░░░░░ 0/26</div>
+        </div>
+        <div class="trial-controls-row" id="word-trial-controls">
+            <button id="btn-start-trial" class="btn btn-trial-start" type="button">▶ START TRIAL [SPACE]</button>
+            <button id="btn-skip-trial" class="btn btn-trial-skip" type="button">⏭ SKIP</button>
+        </div>
+    </section>
+
     <main>
         <section class="video-container">
             <video id="video" autoplay playsinline webkit-playsinline muted></video>
@@ -527,6 +792,10 @@ main {
             <div id="loading-overlay" class="loading-overlay">
                 <div class="loading-spinner"></div>
                 <div id="loading-text">Initializing camera...</div>
+            </div>
+            <div id="countdown-overlay" class="countdown-overlay hidden">
+                <div id="countdown-title" class="countdown-title">HAZIRLAŞIN...</div>
+                <div id="countdown-num" class="countdown-num">3</div>
             </div>
         </section>
 
@@ -577,7 +846,10 @@ main {
         </section>
 
         <section class="prediction-card">
-            <h3><span>🎯</span> Prediction</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                <h3 style="margin:0;"><span id="prediction-header-icon">🎯</span> <span id="prediction-header-title">Prediction</span></h3>
+                <span id="prediction-state-badge" class="trial-badge ready">READY</span>
+            </div>
             <div class="prediction-content">
                 <div class="smooth-prediction" id="smoothPred">-</div>
                 <div class="smooth-confidence" id="smoothConf">0%</div>
@@ -662,27 +934,8 @@ main {
 </div>
 
 <script>
-// ===== BEGIN ALPHABET MODE INTEGRATION =====
-// State for the client-side AzSL alphabet (fingerspelling) mode. All of this
-// state is read/written only by the alphabet-mode code path below; the
-// existing word-mode code never touches it.
 let currentMode = 'word';            // 'word' | 'alphabet'
-let azslModel = null;                // loaded azsl_hierarchical_model.json
-let mpHands = null;                  // MediaPipe Hands instance (lazy-loaded)
-let mpLoadingPromise = null;         // de-dupe concurrent MediaPipe script loads
-let mpCameraLoopId = null;           // setInterval id for the alphabet loop
-let alphabetLandmarkBuffer = null;   // LandmarkBuffer for trajectory engine
-let alphabetMotionBuffer = null;     // MotionBuffer (raw wrist position history)
-let alphabetHysteresis = null;       // DynamicHysteresis for O->Ö / U->Ü / C->Ç
 let spelledWord = '';                // accumulated letters since last sentence commit
-let lastAcceptedLetter = null;       // last letter appended to spelledWord
-let lastAcceptedAt = 0;              // performance.now() of last acceptance (debounce)
-
-// Tuning constants (override-able via the help text in the UI).
-const LETTER_HOLD_MS = 700;          // min hold time before re-accepting same letter
-const DIFFERENT_LETTER_HOLD_MS = 250; // min hold time for a DIFFERENT new letter
-const ALPHABET_CONFIDENCE_FLOOR = 0.35; // min confidence to accept a prediction
-// ===== END ALPHABET MODE INTEGRATION =====
 
 let ws = null;
 let videoStream = null;
@@ -693,7 +946,7 @@ let captureCanvas = null;
 let captureCtx = null;
 const CAPTURE_WIDTH = 480;
 const CAPTURE_HEIGHT = 360;
-const FRAME_INTERVAL_MS = 100; // ~10 fps, keeps backend load reasonable
+const FRAME_INTERVAL_MS = 66; // ~15 fps, fast real-time responsiveness
 const FRAME_LOG_INTERVAL = 30; // log every N sent frames
 // DOM elements
 const video = document.getElementById('video');
@@ -724,6 +977,25 @@ const sentenceBoxEl = document.getElementById('sentence-box');
 const clearSelectionBtn = document.getElementById('clear-selection');
 const clearHistoryBtn = document.getElementById('clear-history');
 
+// Word Trial Progress Elements & Helper
+const trialProgressCard     = document.getElementById('trial-progress-card');
+const trialStageBadge       = document.getElementById('trial-stage-badge');
+const trialStageDesc        = document.getElementById('trial-stage-desc');
+const trialFrameCounter     = document.getElementById('trial-frame-counter');
+const trialProgressAscii    = document.getElementById('trial-progress-ascii');
+const trialProgressFill     = document.getElementById('trial-progress-fill');
+const predictionHeaderTitle = document.getElementById('prediction-header-title');
+const predictionStateBadge  = document.getElementById('prediction-state-badge');
+const btnStartTrial         = document.getElementById('btn-start-trial');
+const btnSkipTrial          = document.getElementById('btn-skip-trial');
+
+function getAsciiProgressBar(current, total, barLength = 16) {
+    const cur = Math.max(0, Math.min(current, total));
+    const filled = Math.round((cur / total) * barLength);
+    const empty = Math.max(0, barLength - filled);
+    return '█'.repeat(filled) + '░'.repeat(empty) + ` ${cur}/${total}`;
+}
+
 function setLoadingText(message) {
     const loadingTextEl = document.getElementById('loading-text');
     if (loadingTextEl) {
@@ -732,6 +1004,40 @@ function setLoadingText(message) {
 }
 
 // WebSocket initialization
+function handleAlphabetBackendResponse(data) {
+    const liveLetterEl = document.getElementById('alphabet-live-letter');
+    const liveConfEl   = document.getElementById('alphabet-live-conf');
+
+    if (!data.hand_present || !data.accepted_letter || data.accepted_letter === '-') {
+        if (liveLetterEl) { liveLetterEl.textContent = '-'; liveLetterEl.classList.add('empty'); }
+        if (liveConfEl)   { liveConfEl.textContent   = '-'; liveConfEl.classList.add('empty'); }
+        updateHandStatus(data.hand_present ? 'Detecting' : 'Not Detecting');
+        if (data.spelled_word !== undefined) {
+            spelledWord = data.spelled_word;
+            renderSpelledWord();
+        }
+        return;
+    }
+
+    updateHandStatus('Detecting');
+    const letter = data.accepted_letter;
+    const conf = data.alphabet_confidence || data.raw_confidence || 0.0;
+
+    if (liveLetterEl) {
+        liveLetterEl.textContent = letter;
+        liveLetterEl.classList.remove('empty');
+    }
+    if (liveConfEl) {
+        liveConfEl.textContent = (conf * 100).toFixed(1) + '%';
+        liveConfEl.classList.remove('empty');
+    }
+
+    if (data.spelled_word !== undefined) {
+        spelledWord = data.spelled_word;
+        renderSpelledWord(data.just_accepted ? letter : null);
+    }
+}
+
 function initWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws`;
@@ -740,61 +1046,175 @@ function initWebSocket() {
     ws.onopen = () => {
         console.log('WebSocket connected');
         updateModelStatus('Loaded');
-        setStatus('Model loaded. Ready to start');
+        setStatus('Model yükləndi. Trial üçün [SPACE] və ya START TRIAL sıxın.');
         setLoadingText('WebSocket connected');
     };
 
     ws.onmessage = (event) => {
-        // Log message metadata without dumping base64 payloads.
-        console.log('WS MESSAGE RECEIVED:', event.data.length, 'bytes');
         try {
             const data = JSON.parse(event.data);
 
-            // Explicit backend error handling.
             if (data.error) {
                 console.error('Backend error:', data.error);
                 setStatus('Error: ' + data.error);
                 return;
             }
 
-            // Update buffer progress.
-            if (data.buffer_progress) {
-                if (bufferEl) bufferEl.textContent = data.buffer_progress;
+            // Route Alphabet mode responses
+            if (data.mode === 'alphabet' || currentMode === 'alphabet') {
+                handleAlphabetBackendResponse(data);
+                return;
             }
 
-            // Update predictions using the actual backend field names.
-            // Hand-presence gate: if MediaPipe did not detect a hand in the
-            // current frame, force both live readouts to "Əl aşkarlanmadı"
-            // regardless of what the buffer-based inference returned. Without
-            // this, a zero-feature buffer would still produce a top-1 class
-            // via softmax and the user would see ghost predictions.
+            // Word mode trial handling
+            const wordState = data.word_state || (data.status === 'READY' ? 'READY' : null);
+            const countdownOverlay = document.getElementById('countdown-overlay');
+            const countdownTitle = document.getElementById('countdown-title');
+            const countdownNum = document.getElementById('countdown-num');
+
+            const frameIdx = (typeof data.frame_index === 'number') ? data.frame_index : (parseInt((data.buffer_progress || '0').split('/')[0]) || 0);
+            const totalFrames = data.total_frames || 26;
+            const progFraction = Math.max(0, Math.min(frameIdx / totalFrames, 1.0));
+            const progPercent = (progFraction * 100).toFixed(1) + '%';
+            const asciiBar = getAsciiProgressBar(frameIdx, totalFrames);
+
+            if (data.buffer_progress && bufferEl) {
+                bufferEl.textContent = data.buffer_progress;
+            }
+
+            if (wordState === 'COUNTDOWN') {
+                if (countdownOverlay) countdownOverlay.classList.remove('hidden');
+                const cTitle = data.countdown_title || 'HAZIRLAŞIN...';
+                const cText = data.countdown_text || '';
+                const cVal = data.countdown_val !== undefined ? data.countdown_val : '';
+                if (countdownTitle) countdownTitle.textContent = cTitle;
+                if (countdownNum) countdownNum.textContent = (cVal === 0 || cText === 'BAŞLA!') ? 'BAŞLA!' : (cVal !== '' ? cVal : cText);
+
+                if (trialStageBadge) { trialStageBadge.textContent = 'HAZIRLAŞIN...'; trialStageBadge.className = 'trial-badge countdown'; }
+                if (trialStageDesc)  trialStageDesc.textContent = (cVal === 0 || cText === 'BAŞLA!') ? 'BAŞLA!' : ('HAZIRLAŞIN... ' + cVal);
+                if (trialFrameCounter) trialFrameCounter.textContent = 'FRAME 0 / ' + totalFrames;
+                if (trialProgressAscii) trialProgressAscii.textContent = getAsciiProgressBar(0, totalFrames);
+                if (trialProgressFill)  trialProgressFill.style.width = '0%';
+
+                if (predictionHeaderTitle) predictionHeaderTitle.textContent = 'Hazırlaşın';
+                if (predictionStateBadge) { predictionStateBadge.textContent = 'COUNTDOWN'; predictionStateBadge.className = 'trial-badge countdown'; }
+                if (smoothPred) smoothPred.textContent = (cVal === 0 || cText === 'BAŞLA!') ? 'BAŞLA!' : ('HAZIRLAŞIN... ' + cVal);
+                if (smoothConf) smoothConf.textContent = '0%';
+
+                if (btnStartTrial) { btnStartTrial.textContent = '⏳ HAZIRLAŞIN...'; btnStartTrial.disabled = true; }
+                setStatus(cText ? ('HAZIRLAŞIN... ' + cText) : 'HAZIRLAŞIN...');
+                return;
+            } else {
+                if (countdownOverlay) countdownOverlay.classList.add('hidden');
+            }
+
+            if (wordState === 'RECORDING') {
+                const countText = 'FRAME ' + frameIdx + ' / ' + totalFrames;
+                if (trialStageBadge) { trialStageBadge.textContent = 'RECORDING'; trialStageBadge.className = 'trial-badge recording'; }
+                if (trialStageDesc)  trialStageDesc.textContent = 'Qeyd edilir... (' + frameIdx + '/' + totalFrames + ')';
+                if (trialFrameCounter) trialFrameCounter.textContent = countText;
+                if (trialProgressAscii) trialProgressAscii.textContent = asciiBar;
+                if (trialProgressFill)  trialProgressFill.style.width = progPercent;
+
+                if (predictionHeaderTitle) predictionHeaderTitle.textContent = 'Qeyd Edilir';
+                if (predictionStateBadge) { predictionStateBadge.textContent = 'RECORDING'; predictionStateBadge.className = 'trial-badge recording'; }
+                if (smoothPred) smoothPred.textContent = countText;
+                if (smoothConf) smoothConf.textContent = asciiBar;
+
+                if (btnStartTrial) { btnStartTrial.textContent = '● RECORDING (' + frameIdx + '/' + totalFrames + ')'; btnStartTrial.disabled = true; }
+                setStatus('QEYD EDİLİR: Hərəkəti edin... (' + countText + ' ' + asciiBar + ')');
+                updateHandStatus(data.hand_present ? 'Detecting' : 'Axtarılır...');
+                return;
+            }
+
+            if (wordState === 'ANALYZING') {
+                const fullText = 'FRAME ' + totalFrames + ' / ' + totalFrames;
+                const fullAscii = getAsciiProgressBar(totalFrames, totalFrames);
+                if (trialStageBadge) { trialStageBadge.textContent = 'ANALİZ EDİLİR...'; trialStageBadge.className = 'trial-badge analyzing'; }
+                if (trialStageDesc)  trialStageDesc.textContent = 'Model təhlil edir...';
+                if (trialFrameCounter) trialFrameCounter.textContent = fullText;
+                if (trialProgressAscii) trialProgressAscii.textContent = fullAscii;
+                if (trialProgressFill)  trialProgressFill.style.width = '100%';
+
+                if (predictionHeaderTitle) predictionHeaderTitle.textContent = 'Analiz';
+                if (predictionStateBadge) { predictionStateBadge.textContent = 'ANALYZING'; predictionStateBadge.className = 'trial-badge analyzing'; }
+                if (smoothPred) smoothPred.textContent = 'ANALİZ EDİLİR...';
+                if (smoothConf) smoothConf.textContent = '100%';
+
+                if (btnStartTrial) { btnStartTrial.textContent = '⏳ ANALİZ EDİLİR...'; btnStartTrial.disabled = true; }
+                setStatus('26 frame toplandı. Analiz edilir...');
+                return;
+            }
+
+            if (wordState === 'RESULT') {
+                const pred = data.prediction || data.smoothed_prediction || data.raw_prediction || '-';
+                const conf = (typeof data.confidence === 'number') ? data.confidence : ((typeof data.smoothed_confidence === 'number') ? data.smoothed_confidence : (data.raw_confidence || 0.0));
+                const noHand = (pred === 'ƏL AŞKARLANMADI' || data.raw_prediction === 'ƏL AŞKARLANMADI');
+                const fullText = 'FRAME ' + totalFrames + ' / ' + totalFrames;
+                const fullAscii = getAsciiProgressBar(totalFrames, totalFrames);
+
+                if (trialFrameCounter) trialFrameCounter.textContent = fullText;
+                if (trialProgressAscii) trialProgressAscii.textContent = fullAscii;
+                if (trialProgressFill)  trialProgressFill.style.width = '100%';
+                if (predictionHeaderTitle) predictionHeaderTitle.textContent = 'NƏTİCƏ';
+
+                if (noHand) {
+                    if (trialStageBadge) { trialStageBadge.textContent = 'ƏL AŞKARLANMADI'; trialStageBadge.className = 'trial-badge ready'; }
+                    if (trialStageDesc)  trialStageDesc.textContent = '< 5 frame aşkarlandı';
+                    if (predictionStateBadge) { predictionStateBadge.textContent = 'ƏL AŞKARLANMADI'; predictionStateBadge.className = 'trial-badge ready'; }
+                    if (smoothPred) smoothPred.textContent = 'ƏL AŞKARLANMADI';
+                    if (smoothConf) smoothConf.textContent = '0%';
+                    if (rawPred) rawPred.textContent = 'ƏL AŞKARLANMADI';
+                    if (rawConf) rawConf.textContent = '0%';
+                    updateHandStatus('Not Detecting');
+                    setStatus('FRAME 26 / 26 — ƏL AŞKARLANMADI (< 5 frame). Növbəti trial üçün [SPACE] və ya NEXT TRIAL sıxın.');
+                } else {
+                    if (trialStageBadge) { trialStageBadge.textContent = 'NƏTİCƏ'; trialStageBadge.className = 'trial-badge result'; }
+                    if (trialStageDesc)  trialStageDesc.textContent = 'Tamamlandı';
+                    if (predictionStateBadge) { predictionStateBadge.textContent = 'NƏTİCƏ'; predictionStateBadge.className = 'trial-badge result'; }
+                    if (smoothPred) smoothPred.textContent = pred;
+                    if (smoothConf) smoothConf.textContent = (conf * 100).toFixed(2) + '%';
+                    if (rawPred) rawPred.textContent = data.raw_prediction || pred;
+                    if (rawConf) rawConf.textContent = ((data.raw_confidence || conf) * 100).toFixed(2) + '%';
+                    updateHandStatus('Detecting');
+                    setStatus('NƏTİCƏ: ' + pred + ' (' + (conf * 100).toFixed(2) + '%). Növbəti trial üçün [SPACE] və ya NEXT TRIAL sıxın.');
+
+                    if (data.segment_event && data.segment_event.label) {
+                        addDetectedWord(data.segment_event.label, data.segment_event.confidence);
+                    }
+                }
+
+                if (btnStartTrial) { btnStartTrial.textContent = '▶ NEXT TRIAL [SPACE]'; btnStartTrial.disabled = false; }
+                if (btnSkipTrial)  { btnSkipTrial.disabled = false; }
+                return;
+            }
+
+            if (wordState === 'READY') {
+                if (trialStageBadge) { trialStageBadge.textContent = 'READY'; trialStageBadge.className = 'trial-badge ready'; }
+                if (trialStageDesc)  trialStageDesc.textContent = 'START TRIAL [SPACE]';
+                if (trialFrameCounter) trialFrameCounter.textContent = 'FRAME 0 / ' + totalFrames;
+                if (trialProgressAscii) trialProgressAscii.textContent = getAsciiProgressBar(0, totalFrames);
+                if (trialProgressFill)  trialProgressFill.style.width = '0%';
+
+                if (predictionHeaderTitle) predictionHeaderTitle.textContent = 'Prediction';
+                if (predictionStateBadge) { predictionStateBadge.textContent = 'READY'; predictionStateBadge.className = 'trial-badge ready'; }
+                if (smoothPred) smoothPred.textContent = '-';
+                if (smoothConf) smoothConf.textContent = '0%';
+                if (rawPred) rawPred.textContent = '-';
+                if (rawConf) rawConf.textContent = '0%';
+
+                if (btnStartTrial) { btnStartTrial.textContent = '▶ START TRIAL [SPACE]'; btnStartTrial.disabled = false; }
+                if (btnSkipTrial)  { btnSkipTrial.disabled = false; }
+                setStatus('Hazırdır. Trial üçün [SPACE] və ya START TRIAL sıxın.');
+                return;
+            }
+
+            // Fallback for non-state messages
             const noHand = (data.hand_present === false);
-            const smoothed = (!noHand && data.smoothed_confidence >= 0.50)
-                ? (data.smoothed_prediction || '-')
-                : '-';
-            const raw = (!noHand && data.raw_confidence >= 0.50)
-                ? (data.raw_prediction || '-')
-                : '-';
-            if (smoothPred) smoothPred.textContent = smoothed;
-            if (smoothConf) smoothConf.textContent = noHand
-                ? 'Əl aşkarlanmadı'
-                : (smoothed === '-' ? '-' : (data.smoothed_confidence * 100).toFixed(1) + '%');
-            if (rawPred) rawPred.textContent = raw;
-            if (rawConf) rawConf.textContent = noHand
-                ? 'Əl aşkarlanmadı'
-                : (raw === '-' ? '-' : (data.raw_confidence * 100).toFixed(1) + '%');
-
-            // Update hand-detection status when frames are actually processed.
-            if (data.buffer_progress && data.buffer_progress !== '0/26') {
-                updateHandStatus(noHand ? 'Axtarılır...' : 'Detecting');
-            }
-
-            // New (additive): capture completed temporal segments emitted by
-            // the backend segmenter. Only this field is added to history;
-            // raw_prediction and smoothed_prediction are intentionally not.
-            if (data.segment_event && data.segment_event.label) {
-                addDetectedWord(data.segment_event.label, data.segment_event.confidence);
-            }
+            if (smoothPred) smoothPred.textContent = (!noHand && data.smoothed_confidence >= 0.35) ? (data.smoothed_prediction || '-') : '-';
+            if (smoothConf) smoothConf.textContent = noHand ? 'Əl aşkarlanmadı' : ((data.smoothed_confidence || 0) * 100).toFixed(1) + '%';
+            if (rawPred) rawPred.textContent = (!noHand && data.raw_confidence >= 0.35) ? (data.raw_prediction || '-') : '-';
+            if (rawConf) rawConf.textContent = noHand ? 'Əl aşkarlanmadı' : ((data.raw_confidence || 0) * 100).toFixed(1) + '%';
         } catch (e) {
             console.error('Error parsing WebSocket message:', e);
         }
@@ -816,7 +1236,7 @@ function initWebSocket() {
 
 // Camera functions
 function startCamera() {
-    if (isStreaming) return;
+    if (isStreaming) return Promise.resolve();
 
     showLoading(true);
     setStatus('Starting camera...');
@@ -825,10 +1245,10 @@ function startCamera() {
         showLoading(false);
         setStatus('Error: Camera API not available');
         alert('Your browser does not support camera access.');
-        return;
+        return Promise.reject(new Error('Camera API not available'));
     }
 
-    navigator.mediaDevices.getUserMedia({
+    return navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480, facingMode: 'user' }
     })
     .then(stream => {
@@ -868,6 +1288,7 @@ function startCamera() {
         showLoading(false);
         setStatus('Error: Could not start camera');
         alert('Could not start the camera. Please check permissions and try again.');
+        throw err;
     });
 }
 
@@ -918,12 +1339,6 @@ function startFrameLoop() {
     }
 
     frameIntervalId = setInterval(() => {
-        // ALPHABET MODE: gate the word-mode frame loop. When in alphabet mode,
-        // frames are processed locally by MediaPipe + azsl_alphabet.js; we
-        // must NOT also stream JPEGs to the backend (which would waste
-        // bandwidth and confuse the backend's 26-frame buffer).
-        if (currentMode !== 'word') return;
-
         // Only send while the camera stream and WebSocket both exist and are open.
         if (!isStreaming || !videoStream || !video.readyState) {
             return;
@@ -938,6 +1353,7 @@ function startFrameLoop() {
 
         ws.send(JSON.stringify({
             type: 'frame',
+            mode: currentMode,
             data: base64
         }));
 
@@ -952,8 +1368,20 @@ function resetBuffer() {
     framesSent = 0;
     bufferEl.textContent = '0/26';
     updateHandStatus('Not Detecting');
+    if (trialStageBadge) { trialStageBadge.textContent = 'READY'; trialStageBadge.className = 'trial-badge ready'; }
+    if (trialStageDesc)  trialStageDesc.textContent = 'START TRIAL [SPACE]';
+    if (trialFrameCounter) trialFrameCounter.textContent = 'FRAME 0 / 26';
+    if (trialProgressAscii) trialProgressAscii.textContent = getAsciiProgressBar(0, 26);
+    if (trialProgressFill)  trialProgressFill.style.width = '0%';
+    if (predictionHeaderTitle) predictionHeaderTitle.textContent = 'Prediction';
+    if (predictionStateBadge) { predictionStateBadge.textContent = 'READY'; predictionStateBadge.className = 'trial-badge ready'; }
+    if (btnStartTrial) { btnStartTrial.textContent = '▶ START TRIAL [SPACE]'; btnStartTrial.disabled = false; }
+    if (smoothPred) smoothPred.textContent = '-';
+    if (smoothConf) smoothConf.textContent = '0%';
+    if (rawPred) rawPred.textContent = '-';
+    if (rawConf) rawConf.textContent = '0%';
     if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'reset' }));
+        ws.send(JSON.stringify({ type: 'reset', mode: currentMode }));
     }
     if (isStreaming) {
         setStatus('Buffer reset');
@@ -1143,101 +1571,7 @@ function showLoading(show) {
     }
 }
 
-// ===== BEGIN ALPHABET MODE INTEGRATION =====
-/* AzSL Alphabet (fingerspelling) mode - client-side, no backend involvement.
- *
- * Architecture:
- *   - MediaPipe Hands (legacy browser solution, matches the alphabet repo)
- *     is lazy-loaded only when the user first enters Alphabet Mode. Until
- *     then, Word Mode behaves EXACTLY as before - no extra scripts fetched.
- *   - The trained model JSON (~476 KB) is fetched once, handed to
- *     AzslAlphabet.setAzslModel(), and then the JS in azsl_alphabet.js does
- *     MediaPipe -> 84-dim feature -> 2-level MLP dispatch -> letter label,
- *     all in the browser.
- *   - When the user switches back to Word Mode, we tear down the alphabet
- *     loop, clear local alphabet state, send a `reset` to the backend (so
- *     its 26-frame buffer is clean), and resume the word frame loop.
- */
-
-function loadScriptOnce(src) {
-    return new Promise((resolve, reject) => {
-        const existing = document.querySelector('script[data-mp-src="' + src + '"]');
-        if (existing) {
-            if (existing.dataset.loaded === '1') resolve();
-            else existing.addEventListener('load', () => resolve(), { once: true });
-            return;
-        }
-        const s = document.createElement('script');
-        s.src = src;
-        s.async = true;
-        s.dataset.mpSrc = src;
-        s.addEventListener('load', () => { s.dataset.loaded = '1'; resolve(); }, { once: true });
-        s.addEventListener('error', () => reject(new Error('Failed to load ' + src)), { once: true });
-        document.head.appendChild(s);
-    });
-}
-
-async function loadMediaPipeHands() {
-    if (mpHands) return mpHands;
-    if (mpLoadingPromise) return mpLoadingPromise;
-
-    mpLoadingPromise = (async () => {
-        if (typeof window.Hands !== 'function') {
-            console.log('[ALPHABET-DEBUG] Loading MediaPipe Hands script tags from CDN...');
-            await loadScriptOnce('https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js');
-            console.log('[ALPHABET-DEBUG] hands.js loaded');
-            await loadScriptOnce('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js');
-            console.log('[ALPHABET-DEBUG] camera_utils.js loaded');
-            await loadScriptOnce('https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js');
-            console.log('[ALPHABET-DEBUG] drawing_utils.js loaded');
-        }
-        if (typeof window.Hands !== 'function') {
-            throw new Error('MediaPipe Hands did not load.');
-        }
-
-        console.log('[ALPHABET-DEBUG] Constructing window.Hands instance...');
-        const hands = new window.Hands({
-            locateFile: (file) => 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/' + file
-        });
-        hands.setOptions({
-            maxNumHands: 1,
-            modelComplexity: 1,
-            // Slightly relaxed from 0.7 to 0.5 for typical webcam lighting
-            // conditions (the 0.7 default was tuned for studio conditions).
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5
-        });
-
-        hands.onResults(onAlphabetHandsResults);
-        mpHands = hands;
-        console.log('[ALPHABET-DEBUG] MediaPipe Hands initialized and onResults wired up');
-        return hands;
-    })().catch((err) => {
-        console.error('[ALPHABET-DEBUG] MediaPipe Hands load/init failed:', err);
-        mpLoadingPromise = null;
-        throw err;
-    });
-
-    return mpLoadingPromise;
-}
-
-async function loadAzslModelJson() {
-    if (azslModel) return azslModel;
-    const resp = await fetch('/static/models/azsl_hierarchical_model.json');
-    if (!resp.ok) throw new Error('Failed to fetch alphabet model: HTTP ' + resp.status);
-    azslModel = await resp.json();
-    window.AzslAlphabet.setAzslModel(azslModel);
-    return azslModel;
-}
-
-// ===== BEGIN ALPHABET MODE INTEGRATION =====
-/* Mode toggle + alphabet frame loop + MediaPipe -> AzslAlphabet pipeline.
- *
- * The setMode() handler is the heart of the integration: it gates whether
- * frames go over WebSocket (word mode, existing path) or through MediaPipe
- * (alphabet mode, this path).
- */
-
+// ===== ALPHABET & WORD MODE SWITCHING & CONTROLS =====
 async function setMode(newMode) {
     if (newMode === currentMode) return;
     currentMode = newMode;
@@ -1245,271 +1579,45 @@ async function setMode(newMode) {
     const wordBtn    = document.getElementById('mode-word');
     const alphaBtn   = document.getElementById('mode-alphabet');
     const alphaPanel = document.getElementById('alphabet-panel');
+    const wordTrialControls = document.getElementById('word-trial-controls');
+    const countdownOverlay = document.getElementById('countdown-overlay');
+
+    if (countdownOverlay) countdownOverlay.classList.add('hidden');
 
     if (currentMode === 'alphabet') {
         wordBtn.classList.remove('active');  wordBtn.setAttribute('aria-selected', 'false');
         alphaBtn.classList.add('active');    alphaBtn.setAttribute('aria-selected', 'true');
         alphaPanel.classList.remove('hidden');
+        if (wordTrialControls) wordTrialControls.classList.add('hidden');
+        if (trialProgressCard) trialProgressCard.classList.add('hidden');
 
-        // Clear backend 26-frame buffer so word-mode leftovers never bleed
-        // into a future switch-back.
         if (ws && ws.readyState === WebSocket.OPEN) {
-            try { ws.send(JSON.stringify({ type: 'reset' })); } catch (_) {}
-        }
-        // Stop the word-mode JPEG stream loop so we don't double-encode.
-        if (frameIntervalId) {
-            clearInterval(frameIntervalId);
-            frameIntervalId = null;
+            try { ws.send(JSON.stringify({ type: 'reset', mode: 'alphabet' })); } catch (_) {}
         }
 
-        setStatus('Alphabet mode: loading MediaPipe + model...');
-        try {
-            await loadAzslModelJson();
-            console.log('[ALPHABET-DEBUG] Alphabet model JSON loaded and registered');
-            await loadMediaPipeHands();
-            if (typeof window.AzslAlphabet.getAzslModel() !== 'object') {
-                throw new Error('Alphabet model not registered.');
-            }
-            // CRITICAL FIX: The alphabet pipeline needs a live video stream
-            // to send frames into MediaPipe. The previous version silently
-            // failed here when the user had never clicked "Start Camera"
-            // (startAlphabetLoop's setInterval would early-return every tick
-            // because videoStream was null, so onResults was never invoked).
-            // We auto-start the camera if it isn't already running, using
-            // the same startCamera() flow that powers Word Mode.
-            if (!isStreaming) {
-                console.log('[ALPHABET-DEBUG] Camera not running; auto-starting it for Alphabet Mode');
-                setStatus('Alphabet mode: starting camera...');
-                await startCamera();
-                // Give the <video> element a brief moment to reach
-                // readyState >= 2 (HAVE_CURRENT_DATA) so hands.send()
-                // doesn't reject frames on the first tick.
-                await new Promise((resolve) => {
-                    const deadline = Date.now() + 3000;
-                    const tick = () => {
-                        if (video && video.readyState >= 2) return resolve();
-                        if (Date.now() > deadline) return resolve(); // proceed anyway
-                        setTimeout(tick, 50);
-                    };
-                    tick();
-                });
-                console.log('[ALPHABET-DEBUG] Camera readyState now:', video && video.readyState);
-            }
-            // Allocate trajectory engine state once per mode-entry.
-            alphabetLandmarkBuffer = new window.AzslAlphabet.LandmarkBuffer(14);
-            // Minimal MotionBuffer shim - velocityAndPush(x,y) -> {x,y}.
-            alphabetMotionBuffer   = { buffer: [], velocityAndPush: function (x, y) {
-                let vx = 0, vy = 0;
-                if (this.buffer.length) {
-                    const oldest = this.buffer[0];
-                    const span = this.buffer.length;
-                    vx = (x - oldest.x) / span;
-                    vy = (y - oldest.y) / span;
-                }
-                this.buffer.push({ x: x, y: y });
-                if (this.buffer.length > 10) this.buffer.shift();
-                return { x: vx, y: vy };
-            }};
-            alphabetHysteresis = new window.AzslAlphabet.DynamicHysteresis(
-                window.AzslAlphabet.DYNAMIC_HYSTERESIS_MS
-            );
-            startAlphabetLoop();
-            setStatus('Alphabet mode active. Show your hand to the camera.');
-            renderSpelledWord();
-        } catch (err) {
-            console.error('Alphabet mode init failed:', err);
-            setStatus('Alphabet mode error: ' + err.message);
-            alphaPanel.classList.add('hidden');
-            wordBtn.classList.add('active');    wordBtn.setAttribute('aria-selected', 'true');
-            alphaBtn.classList.remove('active');alphaBtn.setAttribute('aria-selected', 'false');
-            currentMode = 'word';
+        if (!isStreaming) {
+            setStatus('Alphabet mode: starting camera...');
+            await startCamera();
+        } else {
+            startFrameLoop();
         }
+
+        setStatus('Alphabet mode aktivdir. Əlinizi kameraya göstərin.');
+        renderSpelledWord();
     } else {
-        // Returning to word mode.
         wordBtn.classList.add('active');      wordBtn.setAttribute('aria-selected', 'true');
         alphaBtn.classList.remove('active');  alphaBtn.setAttribute('aria-selected', 'false');
         alphaPanel.classList.add('hidden');
+        if (wordTrialControls) wordTrialControls.classList.remove('hidden');
+        if (trialProgressCard) trialProgressCard.classList.remove('hidden');
 
-        stopAlphabetLoop();
-        setStatus('Word mode active.');
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            try { ws.send(JSON.stringify({ type: 'reset', mode: 'word' })); } catch (_) {}
+        }
+
+        setStatus('Word mode: Trial başlatmaq üçün [SPACE] və ya START TRIAL sıxın.');
         if (isStreaming) startFrameLoop();
     }
-}
-
-function startAlphabetLoop() {
-    if (mpCameraLoopId) return;
-    console.log('[ALPHABET-DEBUG] startAlphabetLoop() — starting 15 fps push loop into MediaPipe Hands');
-    // MediaPipe is event-driven via hands.onResults(); we push the <video>
-    // frame into it on a fixed cadence (~15 fps, well under the 30 fps
-    // main-thread budget for a single-hand landmarker).
-    let frameCount = 0;
-    let skipLog = 0;
-    mpCameraLoopId = setInterval(() => {
-        if (!videoStream || !video) {
-            // Don't spam the console; just count.
-            return;
-        }
-        if (video.readyState < 2) {
-            skipLog++;
-            if (skipLog === 30) console.warn('[ALPHABET-DEBUG] video.readyState still < 2 after 30 ticks (have:', video.readyState, ')');
-            return;
-        }
-        if (!mpHands) {
-            console.warn('[ALPHABET-DEBUG] mpHands is null in loop tick — MediaPipe not initialized');
-            return;
-        }
-        frameCount++;
-        if (frameCount === 1 || frameCount % 100 === 0) {
-            console.log('[ALPHABET-DEBUG] Pushing frame to MediaPipe, count=', frameCount, 'readyState=', video.readyState);
-        }
-        mpHands.send({ image: video }).catch((err) => {
-            console.warn('[ALPHABET-DEBUG] hands.send failed (non-fatal):', err);
-        });
-    }, 66);
-}
-
-function stopAlphabetLoop() {
-    if (mpCameraLoopId) {
-        clearInterval(mpCameraLoopId);
-        mpCameraLoopId = null;
-    }
-    if (alphabetLandmarkBuffer) alphabetLandmarkBuffer.reset();
-    if (alphabetHysteresis)     alphabetHysteresis.reset();
-    if (alphabetMotionBuffer)   alphabetMotionBuffer.buffer = [];
-}
-// ===== END ALPHABET MODE INTEGRATION =====
-
-// ===== BEGIN ALPHABET MODE INTEGRATION =====
-/* MediaPipe onResults -> AzslAlphabet.predictGesture -> debounced letter
- * acceptance -> spelled-word buffer -> existing sentence UI.
- *
- * The spelled-word buffer (string `spelledWord`) is independent of the
- * existing predictionHistory/selectedWords. commitSpelledWordToSentence()
- * is the only writer that crosses between the two, and it does so by
- * appending to the existing arrays and calling the existing renderers
- * (renderHistory + renderSelected) unchanged.
- */
-
-function onAlphabetHandsResults(results) {
-    if (currentMode !== 'alphabet') return;
-    const liveLetterEl = document.getElementById('alphabet-live-letter');
-    const liveConfEl   = document.getElementById('alphabet-live-conf');
-
-    // Log landmark detection at most every 30 frames to avoid console spam.
-    onAlphabetHandsResults._n = (onAlphabetHandsResults._n || 0) + 1;
-    if (onAlphabetHandsResults._n === 1 || onAlphabetHandsResults._n % 30 === 0) {
-        const detected = !!(results.multiHandLandmarks && results.multiHandLandmarks.length);
-        console.log('[ALPHABET-DEBUG] onResults call #', onAlphabetHandsResults._n,
-                    'hand detected=', detected);
-    }
-
-    if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-        if (liveLetterEl) { liveLetterEl.textContent = '-'; liveLetterEl.classList.add('empty'); }
-        if (liveConfEl)   { liveConfEl.textContent   = '-'; liveConfEl.classList.add('empty'); }
-        return;
-    }
-
-    const lm = results.multiHandLandmarks[0]; // 21 {x,y,z}, normalized 0..1
-    // Mirror left-hand detections so the 84-dim feature builder always
-    // sees a canonical Right hand.
-    const handednessLabel = (results.multiHandedness && results.multiHandedness[0]
-        && results.multiHandedness[0].label) || 'Right';
-    const mirrorX = (handednessLabel === 'Left');
-
-    // Feed the wrist-velocity feature (trained input contract): wrist X/Y
-    // delta over the 10 most recent raw wrist positions, normalized by
-    // frame count.
-    const wrist = lm[window.AzslAlphabet.LM.WRIST];
-    const vel = alphabetMotionBuffer.velocityAndPush(wrist.x, wrist.y);
-
-    // Push into the trajectory ring buffer (raw landmarks, not normalized -
-    // computeTrajectoryFeatures expects raw coordinates).
-    const t = performance.now();
-    alphabetLandmarkBuffer.push(lm, t);
-    const trajectory = window.AzslAlphabet.computeTrajectoryFeatures(
-        alphabetLandmarkBuffer, mirrorX
-    );
-
-    const result = window.AzslAlphabet.predictGesture(
-        lm, mirrorX, vel, trajectory, alphabetHysteresis, t
-    );
-
-    // Log every prediction (label + confidence) — this is the most useful
-    // single line for debugging whether the trained model is firing.
-    console.log('[ALPHABET-DEBUG] predictGesture -> label=',
-                result && result.label, ' conf=',
-                result && result.confidence);
-
-    if (!result || !result.label) {
-        if (liveLetterEl) { liveLetterEl.textContent = '-'; liveLetterEl.classList.add('empty'); }
-        if (liveConfEl)   { liveConfEl.textContent   = '-'; liveConfEl.classList.add('empty'); }
-        return;
-    }
-
-    // Confidence gate: the alphabet model is also trained without an
-    // explicit idle/background class, so low-confidence reads (e.g. when
-    // the hand is half-occluded or moving between gestures) are noise.
-    // Below the floor, treat as idle: do NOT update the live letter, do
-    // NOT advance the debounce, do NOT append to spelledWord.
-    if (result.confidence < ALPHABET_CONFIDENCE_FLOOR) {
-        console.log('[ALPHABET-DEBUG] Rejected (low confidence):',
-                    result.label, ' conf=', (result.confidence * 100).toFixed(1),
-                    '% <', (ALPHABET_CONFIDENCE_FLOOR * 100).toFixed(0), '%');
-        if (liveLetterEl) { liveLetterEl.textContent = '-'; liveLetterEl.classList.add('empty'); }
-        if (liveConfEl)   { liveConfEl.textContent   = (result.confidence * 100).toFixed(1) + '%'; liveConfEl.classList.add('empty'); }
-        return;
-    }
-
-    // Update live read-out IMMEDIATELY (before any debounce) so the user
-    // sees what the classifier is currently seeing. The debounce in
-    // handleAlphabetDecision() only gates appending to spelledWord.
-    const friendly = (window.AzslAlphabet.labelMeta(result.label).friendly) || result.label;
-    if (liveLetterEl) { liveLetterEl.textContent = friendly; liveLetterEl.classList.remove('empty'); }
-    if (liveConfEl)   {
-        liveConfEl.textContent = (result.confidence * 100).toFixed(1) + '%';
-        liveConfEl.classList.remove('empty');
-    }
-
-    handleAlphabetDecision(result, t);
-}
-
-function handleAlphabetDecision(result, t) {
-    const label = result.label;
-    const A = window.AzslAlphabet;
-
-    // Debounce: same letter must hold for LETTER_HOLD_MS; a different new
-    // letter is accepted faster (active handshape change).
-    if (label === lastAcceptedLetter) {
-        if (t - lastAcceptedAt < LETTER_HOLD_MS) {
-            console.log('[ALPHABET-DEBUG] Rejected (same-letter hold):',
-                        label, 'elapsed=', (t - lastAcceptedAt).toFixed(0),
-                        'ms <', LETTER_HOLD_MS, 'ms');
-            return;
-        }
-    } else {
-        if (t - lastAcceptedAt < DIFFERENT_LETTER_HOLD_MS) {
-            console.log('[ALPHABET-DEBUG] Rejected (different-letter hold):',
-                        label, 'elapsed=', (t - lastAcceptedAt).toFixed(0),
-                        'ms <', DIFFERENT_LETTER_HOLD_MS, 'ms');
-            return;
-        }
-    }
-
-    lastAcceptedLetter = label;
-    lastAcceptedAt = t;
-    console.log('[ALPHABET-DEBUG] Accepted letter/gesture:', label);
-
-    if (label === A.LABELS.SPACE) {
-        commitSpelledWordToSentence();
-        return;
-    }
-    if (label === A.LABELS.DEL) {
-        spelledWord = spelledWord.slice(0, -1);
-        renderSpelledWord();
-        return;
-    }
-    spelledWord += label;
-    renderSpelledWord(label);
 }
 
 function renderSpelledWord(justAddedLabel) {
@@ -1534,11 +1642,6 @@ function renderSpelledWord(justAddedLabel) {
     }
 }
 
-/* Spelled word -> existing sentence UI.
- * Pushes a single entry into predictionHistory whose label is the entire
- * spelled word (e.g. "Salam") and immediately selects it, so it shows up
- * in the final sentence UI just like any backend-emitted word. ZERO
- * modifications to renderHistory() / renderSelected() / selectedWords. */
 function commitSpelledWordToSentence() {
     const word = spelledWord.trim();
     if (!word) return;
@@ -1554,6 +1657,9 @@ function commitSpelledWordToSentence() {
     renderSelected();
     spelledWord = '';
     renderSpelledWord();
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        try { ws.send(JSON.stringify({ type: 'alphabet_action', action: 'clear', mode: 'alphabet' })); } catch (_) {}
+    }
     setStatus('Added "' + word + '" to sentence.');
 }
 
@@ -1561,21 +1667,59 @@ document.getElementById('mode-word').addEventListener('click',     () => setMode
 document.getElementById('mode-alphabet').addEventListener('click', () => setMode('alphabet'));
 document.getElementById('alphabet-add-sentence').addEventListener('click', commitSpelledWordToSentence);
 document.getElementById('alphabet-backspace').addEventListener('click', () => {
-    spelledWord = spelledWord.slice(0, -1);
-    renderSpelledWord();
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        try { ws.send(JSON.stringify({ type: 'alphabet_action', action: 'backspace', mode: 'alphabet' })); } catch (_) {}
+    }
+    if (spelledWord) {
+        spelledWord = spelledWord.slice(0, -1);
+        renderSpelledWord();
+    }
 });
 document.getElementById('alphabet-clear').addEventListener('click', () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        try { ws.send(JSON.stringify({ type: 'alphabet_action', action: 'clear', mode: 'alphabet' })); } catch (_) {}
+    }
     spelledWord = '';
     renderSpelledWord();
 });
-// ===== END ALPHABET MODE INTEGRATION =====
+
+// Trial control functions for Word Mode
+async function startWordTrial() {
+    if (currentMode !== 'word') return;
+    if (!isStreaming) {
+        await startCamera();
+    }
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'start', mode: 'word' }));
+    }
+}
+
+function skipWordTrial() {
+    if (currentMode !== 'word') return;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'skip', mode: 'word' }));
+    }
+}
 
 // Event listeners
 startBtn.addEventListener('click', startCamera);
 stopBtn.addEventListener('click', stopCamera);
 resetBtn.addEventListener('click', resetBuffer);
+if (btnStartTrial) btnStartTrial.addEventListener('click', startWordTrial);
+if (btnSkipTrial) btnSkipTrial.addEventListener('click', skipWordTrial);
 if (clearSelectionBtn) clearSelectionBtn.addEventListener('click', clearSelection);
 if (clearHistoryBtn)   clearHistoryBtn.addEventListener('click', clearHistory);
+
+// Global keyboard shortcut: Spacebar triggers START TRIAL in Word Mode
+window.addEventListener('keydown', (e) => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    if (e.code === 'Space' || e.key === ' ') {
+        if (currentMode === 'word') {
+            e.preventDefault();
+            startWordTrial();
+        }
+    }
+});
 
 // Initialize on page load
 window.addEventListener('load', () => {

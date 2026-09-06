@@ -124,23 +124,25 @@
     }
 
     // [63..77] 15 finger joint angles - 5 fingers x 3 angles each:
-    //   base-flex = angle at MCP between (base -> MCP) and (MCP -> PIP)
-    //   tip-flex   = angle at PIP between (MCP -> PIP) and (PIP -> TIP)
-    //   spread     = angle at MCP between (MCP -> PIP) and (MCP -> MIDDLE_PIP)
-    var midPip = coords[LM.MIDDLE_PIP];
+    //   base-flex = angle at MCP between (base -> MCP) and (PIP -> MCP)
+    //   tip-flex   = angle at PIP between (MCP -> PIP) and (TIP -> PIP)
+    //   spread     = angle between finger dir and middle finger dir
+    var middleDir = vecSub(coords[LM.MIDDLE_PIP], coords[LM.MIDDLE_MCP]);
     for (var f = 0; f < FINGERS.length; f++) {
       var F = FINGERS[f];
-      var mcp   = coords[F.j1];
-      var pip   = coords[F.j2];
-      var tip   = coords[F.tip];
       var baseP = coords[F.base];
-      var vMcpBase = vecSub(mcp, baseP);
-      var vMcpPip  = vecSub(pip, mcp);
-      var vPipTip  = vecSub(tip, pip);
-      var vSpread  = vecSub(midPip, mcp);
-      features[63 + f * 3    ] = angleBetween(vMcpBase, vMcpPip);
-      features[63 + f * 3 + 1] = angleBetween(vMcpPip,  vPipTip);
-      features[63 + f * 3 + 2] = angleBetween(vMcpPip,  vSpread);
+      var j1    = coords[F.j1];
+      var j2    = coords[F.j2];
+      var tip   = coords[F.tip];
+
+      var baseFlex = angleBetween(vecSub(baseP, j1), vecSub(j2, j1));
+      var tipFlex  = angleBetween(vecSub(j1, j2), vecSub(tip, j2));
+      var thisDir  = vecSub(j2, j1);
+      var spread   = angleBetween(thisDir, middleDir);
+
+      features[63 + f * 3    ] = baseFlex;
+      features[63 + f * 3 + 1] = tipFlex;
+      features[63 + f * 3 + 2] = spread;
     }
 
     // [78..81] 4 fingertip-gap distances.

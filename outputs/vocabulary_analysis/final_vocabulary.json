@@ -1,0 +1,645 @@
+{
+  "vocabulary_size": 24,
+  "classes": [
+    {
+      "word": "MƏN",
+      "category": "Pronoun",
+      "gloss": "I / me",
+      "index_in_200": 86,
+      "f1_score": 0.8006,
+      "recall": 0.7098,
+      "precision": 0.9181,
+      "train_samples": 1769,
+      "val_samples": 379,
+      "test_samples": 379,
+      "total_samples": 2527,
+      "main_confusion": [
+        [
+          "MƏNƏ",
+          52
+        ],
+        [
+          "MƏNİM",
+          44
+        ]
+      ],
+      "selection_rationale": "Base 1st-person singular pronoun. Retaining MƏN while excluding MƏNƏ/MƏNİM isolates base form cleanly."
+    },
+    {
+      "word": "SƏN",
+      "category": "Pronoun",
+      "gloss": "you (singular)",
+      "index_in_200": 137,
+      "f1_score": 0.4348,
+      "recall": 0.7143,
+      "precision": 0.3125,
+      "train_samples": 34,
+      "val_samples": 7,
+      "test_samples": 7,
+      "total_samples": 48,
+      "main_confusion": [
+        [
+          "HARDA",
+          1
+        ],
+        [
+          "ONUN",
+          1
+        ]
+      ],
+      "selection_rationale": "Base 2nd-person singular pronoun. Essential for interactive demo dialogues."
+    },
+    {
+      "word": "BİZ",
+      "category": "Pronoun",
+      "gloss": "we / us",
+      "index_in_200": 39,
+      "f1_score": 0.7619,
+      "recall": 0.64,
+      "precision": 0.9412,
+      "train_samples": 117,
+      "val_samples": 25,
+      "test_samples": 25,
+      "total_samples": 167,
+      "main_confusion": [
+        [
+          "MƏN",
+          6
+        ],
+        [
+          "BAYRAQ",
+          1
+        ]
+      ],
+      "selection_rationale": "1st-person plural pronoun. High baseline F1 (0.762) and strong train support (117)."
+    },
+    {
+      "word": "SİZ",
+      "category": "Pronoun",
+      "gloss": "you (plural / polite)",
+      "index_in_200": 134,
+      "f1_score": 0.58,
+      "recall": 0.4394,
+      "precision": 0.8529,
+      "train_samples": 308,
+      "val_samples": 66,
+      "test_samples": 66,
+      "total_samples": 440,
+      "main_confusion": [
+        [
+          "SİZİN",
+          13
+        ],
+        [
+          "BAKI",
+          6
+        ]
+      ],
+      "selection_rationale": "2nd-person plural/polite pronoun. High train data (308). Excluding SİZİN removes possessive confusion."
+    },
+    {
+      "word": "SALAM",
+      "category": "Social / Greeting",
+      "gloss": "Hello",
+      "index_in_200": 123,
+      "f1_score": 0.8889,
+      "recall": 1.0,
+      "precision": 0.8,
+      "train_samples": 22,
+      "val_samples": 4,
+      "test_samples": 4,
+      "total_samples": 30,
+      "main_confusion": [],
+      "selection_rationale": "Standard AzSL greeting gesture. High baseline F1 (0.889) and perfect recall (1.000)."
+    },
+    {
+      "word": "SAĞLAM",
+      "category": "Social / State",
+      "gloss": "Healthy / Well",
+      "index_in_200": 126,
+      "f1_score": 0.9333,
+      "recall": 0.875,
+      "precision": 1.0,
+      "train_samples": 39,
+      "val_samples": 8,
+      "test_samples": 8,
+      "total_samples": 55,
+      "main_confusion": [
+        [
+          "SALAM",
+          1
+        ]
+      ],
+      "selection_rationale": "High quality state descriptor (F1: 0.933, Precision: 1.000)."
+    },
+    {
+      "word": "İSTƏMƏK",
+      "category": "Verb",
+      "gloss": "To want / desire",
+      "index_in_200": 188,
+      "f1_score": 0.3333,
+      "recall": 0.25,
+      "precision": 0.5,
+      "train_samples": 73,
+      "val_samples": 16,
+      "test_samples": 16,
+      "total_samples": 105,
+      "main_confusion": [
+        [
+          "İSTƏYİRƏM",
+          8
+        ],
+        [
+          "SUBAY",
+          1
+        ]
+      ],
+      "selection_rationale": "Core modal verb for expressing intentions. Excluding İSTƏYİRƏM removes 50% of test errors."
+    },
+    {
+      "word": "GETMƏK",
+      "category": "Verb",
+      "gloss": "To go",
+      "index_in_200": 61,
+      "f1_score": 0.5714,
+      "recall": 0.5714,
+      "precision": 0.5714,
+      "train_samples": 34,
+      "val_samples": 7,
+      "test_samples": 7,
+      "total_samples": 48,
+      "main_confusion": [
+        [
+          "METRO",
+          2
+        ],
+        [
+          "MƏTBƏX",
+          1
+        ]
+      ],
+      "selection_rationale": "Core directional motion verb. Clean baseline F1 (0.571)."
+    },
+    {
+      "word": "GƏLMƏK",
+      "category": "Verb",
+      "gloss": "To come",
+      "index_in_200": 66,
+      "f1_score": 0.5,
+      "recall": 0.4,
+      "precision": 0.6667,
+      "train_samples": 24,
+      "val_samples": 5,
+      "test_samples": 5,
+      "total_samples": 34,
+      "main_confusion": [
+        [
+          "UŞAQLAR",
+          1
+        ],
+        [
+          "ONLAR",
+          1
+        ]
+      ],
+      "selection_rationale": "Reciprocal motion verb to GETMƏK. Enables departure and arrival sentences."
+    },
+    {
+      "word": "YEMƏK",
+      "category": "Verb / Noun",
+      "gloss": "To eat / Food",
+      "index_in_200": 166,
+      "f1_score": 0.7273,
+      "recall": 0.8,
+      "precision": 0.6667,
+      "train_samples": 26,
+      "val_samples": 5,
+      "test_samples": 5,
+      "total_samples": 36,
+      "main_confusion": [
+        [
+          "2",
+          1
+        ]
+      ],
+      "selection_rationale": "High-frequency daily verb/object. High baseline F1 (0.727)."
+    },
+    {
+      "word": "ALMAQ",
+      "category": "Verb",
+      "gloss": "To buy / take",
+      "index_in_200": 8,
+      "f1_score": 0.6667,
+      "recall": 0.8571,
+      "precision": 0.5455,
+      "train_samples": 31,
+      "val_samples": 7,
+      "test_samples": 7,
+      "total_samples": 45,
+      "main_confusion": [
+        [
+          "OYNAMAQ",
+          1
+        ]
+      ],
+      "selection_rationale": "Core transaction verb. High baseline recall (0.857)."
+    },
+    {
+      "word": "OLMAQ",
+      "category": "Verb",
+      "gloss": "To be / become",
+      "index_in_200": 98,
+      "f1_score": 0.6667,
+      "recall": 0.6667,
+      "precision": 0.6667,
+      "train_samples": 28,
+      "val_samples": 6,
+      "test_samples": 6,
+      "total_samples": 40,
+      "main_confusion": [
+        [
+          "XİRDA",
+          1
+        ],
+        [
+          "GEDƏ",
+          1
+        ]
+      ],
+      "selection_rationale": "Fundamental copula/state verb. Balanced baseline metrics (F1: 0.667)."
+    },
+    {
+      "word": "EV",
+      "category": "Noun",
+      "gloss": "House / Home",
+      "index_in_200": 54,
+      "f1_score": 0.6957,
+      "recall": 0.6667,
+      "precision": 0.7273,
+      "train_samples": 53,
+      "val_samples": 12,
+      "test_samples": 12,
+      "total_samples": 77,
+      "main_confusion": [
+        [
+          "AVTOBUS",
+          1
+        ],
+        [
+          "MƏTBƏX",
+          1
+        ]
+      ],
+      "selection_rationale": "Core locative entity. Strong baseline F1 (0.696) and solid sample count (77 total)."
+    },
+    {
+      "word": "BAKI",
+      "category": "Noun / Location",
+      "gloss": "Baku",
+      "index_in_200": 22,
+      "f1_score": 0.5185,
+      "recall": 0.7,
+      "precision": 0.4118,
+      "train_samples": 44,
+      "val_samples": 10,
+      "test_samples": 10,
+      "total_samples": 64,
+      "main_confusion": [
+        [
+          "DİL",
+          1
+        ],
+        [
+          "3",
+          1
+        ]
+      ],
+      "selection_rationale": "Capital city and primary geographic landmark in AzSL. High real-time demo value."
+    },
+    {
+      "word": "AZƏRBAYCAN",
+      "category": "Noun / Location",
+      "gloss": "Azerbaijan",
+      "index_in_200": 18,
+      "f1_score": 0.7692,
+      "recall": 0.8333,
+      "precision": 0.7143,
+      "train_samples": 25,
+      "val_samples": 6,
+      "test_samples": 6,
+      "total_samples": 37,
+      "main_confusion": [
+        [
+          "İŞ",
+          1
+        ]
+      ],
+      "selection_rationale": "National identifier gesture. High baseline F1 (0.769) and strong recall (0.833)."
+    },
+    {
+      "word": "TELEFON",
+      "category": "Noun / Object",
+      "gloss": "Phone",
+      "index_in_200": 141,
+      "f1_score": 0.6,
+      "recall": 0.5,
+      "precision": 0.75,
+      "train_samples": 28,
+      "val_samples": 6,
+      "test_samples": 6,
+      "total_samples": 40,
+      "main_confusion": [
+        [
+          "ZƏNG",
+          2
+        ],
+        [
+          "1",
+          1
+        ]
+      ],
+      "selection_rationale": "Everyday modern object. Balanced metrics (F1: 0.600, Precision: 0.750)."
+    },
+    {
+      "word": "HARDA",
+      "category": "Question / Locative",
+      "gloss": "Where",
+      "index_in_200": 70,
+      "f1_score": 0.5,
+      "recall": 0.6,
+      "precision": 0.4286,
+      "train_samples": 26,
+      "val_samples": 5,
+      "test_samples": 5,
+      "total_samples": 36,
+      "main_confusion": [
+        [
+          "ALMAQ",
+          1
+        ],
+        [
+          "ORA",
+          1
+        ]
+      ],
+      "selection_rationale": "Essential spatial interrogative particle for question sentences."
+    },
+    {
+      "word": "NECƏ",
+      "category": "Question / Manner",
+      "gloss": "How",
+      "index_in_200": 91,
+      "f1_score": 0.6,
+      "recall": 0.75,
+      "precision": 0.5,
+      "train_samples": 19,
+      "val_samples": 4,
+      "test_samples": 4,
+      "total_samples": 27,
+      "main_confusion": [
+        [
+          "UNİVERSİTET",
+          1
+        ]
+      ],
+      "selection_rationale": "Critical interrogative particle for standard greeting 'SALAM SƏN NECƏ'."
+    },
+    {
+      "word": "BURDA",
+      "category": "Locative",
+      "gloss": "Here",
+      "index_in_200": 34,
+      "f1_score": 0.5625,
+      "recall": 0.6,
+      "precision": 0.5294,
+      "train_samples": 72,
+      "val_samples": 15,
+      "test_samples": 15,
+      "total_samples": 102,
+      "main_confusion": [
+        [
+          "SƏN",
+          3
+        ],
+        [
+          "BURA",
+          1
+        ]
+      ],
+      "selection_rationale": "Core spatial demonstrative locative. Strong sample volume (102 total)."
+    },
+    {
+      "word": "BU GÜN",
+      "category": "Time / Adverb",
+      "gloss": "Today",
+      "index_in_200": 31,
+      "f1_score": 0.6667,
+      "recall": 0.6,
+      "precision": 0.75,
+      "train_samples": 25,
+      "val_samples": 5,
+      "test_samples": 5,
+      "total_samples": 35,
+      "main_confusion": [
+        [
+          "HANSI",
+          2
+        ]
+      ],
+      "selection_rationale": "Core present temporal marker. High precision (0.750) and F1 (0.667)."
+    },
+    {
+      "word": "SABAH",
+      "category": "Time / Adverb",
+      "gloss": "Tomorrow",
+      "index_in_200": 122,
+      "f1_score": 0.4706,
+      "recall": 0.6667,
+      "precision": 0.3636,
+      "train_samples": 31,
+      "val_samples": 6,
+      "test_samples": 6,
+      "total_samples": 43,
+      "main_confusion": [
+        [
+          "SƏHƏR",
+          1
+        ],
+        [
+          "DOST",
+          1
+        ]
+      ],
+      "selection_rationale": "Core future temporal marker. Forms temporal contrast with BU GÜN."
+    },
+    {
+      "word": "VAR",
+      "category": "Existential / State",
+      "gloss": "There is / have",
+      "index_in_200": 150,
+      "f1_score": 0.9375,
+      "recall": 0.9375,
+      "precision": 0.9375,
+      "train_samples": 78,
+      "val_samples": 16,
+      "test_samples": 16,
+      "total_samples": 110,
+      "main_confusion": [
+        [
+          "BAKI",
+          1
+        ]
+      ],
+      "selection_rationale": "Top performing class in dataset (F1: 0.938, Prec: 0.938, Rec: 0.938, Total: 110)."
+    },
+    {
+      "word": "YOX",
+      "category": "Negative / Polarity",
+      "gloss": "No / There is not",
+      "index_in_200": 171,
+      "f1_score": 0.6154,
+      "recall": 0.6667,
+      "precision": 0.5714,
+      "train_samples": 30,
+      "val_samples": 6,
+      "test_samples": 6,
+      "total_samples": 42,
+      "main_confusion": [
+        [
+          "SƏHƏR",
+          1
+        ],
+        [
+          "DEYİL",
+          1
+        ]
+      ],
+      "selection_rationale": "Core negative polarity particle. Strong baseline F1 (0.615)."
+    },
+    {
+      "word": "BU",
+      "category": "Demonstrative",
+      "gloss": "This",
+      "index_in_200": 29,
+      "f1_score": 0.8222,
+      "recall": 0.74,
+      "precision": 0.925,
+      "train_samples": 234,
+      "val_samples": 50,
+      "test_samples": 50,
+      "total_samples": 334,
+      "main_confusion": [
+        [
+          "GÖRƏ",
+          4
+        ],
+        [
+          "ÜÇÜN",
+          3
+        ]
+      ],
+      "selection_rationale": "Primary indexical demonstrative. Robust baseline F1 (0.822) and high data (334 total)."
+    }
+  ],
+  "rejected_classes": [
+    {
+      "class_name": "GÖRMƏK",
+      "total_samples": 19,
+      "train_samples": 13,
+      "val_samples": 3,
+      "test_samples": 3,
+      "f1_score": 0.444,
+      "recall": 0.667,
+      "precision": 0.333,
+      "reason": "Critically low sample volume (<15 training samples, only 3 test samples). High statistical instability; test metric based on only 2 correct predictions out of 3."
+    },
+    {
+      "class_name": "BİLMƏK",
+      "total_samples": 22,
+      "train_samples": 16,
+      "val_samples": 3,
+      "test_samples": 3,
+      "f1_score": 0.333,
+      "recall": 0.333,
+      "precision": 0.333,
+      "reason": "Only 1 out of 3 test samples recognized. Low training volume (16 samples). Severe confusion with modal and temporal tokens."
+    },
+    {
+      "class_name": "O",
+      "total_samples": 303,
+      "train_samples": 213,
+      "val_samples": 45,
+      "test_samples": 45,
+      "f1_score": 0.185,
+      "recall": 0.111,
+      "precision": 0.556,
+      "reason": "Dismal baseline recall (11.1%, only 5/45 correct). 26 errors went to ONUN, but also confused with SƏN (3), ORA (3), and BAZAR (2). Functionally covered by indexical demonstrative BU (F1: 0.822)."
+    },
+    {
+      "class_name": "İŞ",
+      "total_samples": 39,
+      "train_samples": 27,
+      "val_samples": 6,
+      "test_samples": 6,
+      "f1_score": 0.4,
+      "recall": 0.333,
+      "precision": 0.5,
+      "reason": "Low recall (33.3%, only 2/6 correct). Confused with multiple sub-tokens (İŞSİZ, İSTİ). Removing İŞ eliminates false positive draw on EV and other motion sentences."
+    },
+    {
+      "class_name": "MƏNİM",
+      "total_samples": 168,
+      "train_samples": 118,
+      "val_samples": 25,
+      "test_samples": 25,
+      "f1_score": 0.281,
+      "recall": 0.36,
+      "precision": 0.231,
+      "reason": "Major confusion attractor with base pronoun MƏN (55 mutual misclassifications in 200-class model). Excluded to cleanly isolate MƏN."
+    },
+    {
+      "class_name": "MƏNƏ",
+      "total_samples": 115,
+      "train_samples": 81,
+      "val_samples": 17,
+      "test_samples": 17,
+      "f1_score": 0.174,
+      "recall": 0.235,
+      "precision": 0.138,
+      "reason": "Major confusion attractor with base pronoun MƏN (55 mutual misclassifications). Excluded to isolate MƏN."
+    },
+    {
+      "class_name": "ONUN",
+      "total_samples": 118,
+      "train_samples": 83,
+      "val_samples": 18,
+      "test_samples": 18,
+      "f1_score": 0.354,
+      "recall": 0.944,
+      "precision": 0.218,
+      "reason": "Massive false positive sink (61 incoming false positives, including 26 from O). Excluded from demo vocabulary."
+    },
+    {
+      "class_name": "SİZİN",
+      "total_samples": 79,
+      "train_samples": 55,
+      "val_samples": 12,
+      "test_samples": 12,
+      "f1_score": 0.364,
+      "recall": 0.333,
+      "precision": 0.4,
+      "reason": "Morphological variant of SİZ causing 15 mutual misclassifications. Excluded to isolate SİZ."
+    },
+    {
+      "class_name": "İSTƏYİRƏM",
+      "total_samples": 40,
+      "train_samples": 28,
+      "val_samples": 6,
+      "test_samples": 6,
+      "f1_score": 0.286,
+      "recall": 0.333,
+      "precision": 0.25,
+      "reason": "Conjugated form of İSTƏMƏK causing 11 mutual misclassifications. Excluded to isolate infinitive İSTƏMƏK."
+    }
+  ]
+}

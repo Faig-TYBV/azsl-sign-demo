@@ -1,0 +1,282 @@
+{
+  "classes": [
+    {
+      "index": 0,
+      "class": "MƏN",
+      "support": 379,
+      "precision": 0.9806,
+      "recall": 0.9314,
+      "f1": 0.9553
+    },
+    {
+      "index": 1,
+      "class": "SƏN",
+      "support": 7,
+      "precision": 0.3846,
+      "recall": 0.7143,
+      "f1": 0.5
+    },
+    {
+      "index": 2,
+      "class": "BİZ",
+      "support": 25,
+      "precision": 0.9,
+      "recall": 0.72,
+      "f1": 0.8
+    },
+    {
+      "index": 3,
+      "class": "SİZ",
+      "support": 66,
+      "precision": 0.7451,
+      "recall": 0.5758,
+      "f1": 0.6496
+    },
+    {
+      "index": 4,
+      "class": "SALAM",
+      "support": 4,
+      "precision": 0.8,
+      "recall": 1.0,
+      "f1": 0.8889
+    },
+    {
+      "index": 5,
+      "class": "SAĞLAM",
+      "support": 8,
+      "precision": 0.8889,
+      "recall": 1.0,
+      "f1": 0.9412
+    },
+    {
+      "index": 6,
+      "class": "İSTƏMƏK",
+      "support": 16,
+      "precision": 0.6364,
+      "recall": 0.875,
+      "f1": 0.7368
+    },
+    {
+      "index": 7,
+      "class": "GETMƏK",
+      "support": 7,
+      "precision": 1.0,
+      "recall": 0.8571,
+      "f1": 0.9231
+    },
+    {
+      "index": 8,
+      "class": "GƏLMƏK",
+      "support": 5,
+      "precision": 0.8,
+      "recall": 0.8,
+      "f1": 0.8
+    },
+    {
+      "index": 9,
+      "class": "YEMƏK",
+      "support": 5,
+      "precision": 0.5,
+      "recall": 0.6,
+      "f1": 0.5455
+    },
+    {
+      "index": 10,
+      "class": "ALMAQ",
+      "support": 7,
+      "precision": 0.6,
+      "recall": 0.8571,
+      "f1": 0.7059
+    },
+    {
+      "index": 11,
+      "class": "OLMAQ",
+      "support": 6,
+      "precision": 0.8,
+      "recall": 0.6667,
+      "f1": 0.7273
+    },
+    {
+      "index": 12,
+      "class": "EV",
+      "support": 12,
+      "precision": 0.9,
+      "recall": 0.75,
+      "f1": 0.8182
+    },
+    {
+      "index": 13,
+      "class": "BAKI",
+      "support": 10,
+      "precision": 0.3158,
+      "recall": 0.6,
+      "f1": 0.4138
+    },
+    {
+      "index": 14,
+      "class": "AZƏRBAYCAN",
+      "support": 6,
+      "precision": 0.8333,
+      "recall": 0.8333,
+      "f1": 0.8333
+    },
+    {
+      "index": 15,
+      "class": "TELEFON",
+      "support": 6,
+      "precision": 0.4545,
+      "recall": 0.8333,
+      "f1": 0.5882
+    },
+    {
+      "index": 16,
+      "class": "HARDA",
+      "support": 5,
+      "precision": 0.5,
+      "recall": 0.6,
+      "f1": 0.5455
+    },
+    {
+      "index": 17,
+      "class": "NECƏ",
+      "support": 4,
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6667
+    },
+    {
+      "index": 18,
+      "class": "BURDA",
+      "support": 15,
+      "precision": 0.4762,
+      "recall": 0.6667,
+      "f1": 0.5556
+    },
+    {
+      "index": 19,
+      "class": "BU GÜN",
+      "support": 5,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "index": 20,
+      "class": "SABAH",
+      "support": 6,
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6667
+    },
+    {
+      "index": 21,
+      "class": "VAR",
+      "support": 16,
+      "precision": 0.875,
+      "recall": 0.875,
+      "f1": 0.875
+    },
+    {
+      "index": 22,
+      "class": "YOX",
+      "support": 6,
+      "precision": 1.0,
+      "recall": 0.6667,
+      "f1": 0.8
+    },
+    {
+      "index": 23,
+      "class": "BU",
+      "support": 50,
+      "precision": 0.913,
+      "recall": 0.84,
+      "f1": 0.875
+    }
+  ],
+  "best_5": [
+    {
+      "index": 19,
+      "class": "BU GÜN",
+      "support": 5,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "index": 0,
+      "class": "MƏN",
+      "support": 379,
+      "precision": 0.9806,
+      "recall": 0.9314,
+      "f1": 0.9553
+    },
+    {
+      "index": 5,
+      "class": "SAĞLAM",
+      "support": 8,
+      "precision": 0.8889,
+      "recall": 1.0,
+      "f1": 0.9412
+    },
+    {
+      "index": 7,
+      "class": "GETMƏK",
+      "support": 7,
+      "precision": 1.0,
+      "recall": 0.8571,
+      "f1": 0.9231
+    },
+    {
+      "index": 4,
+      "class": "SALAM",
+      "support": 4,
+      "precision": 0.8,
+      "recall": 1.0,
+      "f1": 0.8889
+    }
+  ],
+  "worst_5": [
+    {
+      "index": 18,
+      "class": "BURDA",
+      "support": 15,
+      "precision": 0.4762,
+      "recall": 0.6667,
+      "f1": 0.5556
+    },
+    {
+      "index": 9,
+      "class": "YEMƏK",
+      "support": 5,
+      "precision": 0.5,
+      "recall": 0.6,
+      "f1": 0.5455
+    },
+    {
+      "index": 16,
+      "class": "HARDA",
+      "support": 5,
+      "precision": 0.5,
+      "recall": 0.6,
+      "f1": 0.5455
+    },
+    {
+      "index": 1,
+      "class": "SƏN",
+      "support": 7,
+      "precision": 0.3846,
+      "recall": 0.7143,
+      "f1": 0.5
+    },
+    {
+      "index": 13,
+      "class": "BAKI",
+      "support": 10,
+      "precision": 0.3158,
+      "recall": 0.6,
+      "f1": 0.4138
+    }
+  ],
+  "zero_recall_classes": [],
+  "zero_f1_classes": []
+}
