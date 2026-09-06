@@ -114,16 +114,14 @@ cd Holberton-azsl-word-recognition
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r src/web_demo/requirements.txt
-pip install scikit-learn pytest
+pip install -r requirements.txt
 ```
 
 **macOS / Linux:**
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r src/web_demo/requirements.txt
-pip install scikit-learn pytest
+pip install -r requirements.txt
 ```
 
 ### 3. Setup MediaPipe Model (if not present)

@@ -42,18 +42,18 @@ def test_checkpoint_loads():                      # 1. checkpoint loads
     assert len(ckpt["model_state_dict"]) > 0
 
 
-def test_class_mapping_has_200_classes(loaded):   # 2. 200 classes
+def test_class_mapping_has_24_classes(loaded):    # 2. 24 classes
     _, class_to_idx, idx_to_class, _ = loaded
-    assert len(class_to_idx) == 200
-    assert len(idx_to_class) == 200
+    assert len(class_to_idx) == 24
+    assert len(idx_to_class) == 24
 
 
-def test_model_logits_shape(loaded):              # 3. [1,200] logits
+def test_model_logits_shape(loaded):              # 3. [1,24] logits
     model, _, _, device = loaded
     x = torch.randn(1, 26, 126, device=device)
     with torch.no_grad():
         logits = model(x)
-    assert tuple(logits.shape) == (1, 200)
+    assert tuple(logits.shape) == (1, 24)
 
 
 def test_probabilities_sum_to_one(loaded):        # 4. probs sum to ~1
@@ -119,7 +119,7 @@ def test_mismatched_checkpoint_detected(tmp_path):         # 10. mismatch caught
 
     bad_cfg = {
         "input_size": 126, "hidden_size": 64, "num_layers": 1,
-        "num_classes": 200, "dropout": 0.3,
+        "num_classes": 24, "dropout": 0.3,
         "bidirectional": False, "pooling": "last",
     }
     bad = {"model_state_dict": GRUClassifier(**bad_cfg).state_dict(),

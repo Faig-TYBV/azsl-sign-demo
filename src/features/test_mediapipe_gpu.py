@@ -69,7 +69,7 @@ def make_options(delegate) -> mp_vision.HandLandmarkerOptions:
     )
 
 
-def test_inference(landmarker, label: str) -> bool:
+def run_inference_check(landmarker, label: str) -> bool:
     """Run one synthetic frame through VIDEO-mode inference."""
     frame = np.zeros((480, 640, 3), dtype=np.uint8)
     frame[:] = (40, 40, 40)
@@ -112,7 +112,7 @@ def main() -> None:
     # --- CPU baseline ---
     try:
         cpu_lm = mp_vision.HandLandmarker.create_from_options(make_options(mp_python.BaseOptions.Delegate.CPU))
-        cpu_ok = test_inference(cpu_lm, "CPU")
+        cpu_ok = run_inference_check(cpu_lm, "CPU")
         cpu_lm.close()
     except Exception as exc:
         cpu_ok = False
@@ -123,7 +123,7 @@ def main() -> None:
     try:
         gpu_lm = mp_vision.HandLandmarker.create_from_options(make_options(mp_python.BaseOptions.Delegate.GPU))
         print("[GPU] HandLandmarker initialized with GPU delegate.")
-        gpu_ok = test_inference(gpu_lm, "GPU")
+        gpu_ok = run_inference_check(gpu_lm, "GPU")
         gpu_lm.close()
     except Exception as exc:
         print(f"[GPU] initialization/inference FAILED: {type(exc).__name__}: {exc}")

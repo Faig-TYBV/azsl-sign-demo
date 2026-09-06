@@ -52,13 +52,16 @@ from src.models.gru_classifier import GRUClassifier  # noqa: E402
 
 from src.inference.ambiguity_gate import is_ambiguous_prediction
 
-DEFAULT_CHECKPOINT_PATH = PROJECT_ROOT / "outputs/checkpoints/gru_temporal_pool_best.pt"
+DEFAULT_CHECKPOINT_PATH = (
+    PROJECT_ROOT
+    / "outputs/vocabulary_24_cap50/checkpoints/gru_24_cap50_best.pt"
+)
 
 EXPECTED_CONFIG = {
     "input_size": 126,
     "hidden_size": 128,
     "num_layers": 2,
-    "num_classes": 200,
+    "num_classes": 24,
     "dropout": 0.3,
     "bidirectional": False,
     "pooling": "mean_max",
@@ -113,8 +116,8 @@ def verify_checkpoint(checkpoint_path: Path) -> dict:
     }
     if cfg.get("input_size") not in (126, 280):
         mismatches["input_size"] = {"expected": "126 or 280", "found": cfg.get("input_size")}
-    if cfg.get("num_classes") not in (20, 25, 200):
-        mismatches["num_classes"] = {"expected": "20, 25, or 200", "found": cfg.get("num_classes")}
+    if cfg.get("num_classes") not in (20, 24, 25, 200):
+        mismatches["num_classes"] = {"expected": "20, 24, 25, or 200", "found": cfg.get("num_classes")}
     if mismatches:
         raise CheckpointVerificationError(
             f"Checkpoint config mismatch: {mismatches}"
