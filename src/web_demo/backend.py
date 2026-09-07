@@ -15,15 +15,42 @@ from typing import Deque, Dict
 import cv2
 import mediapipe as mp
 import numpy as np
+import os
 import torch
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import (
+    Depends,
+    FastAPI,
+    HTTPException,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, EmailStr, field_validator
+from starlette.middleware.sessions import SessionMiddleware
+
+# Windows consoles default to a legacy codepage (cp1252 / cp1251) that cannot
+# encode the Azerbaijani characters in our log lines (e.g. "BAŞLA!"). Without
+# this, print() raises UnicodeEncodeError inside the countdown task and the
+# trial never reaches the RECORDING state — the frame counter stays at 0/26.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 # Make project-root imports work
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+
+# Absolute path to the MediaPipe hand-landmarker bundle. create_hand_landmarker()
+# otherwise resolves "models/hand_landmarker.task" relative to the process CWD,
+# which only exists if the server is launched from a directory that happens to
+# have a models/ folder — so the /ws socket would accept then immediately close.
+HAND_LANDMARKER_TASK = PROJECT_ROOT / "src" / "models" / "hand_landmarker.task"
 
 from src.features.extract_landmarks import (
     create_hand_landmarker,
@@ -39,8 +66,20 @@ from src.inference.ambiguity_gate import is_ambiguous_prediction
 from src.inference.alphabet_classifier import AlphabetClassifier, AlphabetStabilizer
 from src.data.normalization import FeatureNormalizer
 from src.inference.predict import get_device
+from src.web_demo import db as auth_db
 
 app = FastAPI(title="AzSLD Web Demo Backend")
+
+# Signed session cookie (login state). SESSION_SECRET comes from .env; the
+# fallback keeps a dev server importable but rotates every restart (logs
+# everyone out), so a real value in .env is expected.
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET", "dev-insecure-secret-set-SESSION_SECRET"),
+    session_cookie="azsl_session",
+    https_only=os.getenv("SESSION_COOKIE_SECURE", "0") == "1",
+    same_site="lax",
+)
 
 # Load the Experiment 8 (24-class Cap-50) word model and normalizer at startup
 print("Loading Experiment 8 word model and normalizer...", flush=True)
@@ -98,6 +137,22 @@ print("Alphabet classifier loaded successfully.", flush=True)
 # Constants for prediction smoothing
 WINDOW_SIZE = 5
 CONFIDENCE_THRESHOLD = 0.35
+
+# --- Alphabet (fingerspelling) mode tuning ------------------------------------
+# The alphabet MLP has no "not-a-letter" class, so its softmax saturates and the
+# confidence gate alone can't stop garbage from accumulating ("FFAX" while the
+# user isn't even signing). These three knobs do the real work:
+#   * a long stable-hold requirement (~0.7 s at 15 fps, matches the UI hint)
+#   * a motion gate: a hand travelling between poses can't commit anything
+#   * a high confidence floor
+ALPHA_MIN_CONF = 0.82           # per-frame letter confidence required
+ALPHA_STABILITY_FRAMES = 10     # consecutive agreeing frames to commit (~0.66 s @ 15 fps)
+ALPHA_MOTION_THRESH = 0.030     # wrist travel (normalised image units) per frame; above => "moving"
+# MediaPipe reports handedness as if the image were mirrored (selfie view); the
+# frontend sends a raw, un-mirrored frame, so the Left/Right label is inverted
+# relative to reality. Flip it back before the classifier mirrors the hand.
+# If letters come out consistently wrong, set this to False.
+ALPHA_HANDEDNESS_IS_MIRRORED = True
 
 # Server-side logging verbosity.
 #   False (default): only operational / error / hand-presence events print
@@ -159,7 +214,11 @@ class ConnectionState:
         self.last_word_result = None
 
         # --- Alphabet Mode Stabilization Engine ---
-        self.stabilizer = AlphabetStabilizer(min_confidence=0.55, stability_frames=3)
+        self.stabilizer = AlphabetStabilizer(
+            min_confidence=ALPHA_MIN_CONF, stability_frames=ALPHA_STABILITY_FRAMES
+        )
+        # Previous-frame wrist (x, y) in normalised image space, for the motion gate.
+        self.alpha_prev_wrist = None
 
         self.landmarker = None
         self.last_timestamp_ms = 0
@@ -186,7 +245,126 @@ class ConnectionState:
 
 @app.on_event("startup")
 async def startup_event():
+    # Prepare the PostgreSQL auth store (creates the database + users table on
+    # first run). A bad DATABASE_URL fails loudly here rather than at first login.
+    try:
+        auth_db.init_db()
+        print("Auth database ready (PostgreSQL).", flush=True)
+    except auth_db.DatabaseUnavailable as exc:
+        print("\n" + "=" * 70, flush=True)
+        print(str(exc), flush=True)
+        print("=" * 70 + "\n", flush=True)
+        # Terse re-raise — the actionable message is the banner above, not a
+        # SQLAlchemy stack trace.
+        raise SystemExit("Startup aborted: auth database unavailable (see above).")
     print("WebSocket backend started.", flush=True)
+
+
+# --------------------------------------------------------------------------- #
+# Auth: request/response models, helpers, routes
+# --------------------------------------------------------------------------- #
+def get_db():
+    session = auth_db.SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+def _session_uid(request: Request):
+    uid = request.session.get("uid")
+    return int(uid) if uid is not None else None
+
+
+def current_user(request: Request, session=Depends(get_db)):
+    """FastAPI dependency: the logged-in User, or None."""
+    uid = _session_uid(request)
+    if uid is None:
+        return None
+    return auth_db.get_user_by_id(session, uid)
+
+
+def require_user(user=Depends(current_user)):
+    """FastAPI dependency for JSON APIs: 401 when not signed in."""
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+        )
+    return user
+
+
+class RegisterIn(BaseModel):
+    full_name: str
+    email: EmailStr
+    password: str
+    confirm: str | None = None
+
+    @field_validator("full_name")
+    @classmethod
+    def _name_len(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 2:
+            raise ValueError("Ad və Soyad ən azı 2 simvol olmalıdır.")
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def _pw_len(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("Şifrə ən azı 6 simvoldan ibarət olmalıdır.")
+        return v
+
+    @field_validator("confirm")
+    @classmethod
+    def _pw_match(cls, v, info):
+        if v is not None and v != info.data.get("password"):
+            raise ValueError("Şifrələr uyğun gəlmir.")
+        return v
+
+
+class LoginIn(BaseModel):
+    email: EmailStr
+    password: str
+
+
+@app.post("/api/register")
+async def api_register(payload: RegisterIn, request: Request, session=Depends(get_db)):
+    if auth_db.get_user_by_email(session, payload.email):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Bu e-poçt artıq qeydiyyatdan keçib.",
+        )
+    user = auth_db.create_user(
+        session,
+        full_name=payload.full_name,
+        email=payload.email,
+        password=payload.password,
+    )
+    request.session["uid"] = user.id
+    return {"user": user.public_dict()}
+
+
+@app.post("/api/login")
+async def api_login(payload: LoginIn, request: Request, session=Depends(get_db)):
+    user = auth_db.get_user_by_email(session, payload.email)
+    if user is None or not auth_db.verify_password(payload.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="E-poçt və ya şifrə yanlışdır.",
+        )
+    request.session["uid"] = user.id
+    return {"user": user.public_dict()}
+
+
+@app.post("/api/logout")
+async def api_logout(request: Request):
+    request.session.clear()
+    return {"ok": True}
+
+
+@app.get("/api/me")
+async def api_me(user=Depends(require_user)):
+    return {"user": user.public_dict()}
 
 
 def _serve_page(filename: str) -> HTMLResponse:
@@ -205,20 +383,26 @@ async def root():
 
 
 @app.get("/login")
-async def login_page():
-    """The login/registration page (unchanged HTML/CSS, just relocated here)."""
+async def login_page(user=Depends(current_user)):
+    """Login form. Already signed in -> straight to the workspace."""
+    if user is not None:
+        return RedirectResponse(url="/app", status_code=302)
     return _serve_page("register.html")
 
 
 @app.get("/register")
-async def register_page():
-    """Alias for '/login' so the registration page keeps its explicit URL too."""
+async def register_page(user=Depends(current_user)):
+    """Registration form (same page as /login; the frontend switches mode by path)."""
+    if user is not None:
+        return RedirectResponse(url="/app", status_code=302)
     return _serve_page("register.html")
 
 
 @app.get("/app")
-async def app_page():
-    """The main CV workspace (word + alphabet recognition). Unchanged content."""
+async def app_page(user=Depends(current_user)):
+    """The main CV workspace. Requires a valid session."""
+    if user is None:
+        return RedirectResponse(url="/login", status_code=302)
     return _serve_page("index.html")
 
 
@@ -230,11 +414,17 @@ async def workspace_alias():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    # SessionMiddleware also populates websocket.session — reject anonymous
+    # sockets so the recognition stream matches the gated /app page.
+    if websocket.session.get("uid") is None:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
     await websocket.accept()
     print("Client connected", flush=True)
 
     try:
-        landmarker = create_hand_landmarker()
+        landmarker = create_hand_landmarker(HAND_LANDMARKER_TASK)
     except FileNotFoundError as e:
         await websocket.send_text(json.dumps({"error": str(e)}))
         await websocket.close()
@@ -622,18 +812,38 @@ async def websocket_endpoint(websocket: WebSocket):
                     has_hand = frame_result.num_hands > 0
                     raw_letter = None
                     raw_conf = 0.0
+                    is_moving = False
 
                     if has_hand:
                         hand_lm = frame_result.landmarks[0]
-                        hand_label = frame_result.handedness[0] if frame_result.handedness else "Right"
-                        raw_letter, raw_conf = alphabet_classifier.predict_frame(
-                            hand_lm, handedness=hand_label, min_confidence=0.55
+
+                        # Motion gate: how far did the wrist travel since the
+                        # last frame? A hand in transit between poses must not
+                        # be allowed to commit a letter.
+                        wrist_xy = (float(hand_lm[0][0]), float(hand_lm[0][1]))
+                        if state.alpha_prev_wrist is not None:
+                            dx = wrist_xy[0] - state.alpha_prev_wrist[0]
+                            dy = wrist_xy[1] - state.alpha_prev_wrist[1]
+                            is_moving = (dx * dx + dy * dy) ** 0.5 > ALPHA_MOTION_THRESH
+                        state.alpha_prev_wrist = wrist_xy
+
+                        hand_label = (
+                            frame_result.handedness[0] if frame_result.handedness else "Right"
                         )
+                        if ALPHA_HANDEDNESS_IS_MIRRORED:
+                            hand_label = "Left" if hand_label == "Right" else "Right"
+
+                        raw_letter, raw_conf = alphabet_classifier.predict_frame(
+                            hand_lm, handedness=hand_label, min_confidence=ALPHA_MIN_CONF
+                        )
+                    else:
+                        state.alpha_prev_wrist = None
 
                     stab_result = state.stabilizer.update(
                         raw_letter=raw_letter,
                         raw_confidence=raw_conf,
                         hand_present=has_hand,
+                        is_moving=is_moving,
                     )
                     total_ms = (time.perf_counter() - t0) * 1000.0
 

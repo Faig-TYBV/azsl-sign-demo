@@ -9,3 +9,11 @@ websocket-client>=1.8.0
 httpx>=0.27.0
 scikit-learn>=1.4.0
 pytest>=8.0.0
+
+# --- Web demo auth (registration + login, PostgreSQL) ---
+sqlalchemy>=2.0.0
+psycopg[binary]>=3.1
+argon2-cffi>=23.1.0
+itsdangerous>=2.1.0
+python-dotenv>=1.0.0
+email-validator>=2.0.0

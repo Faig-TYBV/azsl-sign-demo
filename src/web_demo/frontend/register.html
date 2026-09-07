@@ -256,6 +256,24 @@ main {
 
 .field.invalid .field-error { display: block; }
 
+/* ---------- Server-side form alert ---------- */
+.form-alert {
+    margin: 0 0 1rem;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    border-radius: 10px;
+    border: 1px solid var(--state-danger);
+    color: var(--state-danger);
+    background: rgba(255, 90, 90, 0.08);
+}
+.form-alert.ok {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    background: rgba(160, 255, 255, 0.08);
+}
+.field.hidden { display: none; }
+
 /* ---------- Submit ---------- */
 .submit-btn {
     width: 100%;
@@ -371,15 +389,17 @@ main {
             <span class="brand-name">Az<span class="accent">İşarə</span></span>
         </a>
 
-        <a class="login-link" href="/app">Daxil ol</a>
+        <a class="login-link" id="header-auth-link" href="/login">Daxil ol</a>
     </header>
 
     <main>
         <section class="register-card" id="register-card">
-            <h1 class="card-title">Azİşarə Platformasında Qeydiyyat</h1>
-            <p class="card-subtitle">
+            <h1 class="card-title" id="card-title">Azİşarə Platformasında Qeydiyyat</h1>
+            <p class="card-subtitle" id="card-subtitle">
                 Hesabınızı yaradın və real vaxt rejimində işarə dilini öyrənməyə başlayın.
             </p>
+
+            <p class="form-alert" id="form-alert" role="alert" hidden></p>
 
             <form id="register-form" novalidate>
                 <div class="field" id="field-name">
@@ -411,7 +431,7 @@ main {
                 </div>
 
                 <button type="submit" class="submit-btn" id="submit-btn">
-                    <span>Qeydiyyatı Tamamla</span>
+                    <span id="submit-label">Qeydiyyatı Tamamla</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M5 12h13"/>
@@ -420,8 +440,8 @@ main {
                 </button>
             </form>
 
-            <p class="card-footer">
-                Artıq hesabınız var? <a href="/app">Daxil olun</a>
+            <p class="card-footer" id="card-footer">
+                Artıq hesabınız var? <a href="/login">Daxil olun</a>
             </p>
         </section>
     </main>
@@ -564,6 +584,12 @@ main {
     var form = document.getElementById('register-form');
     var card = document.getElementById('register-card');
     var submitBtn = document.getElementById('submit-btn');
+    var submitLabel = document.getElementById('submit-label');
+    var formAlert = document.getElementById('form-alert');
+    var cardTitle = document.getElementById('card-title');
+    var cardSubtitle = document.getElementById('card-subtitle');
+    var cardFooter = document.getElementById('card-footer');
+    var headerAuthLink = document.getElementById('header-auth-link');
 
     var fields = {
         name:     { wrap: document.getElementById('field-name'),     input: document.getElementById('fullname') },
@@ -573,6 +599,57 @@ main {
     };
 
     var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+    /* "login" when the page is served at /login, otherwise "register".
+       Both URLs return this same HTML; the backend switches nothing. */
+    var MODE = window.location.pathname.replace(/\/+$/, '') === '/login'
+        ? 'login' : 'register';
+
+    var COPY = {
+        register: {
+            title: 'Azİşarə Platformasında Qeydiyyat',
+            subtitle: 'Hesabınızı yaradın və real vaxt rejimində işarə dilini öyrənməyə başlayın.',
+            submit: 'Qeydiyyatı Tamamla',
+            footerHtml: 'Artıq hesabınız var? <a href="/login">Daxil olun</a>',
+            headerLink: { text: 'Daxil ol', href: '/login' },
+            endpoint: '/api/register'
+        },
+        login: {
+            title: 'Azİşarə Platformasına Daxil ol',
+            subtitle: 'E-poçt və şifrənizlə hesabınıza daxil olun.',
+            submit: 'Daxil ol',
+            footerHtml: 'Hesabınız yoxdur? <a href="/register">Qeydiyyatdan keçin</a>',
+            headerLink: { text: 'Qeydiyyat', href: '/register' },
+            endpoint: '/api/login'
+        }
+    };
+
+    function applyMode() {
+        var c = COPY[MODE];
+        cardTitle.textContent = c.title;
+        cardSubtitle.textContent = c.subtitle;
+        submitLabel.textContent = c.submit;
+        cardFooter.innerHTML = c.footerHtml;
+        if (headerAuthLink) {
+            headerAuthLink.textContent = c.headerLink.text;
+            headerAuthLink.setAttribute('href', c.headerLink.href);
+        }
+        document.title = c.title;
+        // Name + confirm only exist for registration.
+        var loginMode = MODE === 'login';
+        fields.name.wrap.classList.toggle('hidden', loginMode);
+        fields.confirm.wrap.classList.toggle('hidden', loginMode);
+        fields.password.input.setAttribute(
+            'autocomplete', loginMode ? 'current-password' : 'new-password'
+        );
+    }
+
+    function showAlert(message, ok) {
+        formAlert.textContent = message;
+        formAlert.classList.toggle('ok', !!ok);
+        formAlert.hidden = false;
+    }
+    function clearAlert() { formAlert.hidden = true; formAlert.textContent = ''; }
 
     function setError(key, message) {
         var f = fields[key];
@@ -591,13 +668,16 @@ main {
 
     function validate() {
         var firstInvalid = null;
+        var loginMode = MODE === 'login';
 
-        var name = fields.name.input.value.trim();
-        if (name.length < 2) {
-            setError('name', 'Ad və Soyad daxil edilməlidir.');
-            firstInvalid = firstInvalid || fields.name.input;
-        } else {
-            clearError('name');
+        if (!loginMode) {
+            var name = fields.name.input.value.trim();
+            if (name.length < 2) {
+                setError('name', 'Ad və Soyad daxil edilməlidir.');
+                firstInvalid = firstInvalid || fields.name.input;
+            } else {
+                clearError('name');
+            }
         }
 
         var email = fields.email.input.value.trim();
@@ -609,22 +689,26 @@ main {
         }
 
         var password = fields.password.input.value;
-        if (password.length < 6) {
-            setError('password', 'Şifrə ən azı 6 simvoldan ibarət olmalıdır.');
+        if (loginMode ? password.length === 0 : password.length < 6) {
+            setError('password', loginMode
+                ? 'Şifrəni daxil edin.'
+                : 'Şifrə ən azı 6 simvoldan ibarət olmalıdır.');
             firstInvalid = firstInvalid || fields.password.input;
         } else {
             clearError('password');
         }
 
-        var confirm = fields.confirm.input.value;
-        if (confirm.length === 0) {
-            setError('confirm', 'Şifrənin təsdiqi daxil edilməlidir.');
-            firstInvalid = firstInvalid || fields.confirm.input;
-        } else if (confirm !== password) {
-            setError('confirm', 'Şifrələr uyğun gəlmir.');
-            firstInvalid = firstInvalid || fields.confirm.input;
-        } else {
-            clearError('confirm');
+        if (!loginMode) {
+            var confirm = fields.confirm.input.value;
+            if (confirm.length === 0) {
+                setError('confirm', 'Şifrənin təsdiqi daxil edilməlidir.');
+                firstInvalid = firstInvalid || fields.confirm.input;
+            } else if (confirm !== password) {
+                setError('confirm', 'Şifrələr uyğun gəlmir.');
+                firstInvalid = firstInvalid || fields.confirm.input;
+            } else {
+                clearError('confirm');
+            }
         }
 
         return firstInvalid;
@@ -637,8 +721,19 @@ main {
         });
     });
 
+    function extractError(payload, fallback) {
+        if (!payload) return fallback;
+        var d = payload.detail;
+        if (typeof d === 'string') return d;
+        if (Array.isArray(d) && d.length && d[0] && d[0].msg) {
+            return String(d[0].msg).replace(/^Value error,\s*/, '');
+        }
+        return fallback;
+    }
+
     form.addEventListener('submit', function (event) {
         event.preventDefault();
+        clearAlert();
 
         var firstInvalid = validate();
         if (firstInvalid) {
@@ -646,15 +741,57 @@ main {
             return;
         }
 
-        submitBtn.disabled = true;
-        submitBtn.querySelector('span').textContent = 'Yönləndirilir...';
+        var loginMode = MODE === 'login';
+        var body = loginMode
+            ? {
+                email: fields.email.input.value.trim(),
+                password: fields.password.input.value
+              }
+            : {
+                full_name: fields.name.input.value.trim(),
+                email: fields.email.input.value.trim(),
+                password: fields.password.input.value,
+                confirm: fields.confirm.input.value
+              };
 
-        /* Fade the card out, then hand off to the existing app view. */
-        card.classList.add('submitting');
-        window.setTimeout(function () {
-            window.location.href = APP_URL;
-        }, reduceMotion ? 0 : 420);
+        submitBtn.disabled = true;
+        submitLabel.textContent = 'Gözləyin...';
+
+        fetch(COPY[MODE].endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(body)
+        })
+        .then(function (res) {
+            return res.json().catch(function () { return null; }).then(function (data) {
+                return { ok: res.ok, status: res.status, data: data };
+            });
+        })
+        .then(function (r) {
+            if (r.ok) {
+                submitLabel.textContent = 'Yönləndirilir...';
+                card.classList.add('submitting');
+                window.setTimeout(function () {
+                    window.location.href = APP_URL;
+                }, reduceMotion ? 0 : 420);
+                return;
+            }
+            submitBtn.disabled = false;
+            submitLabel.textContent = COPY[MODE].submit;
+            var msg = extractError(r.data,
+                loginMode ? 'Daxil olmaq alınmadı.' : 'Qeydiyyat alınmadı.');
+            if (r.status === 409) { setError('email', msg); }
+            showAlert(msg, false);
+        })
+        .catch(function () {
+            submitBtn.disabled = false;
+            submitLabel.textContent = COPY[MODE].submit;
+            showAlert('Serverə qoşulmaq mümkün olmadı. Backend işləyirmi?', false);
+        });
     });
+
+    applyMode();
 })();
 </script>
 

@@ -299,15 +299,16 @@ class AlphabetClassifier:
         mirror_x = handedness == "Left"
         coords = normalize_landmarks(landmarks, mirror_x=mirror_x)
 
-        letter_result = self.classify_hierarchical(coords, (0.0, 0.0))
-
-        if letter_result["confidence"] >= CONTROL_OVERRIDE_CONFIDENCE:
-            return letter_result["label"], float(letter_result["confidence"])
-
+        # Control gestures (SPACE = thumbs-up, DEL = index-point) are checked
+        # FIRST. The letter head uses a small MLP with no "not-a-letter" class,
+        # so its softmax saturates (>0.75 on almost any hand pose); leaving the
+        # old `confidence >= CONTROL_OVERRIDE_CONFIDENCE` short-circuit ahead of
+        # this made SPACE/DEL practically unreachable.
         control = detect_control_gesture(coords)
         if control:
             return control["label"], float(control["confidence"])
 
+        letter_result = self.classify_hierarchical(coords, (0.0, 0.0))
         if letter_result["confidence"] >= min_confidence:
             return letter_result["label"], float(letter_result["confidence"])
 
@@ -358,20 +359,40 @@ class AlphabetStabilizer:
         raw_letter: Optional[str],
         raw_confidence: float,
         hand_present: bool = True,
+        is_moving: bool = False,
     ) -> Dict[str, Any]:
         just_accepted = False
 
-        if not hand_present or raw_letter is None or raw_confidence < self.min_confidence:
-            # When hand is removed or confidence drops below threshold:
-            # reset candidate tracking and release commit latch so a gesture can be re-entered.
+        # Hand fully out of frame: reset everything AND release the commit latch,
+        # so deliberately lowering the hand and re-signing the same letter (a
+        # real double letter, e.g. "AA") works.
+        if not hand_present:
             self.candidate = None
             self.consecutive_count = 0
             self.candidate_conf = 0.0
             self.committed_letter = None
             self.already_committed = False
             return {
-                "raw_letter": raw_letter if (hand_present and raw_letter) else "-",
-                "raw_confidence": float(raw_confidence) if hand_present else 0.0,
+                "raw_letter": "-",
+                "raw_confidence": 0.0,
+                "stable_candidate": "-",
+                "candidate_progress": f"0/{self.stability_frames}",
+                "accepted_letter": self.accepted_letter or "-",
+                "just_accepted": False,
+                "spelled_word": self.spelled_word,
+            }
+
+        # Hand present but not spelling right now: it's mid-motion between poses,
+        # the frame has no confident letter, or confidence is below threshold.
+        # Drop the in-progress streak so nothing commits, but KEEP committed_letter
+        # so a single flicker can't double-type the letter just accepted.
+        if is_moving or raw_letter is None or raw_confidence < self.min_confidence:
+            self.candidate = None
+            self.consecutive_count = 0
+            self.candidate_conf = 0.0
+            return {
+                "raw_letter": raw_letter if raw_letter else "-",
+                "raw_confidence": float(raw_confidence),
                 "stable_candidate": "-",
                 "candidate_progress": f"0/{self.stability_frames}",
                 "accepted_letter": self.accepted_letter or "-",

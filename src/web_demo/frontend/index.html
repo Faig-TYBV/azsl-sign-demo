@@ -950,6 +950,13 @@ main {
 <div class="container">
     <header>
         <h1 class="title">Azərbaycan İşarə Dilinin Tanınması</h1>
+        <div class="auth-bar" id="auth-bar" style="display:flex;align-items:center;gap:12px;justify-content:center;margin-top:8px;font-size:0.9rem;">
+            <span id="auth-user" style="opacity:0.8;"></span>
+            <button id="btn-logout" type="button"
+                    style="background:transparent;border:1px solid currentColor;color:inherit;border-radius:8px;padding:4px 12px;cursor:pointer;opacity:0.85;">
+                Çıxış
+            </button>
+        </div>
     </header>
 
     <!-- ===== BEGIN ALPHABET MODE INTEGRATION =====
@@ -1982,6 +1989,33 @@ window.addEventListener('load', () => {
 window.addEventListener('beforeunload', () => {
     cleanup();
 });
+</script>
+
+<script>
+// --- Auth bar: show the signed-in user, wire logout -----------------------
+(function () {
+    var nameEl = document.getElementById('auth-user');
+    var logoutBtn = document.getElementById('btn-logout');
+
+    fetch('/api/me', { credentials: 'same-origin' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+            if (d && d.user) {
+                nameEl.textContent = d.user.full_name + ' · ' + d.user.email;
+            } else {
+                // Session expired between the page load and this call.
+                window.location.href = '/login';
+            }
+        })
+        .catch(function () { /* leave the bar blank on a transient error */ });
+
+    logoutBtn.addEventListener('click', function () {
+        logoutBtn.disabled = true;
+        fetch('/api/logout', { method: 'POST', credentials: 'same-origin' })
+            .then(function () { window.location.href = '/login'; })
+            .catch(function () { window.location.href = '/login'; });
+    });
+})();
 </script>
 
 <footer>
