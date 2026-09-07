@@ -32,6 +32,7 @@ from sqlalchemy import (
 from sqlalchemy.engine import URL, make_url
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(PROJECT_ROOT / ".env")
@@ -44,7 +45,15 @@ DATABASE_URL = os.getenv(
 # argon2id with library defaults — fine for an interactive login form.
 _ph = PasswordHasher()
 
-_engine = create_engine(DATABASE_URL, pool_pre_ping=True, future=True)
+# On Vercel (or any serverless host) the process is frozen/thawed between
+# requests, so a pooled connection goes stale — use NullPool and open a fresh
+# connection per request. A normal long-lived server keeps the pool.
+_serverless = bool(os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
+_engine_kwargs = dict(pool_pre_ping=True, future=True)
+if _serverless:
+    _engine_kwargs = dict(poolclass=NullPool, future=True)
+
+_engine = create_engine(DATABASE_URL, **_engine_kwargs)
 SessionLocal = sessionmaker(bind=_engine, expire_on_commit=False, future=True)
 
 

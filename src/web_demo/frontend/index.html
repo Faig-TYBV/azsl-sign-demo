@@ -1230,9 +1230,30 @@ function handleAlphabetBackendResponse(data) {
     }
 }
 
-function initWebSocket() {
+// Runtime config injected by the backend (webapp.py). recognitionWsUrl:
+//   ""    -> same origin as this page (backend serves /ws here)
+//   <url> -> a separate recognition backend, e.g. "wss://azsl-api.fly.dev"
+//   null  -> no recognition backend (e.g. Vercel-only deploy)
+const AZSL_CONFIG = window.__AZSL_CONFIG__ || { recognitionWsUrl: '' };
+let recognitionOffline = false;
+
+function recognitionWsEndpoint() {
+    const base = AZSL_CONFIG.recognitionWsUrl;
+    if (base === null || base === undefined) return null;
+    if (base) return base.replace(/\/+$/, '') + '/ws';
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    return `${protocol}//${window.location.host}/ws`;
+}
+
+function initWebSocket() {
+    const wsUrl = recognitionWsEndpoint();
+    if (!wsUrl) {
+        recognitionOffline = true;
+        updateModelStatus('Not Loaded');
+        setStatus('Tanınma xidməti bu yerləşdirmədə mövcud deyil (ayrıca backend tələb olunur). Qeydiyyat və giriş işləyir.');
+        setLoadingText('Tanınma xidməti oflayn');
+        return;
+    }
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
@@ -1415,7 +1436,7 @@ function initWebSocket() {
     ws.onclose = () => {
         console.log('WebSocket disconnected');
         updateModelStatus('Not Loaded');
-        if (isStreaming) {
+        if (isStreaming && !recognitionOffline) {
             setStatus('Bağlantı kəsildi. Yenidən qoşulmağa çalışılır...');
             setTimeout(initWebSocket, 3000);
         }

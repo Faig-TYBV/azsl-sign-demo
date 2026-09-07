@@ -15,21 +15,8 @@ from typing import Deque, Dict
 import cv2
 import mediapipe as mp
 import numpy as np
-import os
 import torch
-from fastapi import (
-    Depends,
-    FastAPI,
-    HTTPException,
-    Request,
-    WebSocket,
-    WebSocketDisconnect,
-    status,
-)
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, EmailStr, field_validator
-from starlette.middleware.sessions import SessionMiddleware
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
 
 # Windows consoles default to a legacy codepage (cp1252 / cp1251) that cannot
 # encode the Azerbaijani characters in our log lines (e.g. "BAŞLA!"). Without
@@ -67,19 +54,14 @@ from src.inference.alphabet_classifier import AlphabetClassifier, AlphabetStabil
 from src.data.normalization import FeatureNormalizer
 from src.inference.predict import get_device
 from src.web_demo import db as auth_db
+from src.web_demo.webapp import build_web_layer
 
 app = FastAPI(title="AzSLD Web Demo Backend")
 
-# Signed session cookie (login state). SESSION_SECRET comes from .env; the
-# fallback keeps a dev server importable but rotates every restart (logs
-# everyone out), so a real value in .env is expected.
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=os.getenv("SESSION_SECRET", "dev-insecure-secret-set-SESSION_SECRET"),
-    session_cookie="azsl_session",
-    https_only=os.getenv("SESSION_COOKIE_SECURE", "0") == "1",
-    same_site="lax",
-)
+# Session cookie + /api/* auth routes + static pages. Same layer the Vercel
+# entrypoint (api/index.py) uses; this backend also serves /ws on the same
+# origin, so pass serves_ws=True.
+build_web_layer(app, serves_ws=True)
 
 # Load the Experiment 8 (24-class Cap-50) word model and normalizer at startup
 print("Loading Experiment 8 word model and normalizer...", flush=True)
@@ -191,11 +173,6 @@ SEGMENT_CONFIDENCE_FLOOR = 0.35   # smoothed conf must be >= this to emit
 DISPLAY_CONFIDENCE_FLOOR = 0.35   # below this we display "-" instead of the label
 MIN_VALID_FRAMES_IN_BUFFER = 1    # skip inference if buffer has 0 valid frames
 
-# Serve the frontend as static files
-FRONTEND_DIR = PROJECT_ROOT / "src" / "web_demo" / "frontend"
-app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
-
-
 class ConnectionState:
     """State per WebSocket connection."""
 
@@ -258,158 +235,6 @@ async def startup_event():
         # SQLAlchemy stack trace.
         raise SystemExit("Startup aborted: auth database unavailable (see above).")
     print("WebSocket backend started.", flush=True)
-
-
-# --------------------------------------------------------------------------- #
-# Auth: request/response models, helpers, routes
-# --------------------------------------------------------------------------- #
-def get_db():
-    session = auth_db.SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-
-
-def _session_uid(request: Request):
-    uid = request.session.get("uid")
-    return int(uid) if uid is not None else None
-
-
-def current_user(request: Request, session=Depends(get_db)):
-    """FastAPI dependency: the logged-in User, or None."""
-    uid = _session_uid(request)
-    if uid is None:
-        return None
-    return auth_db.get_user_by_id(session, uid)
-
-
-def require_user(user=Depends(current_user)):
-    """FastAPI dependency for JSON APIs: 401 when not signed in."""
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
-        )
-    return user
-
-
-class RegisterIn(BaseModel):
-    full_name: str
-    email: EmailStr
-    password: str
-    confirm: str | None = None
-
-    @field_validator("full_name")
-    @classmethod
-    def _name_len(cls, v: str) -> str:
-        v = v.strip()
-        if len(v) < 2:
-            raise ValueError("Ad və Soyad ən azı 2 simvol olmalıdır.")
-        return v
-
-    @field_validator("password")
-    @classmethod
-    def _pw_len(cls, v: str) -> str:
-        if len(v) < 6:
-            raise ValueError("Şifrə ən azı 6 simvoldan ibarət olmalıdır.")
-        return v
-
-    @field_validator("confirm")
-    @classmethod
-    def _pw_match(cls, v, info):
-        if v is not None and v != info.data.get("password"):
-            raise ValueError("Şifrələr uyğun gəlmir.")
-        return v
-
-
-class LoginIn(BaseModel):
-    email: EmailStr
-    password: str
-
-
-@app.post("/api/register")
-async def api_register(payload: RegisterIn, request: Request, session=Depends(get_db)):
-    if auth_db.get_user_by_email(session, payload.email):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Bu e-poçt artıq qeydiyyatdan keçib.",
-        )
-    user = auth_db.create_user(
-        session,
-        full_name=payload.full_name,
-        email=payload.email,
-        password=payload.password,
-    )
-    request.session["uid"] = user.id
-    return {"user": user.public_dict()}
-
-
-@app.post("/api/login")
-async def api_login(payload: LoginIn, request: Request, session=Depends(get_db)):
-    user = auth_db.get_user_by_email(session, payload.email)
-    if user is None or not auth_db.verify_password(payload.password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="E-poçt və ya şifrə yanlışdır.",
-        )
-    request.session["uid"] = user.id
-    return {"user": user.public_dict()}
-
-
-@app.post("/api/logout")
-async def api_logout(request: Request):
-    request.session.clear()
-    return {"ok": True}
-
-
-@app.get("/api/me")
-async def api_me(user=Depends(require_user)):
-    return {"user": user.public_dict()}
-
-
-def _serve_page(filename: str) -> HTMLResponse:
-    """Serve a frontend HTML file with caching disabled."""
-    page_path = FRONTEND_DIR / filename
-    return HTMLResponse(
-        content=page_path.read_text(encoding="utf-8"),
-        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
-    )
-
-
-@app.get("/")
-async def root():
-    """Entry point: the public landing page. Registration/login lives at '/login'."""
-    return _serve_page("landing.html")
-
-
-@app.get("/login")
-async def login_page(user=Depends(current_user)):
-    """Login form. Already signed in -> straight to the workspace."""
-    if user is not None:
-        return RedirectResponse(url="/app", status_code=302)
-    return _serve_page("register.html")
-
-
-@app.get("/register")
-async def register_page(user=Depends(current_user)):
-    """Registration form (same page as /login; the frontend switches mode by path)."""
-    if user is not None:
-        return RedirectResponse(url="/app", status_code=302)
-    return _serve_page("register.html")
-
-
-@app.get("/app")
-async def app_page(user=Depends(current_user)):
-    """The main CV workspace. Requires a valid session."""
-    if user is None:
-        return RedirectResponse(url="/login", status_code=302)
-    return _serve_page("index.html")
-
-
-@app.get("/workspace")
-async def workspace_alias():
-    """Convenience alias for the CV workspace."""
-    return RedirectResponse(url="/app")
 
 
 @app.websocket("/ws")
