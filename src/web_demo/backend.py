@@ -17,7 +17,7 @@ import mediapipe as mp
 import numpy as np
 import torch
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 # Make project-root imports work
@@ -189,13 +189,43 @@ async def startup_event():
     print("WebSocket backend started.", flush=True)
 
 
-@app.get("/")
-async def root():
-    index_path = FRONTEND_DIR / "index.html"
+def _serve_page(filename: str) -> HTMLResponse:
+    """Serve a frontend HTML file with caching disabled."""
+    page_path = FRONTEND_DIR / filename
     return HTMLResponse(
-        content=index_path.read_text(encoding="utf-8"),
+        content=page_path.read_text(encoding="utf-8"),
         headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
     )
+
+
+@app.get("/")
+async def root():
+    """Entry point: the public landing page. Registration/login lives at '/login'."""
+    return _serve_page("landing.html")
+
+
+@app.get("/login")
+async def login_page():
+    """The login/registration page (unchanged HTML/CSS, just relocated here)."""
+    return _serve_page("register.html")
+
+
+@app.get("/register")
+async def register_page():
+    """Alias for '/login' so the registration page keeps its explicit URL too."""
+    return _serve_page("register.html")
+
+
+@app.get("/app")
+async def app_page():
+    """The main CV workspace (word + alphabet recognition). Unchanged content."""
+    return _serve_page("index.html")
+
+
+@app.get("/workspace")
+async def workspace_alias():
+    """Convenience alias for the CV workspace."""
+    return RedirectResponse(url="/app")
 
 
 @app.websocket("/ws")

@@ -6,20 +6,19 @@
     <title>AzSLD Web Demo</title>
     <style>
 :root {
-    --bg-dark: #0a0a0a;
-    --bg-darker: #040404;
-    --bg-card: #111111;
-    --bg-card-hover: #1a1a1a;
-    --text-primary: #e0e0e0;
-    --text-secondary: #b0b0b0;
-    --accent: #00d4ff;
-    --accent-secondary: #ff6b6b;
-    --success: #4caf50;
-    --warning: #ff9800;
-    --error: #f44336;
+    --bg-dark: #333333;
+    --bg-darker: #262626;
+    --bg-card: #3d3d3d;
+    --bg-card-hover: #474747;
+    --text-light: #EBEBEB;
+    --border-muted: #C2B280;
+    --accent-cyan: #A0FFFF;
+    --state-trial: #FFCC00;
+    --state-success: #6B8E23;
+    --state-danger: #B5533C;
     --border-radius: 12px;
-    --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    --transition: 0.3s ease;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     --font-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     --font-mono: 'Courier New', Courier, monospace;
 }
@@ -30,15 +29,19 @@
 }
 body {
     font-family: var(--font-sans);
-    background-color: var(--bg-dark);
-    color: var(--text-primary);
+    background:
+        radial-gradient(circle at 15% 50%, rgba(160, 255, 255, 0.04), transparent 30%),
+        radial-gradient(circle at 85% 30%, rgba(128, 0, 128, 0.06), transparent 30%),
+        #222222;
+    background-attachment: fixed;
+    color: var(--text-light);
     line-height: 1.6;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
 .container {
-    max-width: 1200px;
+    max-width: 1800px;
     margin: 0 auto;
     padding: 1rem;
     flex: 1;
@@ -49,51 +52,106 @@ body {
 header {
     text-align: center;
     padding: 1.5rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(194, 178, 128, 0.2);
 }
 .title {
     font-size: 2.2rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
-    background: linear-gradient(to right, var(--accent), var(--accent-secondary));
+    background: linear-gradient(to right, var(--accent-cyan), var(--state-trial));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
-.subtitle {
-    font-size: 1.1rem;
-    color: var(--text-secondary);
-    margin-bottom: 0.5rem;
-}
 .classes-info {
     font-size: 0.9rem;
-    color: var(--text-secondary);
+    color: var(--border-muted);
     font-style: italic;
 }
 main {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 1.5rem;
+}
+/* Word Mode workspace: balanced 3-column row (prediction / camera / controls)
+   followed by a 2-column post-processing row (detected words / sentence). */
+.workspace-row {
+    display: grid;
     grid-template-columns: 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+.workspace-col-left {
+    order: 2;
+    min-width: 0;
+}
+.workspace-col-center {
+    order: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+}
+.workspace-col-right {
+    order: 3;
+    min-width: 0;
+}
+@media (min-width: 1280px) {
+    .workspace-row {
+        /* Left and right panels are pushed to the screen edges with real
+           presence; the camera column absorbs whatever space is left. */
+        grid-template-columns: minmax(360px, 520px) minmax(520px, 1fr) minmax(360px, 520px);
+    }
+    .workspace-col-left { order: 1; }
+    .workspace-col-center { order: 2; }
+    .workspace-col-right { order: 3; }
+}
+.workspace-bottom-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
 }
 @media (min-width: 768px) {
-    main {
-        grid-template-columns: 2fr 1fr;
+    .workspace-bottom-row {
+        grid-template-columns: 1fr 1fr;
     }
 }
+
+/* ---------- Mount animations (vanilla-CSS stand-in for framer-motion's
+   initial={{opacity:0,y:20}} / animate={{opacity:1,y:0}}) ---------- */
+@keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.workspace-col-left,
+.workspace-col-center,
+.workspace-col-right,
+.trial-progress-card,
+#history-card,
+#sentence-card {
+    animation: fadeSlideUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.workspace-col-left     { animation-delay: 0s; }
+.workspace-col-center   { animation-delay: 0.06s; }
+.trial-progress-card    { animation-delay: 0.12s; }
+.workspace-col-right    { animation-delay: 0.18s; }
+#history-card           { animation-delay: 0.24s; }
+#sentence-card          { animation-delay: 0.3s; }
+
 .loading-overlay {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(51, 51, 51, 0.82);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 1rem;
-    color: var(--text-primary);
+    color: var(--text-light);
     font-size: 1.2rem;
-    z-index: 10;
+    z-index: 11;
     opacity: 0;
     transition: opacity var(--transition);
 }
@@ -104,7 +162,7 @@ main {
     width: 40px;
     height: 40px;
     border: 4px solid var(--bg-card);
-    border-top-color: var(--accent);
+    border-top-color: var(--accent-cyan);
     border-radius: 50%;
     animation: spin 1s ease-in-out infinite;
 }
@@ -120,6 +178,16 @@ main {
     box-shadow: var(--shadow);
     background-color: var(--bg-darker);
     aspect-ratio: 4/3;
+    border: 2px solid rgba(194, 178, 128, 0.25);
+    transition: border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.video-container.active {
+    border-color: var(--accent-cyan);
+    animation: cameraPulse 2.4s ease-in-out infinite;
+}
+@keyframes cameraPulse {
+    0%, 100% { box-shadow: var(--shadow), 0 0 0 0 rgba(160, 255, 255, 0.35); }
+    50%      { box-shadow: var(--shadow), 0 0 26px 3px rgba(160, 255, 255, 0.45); }
 }
 #video {
     width: 100%;
@@ -140,13 +208,13 @@ main {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.72);
+    background: rgba(38, 38, 38, 0.85);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    color: #ffffff;
+    color: var(--text-light);
     z-index: 9;
     backdrop-filter: blur(2px);
     pointer-events: none;
@@ -156,13 +224,13 @@ main {
     font-size: 2.2rem;
     font-weight: 700;
     letter-spacing: 0.08em;
-    color: var(--accent);
+    color: var(--accent-cyan);
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
 }
 .countdown-num {
     font-size: 5.5rem;
     font-weight: 900;
-    color: #ffffff;
+    color: var(--text-light);
     text-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
     animation: countPulse 0.45s ease-out;
 }
@@ -171,21 +239,24 @@ main {
     100% { transform: scale(1.0); opacity: 1; }
 }
 .trial-progress-card {
-    position: sticky;
-    top: 0;
-    top: env(safe-area-inset-top, 0px);
-    z-index: 100;
-    background: rgba(15, 23, 42, 0.95);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    /* Its own dedicated, glassmorphic card directly below the camera feed.
+       The feed itself is never obstructed. */
+    background: rgba(61, 61, 61, 0.55);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgba(194, 178, 128, 0.22);
     border-radius: var(--border-radius);
-    padding: 0.85rem 1.25rem;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
-    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+    padding: 1rem 1.25rem;
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
-    border: 1px solid rgba(56, 189, 248, 0.28);
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+.trial-progress-card:hover,
+.trial-progress-card:focus-within {
+    border-color: rgba(160, 255, 255, 0.4);
+    box-shadow: var(--shadow), 0 0 24px rgba(160, 255, 255, 0.12);
 }
 .trial-progress-card.hidden {
     display: none !important;
@@ -205,28 +276,29 @@ main {
     border-radius: 6px;
     display: inline-block;
     user-select: none;
+    transition: background-color var(--transition), color var(--transition), box-shadow var(--transition);
 }
 .trial-badge.ready {
-    background: #334155;
-    color: #94a3b8;
+    background: var(--bg-card-hover);
+    color: var(--border-muted);
 }
 .trial-badge.countdown {
-    background: #f59e0b;
-    color: #000;
+    background: var(--state-trial);
+    color: var(--bg-dark);
 }
 .trial-badge.recording {
-    background: #ef4444;
-    color: #fff;
+    background: var(--state-danger);
+    color: var(--text-light);
     animation: pulseBadge 0.8s infinite alternate;
 }
 .trial-badge.analyzing {
-    background: #3b82f6;
-    color: #fff;
+    background: var(--accent-cyan);
+    color: var(--bg-dark);
     animation: pulseBadge 0.5s infinite alternate;
 }
 .trial-badge.result {
-    background: #10b981;
-    color: #001017;
+    background: var(--state-success);
+    color: var(--text-light);
 }
 @keyframes pulseBadge {
     0% { transform: scale(1.0); opacity: 0.85; }
@@ -236,7 +308,7 @@ main {
     font-family: 'Consolas', 'Courier New', monospace;
     font-size: 1.2rem;
     font-weight: 800;
-    color: var(--accent);
+    color: var(--accent-cyan);
     letter-spacing: 0.05em;
     white-space: nowrap;
 }
@@ -249,28 +321,35 @@ main {
 .trial-progress-track {
     flex: 1;
     height: 10px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(194, 178, 128, 0.15);
     border-radius: 5px;
     overflow: hidden;
 }
 .trial-progress-fill {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%);
+    background: linear-gradient(90deg, var(--accent-cyan), var(--state-trial));
+    background-size: 200% 100%;
+    animation: gaugeGradientShift 2.5s ease-in-out infinite;
     border-radius: 5px;
-    transition: width 0.05s ease-out;
+    box-shadow: 0 0 10px rgba(160, 255, 255, 0.6);
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes gaugeGradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50%      { background-position: 100% 50%; }
 }
 .trial-ascii-bar {
     font-family: 'Consolas', 'Courier New', monospace;
     font-size: 1rem;
     font-weight: 700;
     letter-spacing: 0.08em;
-    color: #38bdf8;
-    background: rgba(0, 0, 0, 0.4);
+    color: var(--accent-cyan);
+    background: rgba(38, 38, 38, 0.5);
     padding: 0.35rem 0.75rem;
     border-radius: 6px;
     text-align: center;
-    border: 1px solid rgba(56, 189, 248, 0.25);
+    border: 1px solid rgba(160, 255, 255, 0.28);
     user-select: none;
     white-space: nowrap;
 }
@@ -280,33 +359,45 @@ main {
     align-items: center;
     width: 100%;
 }
-.btn-trial-start {
+.btn.btn-trial-start {
     flex: 1;
-    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
-    color: #001017;
+    background: linear-gradient(100deg, var(--state-trial) 0%, var(--accent-cyan) 55%, var(--state-trial) 100%);
+    background-size: 220% 100%;
+    background-position: 0% 50%;
+    animation: gaugeGradientShift 3.2s ease-in-out infinite;
+    color: var(--bg-dark);
     font-size: 1.05rem;
     font-weight: 700;
     padding: 0.75rem 1.4rem;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    transition: all var(--transition);
-    box-shadow: 0 2px 10px rgba(0, 242, 254, 0.25);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 14px rgba(255, 204, 0, 0.35);
     text-align: center;
 }
 .btn-trial-start:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 242, 254, 0.4);
+    transform: translateY(-2px) scale(1.015);
+    box-shadow: 0 6px 28px rgba(255, 204, 0, 0.55), 0 0 20px rgba(160, 255, 255, 0.35);
+}
+.btn-trial-start:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 2px 10px rgba(255, 204, 0, 0.4);
+}
+.btn-trial-start:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
 }
 .btn-trial-start:disabled {
     opacity: 0.75;
     cursor: not-allowed;
     transform: none;
+    animation-play-state: paused;
 }
-.btn-trial-skip {
-    background-color: rgba(255, 255, 255, 0.08);
-    color: var(--text-primary);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+.btn.btn-trial-skip {
+    background-color: rgba(194, 178, 128, 0.1);
+    color: var(--text-light);
+    border: 1px solid rgba(194, 178, 128, 0.3);
     padding: 0.75rem 1.25rem;
     border-radius: 8px;
     cursor: pointer;
@@ -314,26 +405,39 @@ main {
     transition: all var(--transition);
 }
 .btn-trial-skip:hover:not(:disabled) {
-    background-color: rgba(255, 255, 255, 0.16);
+    background-color: rgba(194, 178, 128, 0.2);
     transform: translateY(-2px);
+}
+.btn-trial-skip:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
 }
 .btn-trial-skip:disabled {
     opacity: 0.4;
     cursor: not-allowed;
 }
-.prediction-card, .status-panel, .controls-panel {
-    background-color: var(--bg-card);
+.prediction-card, .controls-panel {
+    background: rgba(61, 61, 61, 0.55);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgba(194, 178, 128, 0.22);
     border-radius: var(--border-radius);
     padding: 1.5rem;
     box-shadow: var(--shadow);
+    transition: border-color var(--transition), box-shadow var(--transition);
 }
-.prediction-card h3, .status-panel h3, .controls-panel h3 {
+.prediction-card:hover, .controls-panel:hover,
+.prediction-card:focus-within, .controls-panel:focus-within {
+    border-color: rgba(160, 255, 255, 0.4);
+    box-shadow: var(--shadow), 0 0 24px rgba(160, 255, 255, 0.12);
+}
+.prediction-card h3, .controls-panel h3 {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 1rem;
     font-size: 1.3rem;
-    color: var(--text-primary);
+    color: var(--text-light);
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -347,17 +451,43 @@ main {
     text-align: center;
 }
 .smooth-prediction {
-    font-size: 3.5rem;
+    font-size: clamp(1.9rem, 4vw, 3.5rem);
     font-weight: 700;
-    color: var(--accent);
+    color: var(--accent-cyan);
     min-height: 4.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    text-align: center;
+    word-break: break-word;
+    transition: color var(--transition);
 }
 .smooth-confidence {
     font-size: 1.5rem;
-    color: var(--text-secondary);
+    color: var(--border-muted);
+}
+/* Sleek circular confidence gauge (conic-gradient ring), driven purely by a
+   --pct CSS custom property that a small, self-contained MutationObserver
+   sets by reading the existing #smoothConf text — no pipeline code touched. */
+.confidence-gauge {
+    --pct: 0;
+    position: relative;
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    margin: 0.25rem auto 0;
+    background:
+        radial-gradient(closest-side, var(--bg-dark) 76%, transparent 77% 100%),
+        conic-gradient(var(--accent-cyan) calc(var(--pct) * 1%), rgba(194, 178, 128, 0.18) 0);
+    transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 0 10px rgba(160, 255, 255, 0.35));
+}
+.confidence-gauge .smooth-confidence {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-light);
 }
 .raw-prediction {
     display: flex;
@@ -365,7 +495,7 @@ main {
     width: 100%;
     margin-top: 1rem;
     padding: 0.5rem 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(194, 178, 128, 0.2);
 }
 .raw-prediction div {
     display: flex;
@@ -373,42 +503,13 @@ main {
 }
 .raw-prediction label {
     font-size: 0.9rem;
-    color: var(--text-secondary);
+    color: var(--border-muted);
     margin-bottom: 0.2rem;
 }
 .raw-prediction value {
     font-size: 1.2rem;
     font-weight: 600;
 }
-.status-grid {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-}
-.status-item {
-    background-color: rgba(255, 255, 255, 0.03);
-    border-radius: 8px;
-    padding: 1rem;
-    text-align: center;
-}
-.status-item label {
-    display: block;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    margin-bottom: 0.3rem;
-}
-.status-item value {
-    font-size: 1.4rem;
-    font-weight: 600;
-    min-height: 1.8rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.status-item value.connected { color: var(--success); }
-.status-item value.disconnected { color: var(--error); }
-.status-item value.warning { color: var(--warning); }
-.status-item value.neutral { color: var(--text-primary); }
 .btn-group {
     display: flex;
     gap: 1rem;
@@ -416,39 +517,60 @@ main {
     justify-content: center;
 }
 .btn {
-    background-color: var(--bg-card-hover);
-    color: var(--text-primary);
-    border: none;
+    background-color: var(--bg-dark);
+    color: var(--text-light);
+    border: 1.5px solid transparent;
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
-    transition: all var(--transition);
+    transition: background-color var(--transition), color var(--transition),
+                border-color var(--transition), box-shadow var(--transition),
+                transform var(--transition);
 }
 .btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 14px rgba(160, 255, 255, 0.28);
 }
+.btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(255, 204, 0, 0.32);
+}
+.btn:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
+}
+/* Solid, permanently color-coded actions (identity matters for at-a-glance
+   recognition: green = go, rust = stop/destructive). Hover genuinely shifts
+   the background toward a brighter tint of the same hue plus a colored glow,
+   rather than a generic filter. */
 .btn-start {
-    background-color: var(--success);
-    color: white;
+    background-color: var(--state-success);
+    color: var(--text-light);
 }
 .btn-start:hover {
-    background-color: #43a047;
+    background-color: #82a62a;
+    box-shadow: 0 0 16px rgba(107, 142, 35, 0.55), 0 4px 14px rgba(107, 142, 35, 0.3);
 }
 .btn-stop {
-    background-color: var(--error);
-    color: white;
+    background-color: var(--state-danger);
+    color: var(--text-light);
 }
 .btn-stop:hover {
-    background-color: #d32f2f;
+    background-color: #c96a4c;
+    box-shadow: 0 0 16px rgba(181, 83, 60, 0.55), 0 4px 14px rgba(181, 83, 60, 0.3);
 }
+/* Ghost-style utility actions: idle on --bg-dark, background transitions
+   fully to their accent color on hover with a matching glow. */
 .btn-reset {
-    background-color: var(--accent);
-    color: white;
+    background-color: var(--bg-dark);
+    color: var(--accent-cyan);
+    border-color: var(--accent-cyan);
 }
 .btn-reset:hover {
-    background-color: #00b0cc;
+    background-color: var(--accent-cyan);
+    color: var(--bg-dark);
+    box-shadow: 0 0 18px rgba(160, 255, 255, 0.55), 0 4px 14px rgba(160, 255, 255, 0.3);
 }
 
 /* Prediction History (detected segment events) */
@@ -457,46 +579,81 @@ main {
     flex-wrap: wrap;
     gap: 0.5rem;
     margin-top: 0.5rem;
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+    scrollbar-color: var(--accent-cyan) transparent;
 }
+/* Modern interactive pill badge: a confidence-coded glowing status dot
+   (green/yellow/rust, set by JS via .conf-high/.conf-mid/.conf-low) plus
+   label and a small confidence sub-badge, in one pill-shaped row. */
 .history-chip {
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: var(--text-primary);
-    border-radius: 8px;
-    padding: 0.5rem 0.75rem;
+    background-color: rgba(194, 178, 128, 0.06);
+    border: 1px solid rgba(194, 178, 128, 0.22);
+    color: var(--text-light);
+    border-radius: 999px;
+    padding: 0.5rem 1rem 0.5rem 0.75rem;
     cursor: pointer;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 0.15rem;
-    min-width: 5rem;
+    gap: 0.55rem;
     transition: all var(--transition);
     user-select: none;
 }
 .history-chip:hover {
-    background-color: var(--bg-card-hover);
+    background-color: rgba(160, 255, 255, 0.1);
+    border-color: rgba(160, 255, 255, 0.4);
     transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(160, 255, 255, 0.2);
 }
 .history-chip.selected {
-    background-color: rgba(0, 212, 255, 0.18);
-    border-color: var(--accent);
+    background-color: rgba(255, 204, 0, 0.16);
+    border-color: var(--state-trial);
+}
+.chip-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--border-muted);
+    box-shadow: 0 0 7px currentColor;
+    flex-shrink: 0;
+}
+.history-chip.conf-high .chip-dot { background: var(--state-success); color: var(--state-success); }
+.history-chip.conf-mid  .chip-dot { background: var(--state-trial); color: var(--state-trial); }
+.history-chip.conf-low  .chip-dot { background: var(--state-danger);  color: var(--state-danger); }
+/* Vanilla stand-in for framer-motion's `layout` + AnimatePresence: only
+   genuinely NEW chips (tracked in JS) get this entrance animation, so
+   existing chips never replay it on re-render. Slides in from the left. */
+@keyframes chipPopIn {
+    from { opacity: 0; transform: translateX(-16px) scale(0.92); }
+    to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+.history-chip.entering {
+    animation: chipPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 .history-chip .chip-label {
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     font-weight: 600;
+    white-space: nowrap;
 }
 .history-chip .chip-conf {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--border-muted);
+    background: rgba(0, 0, 0, 0.22);
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    white-space: nowrap;
 }
 .history-chip .chip-order {
     display: inline-block;
     font-size: 0.8rem;
-    color: var(--accent);
+    color: var(--state-trial);
     margin-right: 0.35rem;
 }
 .history-empty {
-    color: var(--text-secondary);
+    color: var(--border-muted);
     font-style: italic;
     font-size: 0.95rem;
 }
@@ -505,64 +662,90 @@ main {
     flex-direction: column;
     gap: 0.4rem;
     margin-top: 0.5rem;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+    scrollbar-color: var(--accent-cyan) transparent;
 }
 .selected-item {
-    background-color: rgba(255, 255, 255, 0.03);
+    background-color: rgba(194, 178, 128, 0.05);
     border-radius: 8px;
     padding: 0.5rem 0.75rem;
     display: flex;
     gap: 0.5rem;
     align-items: center;
+    transition: background-color var(--transition);
+}
+.selected-item.entering {
+    animation: chipPopIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 .selected-item .order {
-    color: var(--accent);
+    color: var(--state-trial);
     font-weight: 700;
     min-width: 1.75rem;
 }
 .sentence-box {
     margin-top: 1rem;
     padding: 1rem;
-    background-color: rgba(0, 212, 255, 0.08);
-    border: 1px solid rgba(0, 212, 255, 0.25);
+    background-color: rgba(255, 204, 0, 0.08);
+    border: 1px solid rgba(255, 204, 0, 0.25);
     border-radius: 8px;
     font-size: 1.4rem;
     font-weight: 600;
     min-height: 3rem;
-    color: var(--accent);
+    color: var(--state-trial);
     word-break: break-word;
+    transition: color var(--transition), background-color var(--transition),
+                border-color var(--transition), box-shadow var(--transition);
+}
+/* Persistent ambient glow once the sentence has content, on top of the
+   one-shot .pulse flash that already fires whenever the text updates. */
+.sentence-box:not(.empty) {
+    box-shadow: 0 0 22px rgba(255, 204, 0, 0.22), inset 0 0 18px rgba(255, 204, 0, 0.05);
+}
+@keyframes sentencePulse {
+    0%   { box-shadow: 0 0 0 0 rgba(255, 204, 0, 0.45); }
+    100% { box-shadow: 0 0 0 12px rgba(255, 204, 0, 0); }
+}
+.sentence-box.pulse {
+    animation: sentencePulse 0.6s ease-out;
 }
 .sentence-box.empty {
-    color: var(--text-secondary);
+    color: var(--border-muted);
     font-weight: 400;
     font-style: italic;
     font-size: 1rem;
 }
 .btn-clear-selection {
-    background-color: var(--warning);
-    color: white;
+    background-color: var(--bg-dark);
+    color: var(--state-trial);
+    border-color: var(--state-trial);
 }
 .btn-clear-selection:hover {
-    background-color: #e68900;
+    background-color: var(--state-trial);
+    color: var(--bg-dark);
+    box-shadow: 0 0 18px rgba(255, 204, 0, 0.55), 0 4px 14px rgba(255, 204, 0, 0.3);
 }
 .btn-clear-history {
-    background-color: var(--accent-secondary);
-    color: white;
+    background-color: var(--state-danger);
+    color: var(--text-light);
 }
 .btn-clear-history:hover {
-    background-color: #e65555;
+    background-color: #c96a4c;
+    box-shadow: 0 0 16px rgba(181, 83, 60, 0.55), 0 4px 14px rgba(181, 83, 60, 0.3);
 }
 .footer {
     text-align: center;
     padding: 1rem 0;
-    color: var(--text-secondary);
+    color: var(--border-muted);
     font-size: 0.9rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(194, 178, 128, 0.2);
 }
 
 /* ===== BEGIN ALPHABET MODE INTEGRATION =====
  * Mode toggle, alphabet panel, spelled-word display.
- * Reuses the same CSS custom properties (--accent, --bg-card, etc.) defined
- * at the top of this <style> block.
+ * Reuses the same CSS custom properties (--accent-cyan, --bg-card, etc.)
+ * defined at the top of this <style> block.
  * ===== END ALPHABET MODE INTEGRATION ===== */
 .mode-toggle {
     display: flex;
@@ -578,22 +761,27 @@ main {
 .mode-toggle button {
     flex: 1;
     background: transparent;
-    color: var(--text-secondary);
+    color: var(--border-muted);
     border: none;
     padding: 0.75rem 1.25rem;
     font-size: 1rem;
     font-weight: 600;
     border-radius: calc(var(--border-radius) - 4px);
     cursor: pointer;
-    transition: background-color var(--transition), color var(--transition);
+    transition: background-color var(--transition), color var(--transition), box-shadow var(--transition);
 }
 .mode-toggle button.active {
-    background-color: var(--accent);
-    color: #001017;
+    background-color: var(--accent-cyan);
+    color: var(--bg-dark);
 }
 .mode-toggle button:not(.active):hover {
-    background-color: var(--bg-card-hover);
-    color: var(--text-primary);
+    background-color: rgba(160, 255, 255, 0.14);
+    color: var(--text-light);
+    box-shadow: inset 0 0 0 1px rgba(160, 255, 255, 0.3);
+}
+.mode-toggle button:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
 }
 .alphabet-panel {
     background-color: var(--bg-card);
@@ -603,7 +791,7 @@ main {
     margin-bottom: 1.5rem;
 }
 .alphabet-panel h3 {
-    color: var(--text-primary);
+    color: var(--text-light);
     margin-bottom: 0.75rem;
     font-size: 1.2rem;
     display: flex;
@@ -612,7 +800,7 @@ main {
 }
 .spelled-word-display {
     background-color: var(--bg-darker);
-    color: var(--accent);
+    color: var(--state-trial);
     font-family: var(--font-mono);
     font-size: 2rem;
     font-weight: 700;
@@ -626,21 +814,21 @@ main {
     margin-bottom: 1rem;
 }
 .spelled-word-display.empty {
-    color: var(--text-secondary);
+    color: var(--border-muted);
     font-weight: 400;
     font-style: italic;
     font-size: 1rem;
 }
 .alphabet-letter {
-    color: var(--accent);
+    color: var(--state-trial);
     font-weight: 700;
 }
 .alphabet-letter.just-added {
     animation: letterPop 0.4s ease-out;
 }
 @keyframes letterPop {
-    0%   { transform: scale(1.5); color: var(--success); }
-    100% { transform: scale(1.0); color: var(--accent); }
+    0%   { transform: scale(1.5); color: var(--state-success); }
+    100% { transform: scale(1.0); color: var(--state-trial); }
 }
 .alphabet-meta {
     display: grid;
@@ -658,22 +846,22 @@ main {
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--text-secondary);
+    color: var(--border-muted);
     margin-bottom: 0.25rem;
 }
 .alphabet-meta .item .value {
     font-family: var(--font-mono);
     font-size: 1.15rem;
-    color: var(--text-primary);
+    color: var(--text-light);
     font-weight: 600;
 }
-.alphabet-meta .item .value.empty { color: var(--text-secondary); font-weight: 400; }
+.alphabet-meta .item .value.empty { color: var(--border-muted); font-weight: 400; }
 .alphabet-help {
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--border-muted);
     line-height: 1.5;
     margin-top: 0.75rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid rgba(194, 178, 128, 0.15);
     padding-top: 0.75rem;
 }
 .hidden { display: none !important; }
@@ -690,10 +878,6 @@ main {
         font-size: 1.35rem;
         margin-bottom: 0.2rem;
     }
-    .subtitle {
-        font-size: 0.85rem;
-        margin-bottom: 0.2rem;
-    }
     .classes-info {
         display: none;
     }
@@ -708,8 +892,6 @@ main {
     .trial-progress-card {
         padding: 0.65rem 0.85rem;
         gap: 0.5rem;
-        margin-bottom: 0.65rem;
-        border-radius: 10px;
     }
     .trial-counter {
         font-size: 1.05rem;
@@ -742,14 +924,32 @@ main {
         font-size: 4rem;
     }
 }
+
+/* Consolidated last so it wins the cascade regardless of specificity ties
+   with the animation rules defined earlier in this stylesheet. */
+@media (prefers-reduced-motion: reduce) {
+    .workspace-col-left,
+    .workspace-col-center,
+    .workspace-col-right,
+    .trial-progress-card,
+    #history-card,
+    #sentence-card,
+    .history-chip.entering,
+    .selected-item.entering,
+    .sentence-box.pulse,
+    .alphabet-letter.just-added,
+    .video-container.active,
+    .trial-progress-fill,
+    .btn.btn-trial-start {
+        animation: none;
+    }
+}
 </style>
 </head>
 <body>
 <div class="container">
     <header>
-        <h1 class="title">Azerbaijani Sign Language Recognition</h1>
-        <p class="subtitle">Real-time translation from video to text</p>
-        <p class="classes-info">Recognizes 26 Azerbaijani sign language words</p>
+        <h1 class="title">Azərbaycan İşarə Dilinin Tanınması</h1>
     </header>
 
     <!-- ===== BEGIN ALPHABET MODE INTEGRATION =====
@@ -757,179 +957,164 @@ main {
      * (which streams frames over WebSocket to the Python backend) and the new
      * client-side alphabet (fingerspelling) pipeline.
      * ===== END ALPHABET MODE INTEGRATION ===== -->
-    <div class="mode-toggle" role="tablist" aria-label="Recognition mode">
+    <div class="mode-toggle" role="tablist" aria-label="Tanınma rejimi">
         <button id="mode-word" class="active" type="button" role="tab"
-                aria-selected="true">Word Mode</button>
+                aria-selected="true">Söz Rejimi</button>
         <button id="mode-alphabet" type="button" role="tab"
-                aria-selected="false">Alphabet Mode</button>
+                aria-selected="false">Əlifba Rejimi</button>
     </div>
 
-    <!-- Word Trial Progress Bar & Stage HUD (Sticky at top of screen) -->
-    <section class="trial-progress-card" id="trial-progress-card">
-        <div class="trial-progress-header">
-            <div style="display:flex; align-items:center; gap:0.6rem;">
-                <span id="trial-stage-badge" class="trial-badge ready">READY</span>
-                <span id="trial-stage-desc" style="font-weight:600; color:var(--text-secondary); font-size:0.95rem;">START TRIAL [SPACE]</span>
+    <!-- ===== BEGIN ALPHABET MODE INTEGRATION =====
+     * Alphabet panel: hidden by default. Visible only when in Alphabet Mode.
+     * Kept as its own modular, full-width section (outside the Word Mode
+     * workspace grid below) so it can be redesigned independently later.
+     * Fingerspelled letters accumulate in the display, and the
+     * "Add to Sentence" button appends the spelled word to the existing
+     * word-history + sentence UI (reuses predictionHistory / selectedWords
+     * so the existing renderHistory() / renderSelected() keep working
+     * with zero modifications).
+     * ===== END ALPHABET MODE INTEGRATION ===== -->
+    <section class="alphabet-panel hidden" id="alphabet-panel">
+        <h3>Əlifba ilə Hecalama</h3>
+        <div id="spelled-word-display" class="spelled-word-display empty">
+            Əlinizlə söz hecalayın...
+        </div>
+        <div class="alphabet-meta">
+            <div class="item">
+                <label>Cari Hərf</label>
+                <div class="value empty" id="alphabet-live-letter">-</div>
             </div>
-            <span id="trial-frame-counter" class="trial-counter">FRAME 0 / 26</span>
-        </div>
-        <div class="trial-progress-bar-row">
-            <div class="trial-progress-track">
-                <div id="trial-progress-fill" class="trial-progress-fill" style="width: 0%;"></div>
+            <div class="item">
+                <label>Dəqiqlik</label>
+                <div class="value empty" id="alphabet-live-conf">-</div>
             </div>
-            <div id="trial-progress-ascii" class="trial-ascii-bar">░░░░░░░░░░░░░░░░ 0/26</div>
         </div>
-        <div class="trial-controls-row" id="word-trial-controls">
-            <button id="btn-start-trial" class="btn btn-trial-start" type="button">▶ START TRIAL [SPACE]</button>
-            <button id="btn-skip-trial" class="btn btn-trial-skip" type="button">⏭ SKIP</button>
+        <div class="btn-group">
+            <button id="alphabet-add-sentence" class="btn btn-start"
+                    type="button">
+                Cümləyə Əlavə Et
+            </button>
+            <button id="alphabet-backspace" class="btn btn-reset"
+                    type="button">
+                Geri Sil (jest)
+            </button>
+            <button id="alphabet-clear" class="btn btn-stop"
+                    type="button">
+                Sözü Təmizlə
+            </button>
         </div>
+        <p class="alphabet-help">
+            Hərfləri bir-bir hecalayın. Qəbul edilməzdən əvvəl hər hərf
+            təxminən <b>700 ms</b> saxlanmalıdır. Hecalanmış sözü cümləyə
+            əlavə etmək üçün <b>SPACE</b> jestindən (baş barmaq içəri
+            qatlanmış yumruq, yuxarı baxan) istifadə edin, son hərfi silmək
+            üçün isə <b>DEL</b> jestindən (şəhadət barmağı yuxarı, digərləri
+            qatlanmış) istifadə edin.
+        </p>
     </section>
 
     <main>
-        <section class="video-container">
-            <video id="video" autoplay playsinline webkit-playsinline muted></video>
-            <canvas id="landmark-canvas"></canvas>
-            <div id="loading-overlay" class="loading-overlay">
-                <div class="loading-spinner"></div>
-                <div id="loading-text">Initializing camera...</div>
-            </div>
-            <div id="countdown-overlay" class="countdown-overlay hidden">
-                <div id="countdown-title" class="countdown-title">HAZIRLAŞIN...</div>
-                <div id="countdown-num" class="countdown-num">3</div>
-            </div>
-        </section>
-
-        <!-- ===== BEGIN ALPHABET MODE INTEGRATION =====
-         * Alphabet panel: hidden by default. Visible only when in Alphabet Mode.
-         * Fingerspelled letters accumulate in the display, and the
-         * "Add to Sentence" button appends the spelled word to the existing
-         * word-history + sentence UI (reuses predictionHistory / selectedWords
-         * so the existing renderHistory() / renderSelected() keep working
-         * with zero modifications).
-         * ===== END ALPHABET MODE INTEGRATION ===== -->
-        <section class="alphabet-panel hidden" id="alphabet-panel">
-            <h3><span>🤟</span> Alphabet Fingerspelling</h3>
-            <div id="spelled-word-display" class="spelled-word-display empty">
-                Spell a word with your hand...
-            </div>
-            <div class="alphabet-meta">
-                <div class="item">
-                    <label>Live Letter</label>
-                    <div class="value empty" id="alphabet-live-letter">-</div>
+        <!-- ===== Word Mode workspace: 3-column row (prediction / camera / controls) ===== -->
+        <div class="workspace-row">
+            <section class="prediction-card workspace-col-left">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                    <h3 style="margin:0;"><span id="prediction-header-title">Proqnoz</span></h3>
+                    <span id="prediction-state-badge" class="trial-badge ready">HAZIRDIR</span>
                 </div>
-                <div class="item">
-                    <label>Confidence</label>
-                    <div class="value empty" id="alphabet-live-conf">-</div>
-                </div>
-            </div>
-            <div class="btn-group">
-                <button id="alphabet-add-sentence" class="btn btn-start"
-                        type="button">
-                    Add to Sentence
-                </button>
-                <button id="alphabet-backspace" class="btn btn-reset"
-                        type="button">
-                    Backspace (⌫ gesture)
-                </button>
-                <button id="alphabet-clear" class="btn btn-stop"
-                        type="button">
-                    Clear Word
-                </button>
-            </div>
-            <p class="alphabet-help">
-                Fingerspell letters one at a time. Each letter must hold for
-                about <b>700 ms</b> before it is accepted. Use the <b>SPACE</b>
-                gesture (fist with thumb tucked and pointing up) to commit the
-                spelled word to the sentence, or the <b>DEL</b> gesture (index
-                finger up, others curled) to delete the last letter.
-            </p>
-        </section>
-
-        <section class="prediction-card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
-                <h3 style="margin:0;"><span id="prediction-header-icon">🎯</span> <span id="prediction-header-title">Prediction</span></h3>
-                <span id="prediction-state-badge" class="trial-badge ready">READY</span>
-            </div>
-            <div class="prediction-content">
-                <div class="smooth-prediction" id="smoothPred">-</div>
-                <div class="smooth-confidence" id="smoothConf">0%</div>
-                <div class="raw-prediction">
-                    <div>
-                        <label>Raw Prediction</label>
-                        <div class="value" id="rawPred">-</div>
+                <div class="prediction-content">
+                    <div class="smooth-prediction" id="smoothPred">-</div>
+                    <div class="confidence-gauge" id="confidence-gauge-wrap">
+                        <div class="smooth-confidence" id="smoothConf">0%</div>
                     </div>
-                    <div>
-                        <label>Confidence</label>
-                        <div class="value" id="rawConf">0%</div>
+                    <div class="raw-prediction">
+                        <div>
+                            <label>İlkin Proqnoz</label>
+                            <div class="value" id="rawPred">-</div>
+                        </div>
+                        <div>
+                            <label>Dəqiqlik</label>
+                            <div class="value" id="rawConf">0%</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <section class="status-panel">
-            <h3><span>📊</span> System Status</h3>
-            <div class="status-grid">
-                <div class="status-item">
-                    <label>Camera</label>
-                    <div class="value" id="camera-status" class="disconnected">Off</div>
-                </div>
-                <div class="status-item">
-                    <label>Hand Detection</label>
-                    <div class="value" id="hand-status" class="disconnected">Not Detecting</div>
-                </div>
-                <div class="status-item">
-                    <label>Buffer</label>
-                    <div class="value" id="buffer">0/26</div>
-                </div>
-                <div class="status-item">
-                    <label>Model</label>
-                    <div class="value" id="model-status" class="disconnected">Not Loaded</div>
-                </div>
-                <div class="status-item">
-                    <label>Device</label>
-                    <div class="value" id="device-status" class="neutral">Unknown</div>
-                </div>
-                <div class="status-item">
-                    <label>FPS</label>
-                    <div class="value" id="fps">0</div>
-                </div>
-            </div>
-        </section>
+            <div class="workspace-col-center">
+                <section class="video-container">
+                    <video id="video" autoplay playsinline webkit-playsinline muted></video>
+                    <canvas id="landmark-canvas"></canvas>
+                    <div id="loading-overlay" class="loading-overlay">
+                        <div class="loading-spinner"></div>
+                        <div id="loading-text">Kamera işə salınır...</div>
+                    </div>
+                    <div id="countdown-overlay" class="countdown-overlay hidden">
+                        <div id="countdown-title" class="countdown-title">HAZIRLAŞIN...</div>
+                        <div id="countdown-num" class="countdown-num">3</div>
+                    </div>
+                </section>
 
-        <section class="controls-panel">
-            <h3><span>🎮</span> Controls</h3>
-            <div class="btn-group">
-                <button id="start" class="btn btn-start">Start Camera</button>
-                <button id="stop" class="btn btn-stop">Stop Camera</button>
-                <button id="reset" class="btn btn-reset">Reset Buffer</button>
+                <!-- Word Trial Progress Bar & Stage HUD: its own dedicated card
+                     directly below the camera feed. The feed itself stays
+                     completely unobstructed. -->
+                <section class="trial-progress-card" id="trial-progress-card">
+                    <div class="trial-progress-header">
+                        <div style="display:flex; align-items:center; gap:0.6rem;">
+                            <span id="trial-stage-badge" class="trial-badge ready">HAZIRDIR</span>
+                            <span id="trial-stage-desc" style="font-weight:600; color:var(--border-muted); font-size:0.95rem;">SINAĞA BAŞLA [SPACE]</span>
+                        </div>
+                        <span id="trial-frame-counter" class="trial-counter">KADR 0 / 26</span>
+                    </div>
+                    <div class="trial-progress-bar-row">
+                        <div class="trial-progress-track">
+                            <div id="trial-progress-fill" class="trial-progress-fill" style="width: 0%;"></div>
+                        </div>
+                        <div id="trial-progress-ascii" class="trial-ascii-bar">░░░░░░░░░░░░░░░░ 0/26</div>
+                    </div>
+                    <div class="trial-controls-row" id="word-trial-controls">
+                        <button id="btn-start-trial" class="btn btn-trial-start" type="button">SINAĞA BAŞLA [SPACE]</button>
+                        <button id="btn-skip-trial" class="btn btn-trial-skip" type="button">KEÇ</button>
+                    </div>
+                </section>
             </div>
-            <p id="status-text" class="status-text">Ready to start</p>
-        </section>
 
-        <section class="prediction-card" id="history-card">
-            <h3><span>📝</span> Detected Words</h3>
-            <p class="classes-info" style="margin-bottom:0.75rem;">
-                Words emitted by the temporal segmenter. Tap to add to your sentence.
-            </p>
-            <div id="history-grid" class="history-grid">
-                <span class="history-empty">No words detected yet.</span>
-            </div>
-        </section>
+            <section class="controls-panel workspace-col-right">
+                <h3>İdarəetmə Paneli</h3>
+                <div class="btn-group">
+                    <button id="start" class="btn btn-start">Kameranı Başlat</button>
+                    <button id="stop" class="btn btn-stop">Kameranı Dayandır</button>
+                    <button id="reset" class="btn btn-reset">Yaddaşı Sıfırla</button>
+                </div>
+                <p id="status-text" class="status-text">Başlamağa hazırdır.</p>
+            </section>
+        </div>
 
-        <section class="prediction-card" id="sentence-card">
-            <h3><span>🧩</span> Selected Words &amp; Final Sentence</h3>
-            <p class="classes-info" style="margin-bottom:0.75rem;">
-                Order is determined by your selection. Words already selected are highlighted in the list above.
-            </p>
-            <div id="selected-list" class="selected-list">
-                <span class="history-empty">No words selected yet.</span>
-            </div>
-            <div id="sentence-box" class="sentence-box empty">Final sentence will appear here.</div>
-            <div class="btn-group" style="margin-top:1rem;">
-                <button id="clear-selection" class="btn btn-clear-selection">Clear Selection</button>
-                <button id="clear-history" class="btn btn-clear-history">Clear History</button>
-            </div>
-        </section>
+        <!-- ===== Post-processing row: detected words / selected sentence ===== -->
+        <div class="workspace-bottom-row">
+            <section class="prediction-card" id="history-card">
+                <h3>Təyin Edilmiş Sözlər</h3>
+                <p class="classes-info" style="margin-bottom:0.75rem;">
+                    Zaman seqmentləşdiricisi tərəfindən yaradılan sözlər. Cümlənizə əlavə etmək üçün toxunun.
+                </p>
+                <div id="history-grid" class="history-grid">
+                    <span class="history-empty">Hələ heç bir söz aşkarlanmayıb.</span>
+                </div>
+            </section>
+
+            <section class="prediction-card" id="sentence-card">
+                <h3>Seçilmiş Sözlər və Yekun Cümlə</h3>
+                <p class="classes-info" style="margin-bottom:0.75rem;">
+                    Sıra seçiminizə əsasən müəyyən edilir. Artıq seçilmiş sözlər yuxarıdakı siyahıda vurğulanıb.
+                </p>
+                <div id="selected-list" class="selected-list">
+                    <span class="history-empty">Hələ heç bir söz seçilməyib.</span>
+                </div>
+                <div id="sentence-box" class="sentence-box empty">Yekun cümlə burada görünəcək.</div>
+                <div class="btn-group" style="margin-top:1rem;">
+                    <button id="clear-selection" class="btn btn-clear-selection">Seçimi Sil</button>
+                    <button id="clear-history" class="btn btn-clear-history">Tarixçəni Təmizlə</button>
+                </div>
+            </section>
+        </div>
     </main>
 </div>
 
@@ -1046,8 +1231,8 @@ function initWebSocket() {
     ws.onopen = () => {
         console.log('WebSocket connected');
         updateModelStatus('Loaded');
-        setStatus('Model yükləndi. Trial üçün [SPACE] və ya START TRIAL sıxın.');
-        setLoadingText('WebSocket connected');
+        setStatus('Model yükləndi. Sınaq üçün [SPACE] və ya SINAĞA BAŞLA sıxın.');
+        setLoadingText('WebSocket qoşuldu');
     };
 
     ws.onmessage = (event) => {
@@ -1092,16 +1277,16 @@ function initWebSocket() {
 
                 if (trialStageBadge) { trialStageBadge.textContent = 'HAZIRLAŞIN...'; trialStageBadge.className = 'trial-badge countdown'; }
                 if (trialStageDesc)  trialStageDesc.textContent = (cVal === 0 || cText === 'BAŞLA!') ? 'BAŞLA!' : ('HAZIRLAŞIN... ' + cVal);
-                if (trialFrameCounter) trialFrameCounter.textContent = 'FRAME 0 / ' + totalFrames;
+                if (trialFrameCounter) trialFrameCounter.textContent = 'KADR 0 / ' + totalFrames;
                 if (trialProgressAscii) trialProgressAscii.textContent = getAsciiProgressBar(0, totalFrames);
                 if (trialProgressFill)  trialProgressFill.style.width = '0%';
 
                 if (predictionHeaderTitle) predictionHeaderTitle.textContent = 'Hazırlaşın';
-                if (predictionStateBadge) { predictionStateBadge.textContent = 'COUNTDOWN'; predictionStateBadge.className = 'trial-badge countdown'; }
+                if (predictionStateBadge) { predictionStateBadge.textContent = 'GERİ SAYIM'; predictionStateBadge.className = 'trial-badge countdown'; }
                 if (smoothPred) smoothPred.textContent = (cVal === 0 || cText === 'BAŞLA!') ? 'BAŞLA!' : ('HAZIRLAŞIN... ' + cVal);
                 if (smoothConf) smoothConf.textContent = '0%';
 
-                if (btnStartTrial) { btnStartTrial.textContent = '⏳ HAZIRLAŞIN...'; btnStartTrial.disabled = true; }
+                if (btnStartTrial) { btnStartTrial.textContent = 'HAZIRLAŞIN...'; btnStartTrial.disabled = true; }
                 setStatus(cText ? ('HAZIRLAŞIN... ' + cText) : 'HAZIRLAŞIN...');
                 return;
             } else {
@@ -1109,26 +1294,26 @@ function initWebSocket() {
             }
 
             if (wordState === 'RECORDING') {
-                const countText = 'FRAME ' + frameIdx + ' / ' + totalFrames;
-                if (trialStageBadge) { trialStageBadge.textContent = 'RECORDING'; trialStageBadge.className = 'trial-badge recording'; }
+                const countText = 'KADR ' + frameIdx + ' / ' + totalFrames;
+                if (trialStageBadge) { trialStageBadge.textContent = 'QEYD EDİLİR'; trialStageBadge.className = 'trial-badge recording'; }
                 if (trialStageDesc)  trialStageDesc.textContent = 'Qeyd edilir... (' + frameIdx + '/' + totalFrames + ')';
                 if (trialFrameCounter) trialFrameCounter.textContent = countText;
                 if (trialProgressAscii) trialProgressAscii.textContent = asciiBar;
                 if (trialProgressFill)  trialProgressFill.style.width = progPercent;
 
                 if (predictionHeaderTitle) predictionHeaderTitle.textContent = 'Qeyd Edilir';
-                if (predictionStateBadge) { predictionStateBadge.textContent = 'RECORDING'; predictionStateBadge.className = 'trial-badge recording'; }
+                if (predictionStateBadge) { predictionStateBadge.textContent = 'QEYD EDİLİR'; predictionStateBadge.className = 'trial-badge recording'; }
                 if (smoothPred) smoothPred.textContent = countText;
                 if (smoothConf) smoothConf.textContent = asciiBar;
 
-                if (btnStartTrial) { btnStartTrial.textContent = '● RECORDING (' + frameIdx + '/' + totalFrames + ')'; btnStartTrial.disabled = true; }
+                if (btnStartTrial) { btnStartTrial.textContent = 'QEYD EDİLİR (' + frameIdx + '/' + totalFrames + ')'; btnStartTrial.disabled = true; }
                 setStatus('QEYD EDİLİR: Hərəkəti edin... (' + countText + ' ' + asciiBar + ')');
                 updateHandStatus(data.hand_present ? 'Detecting' : 'Axtarılır...');
                 return;
             }
 
             if (wordState === 'ANALYZING') {
-                const fullText = 'FRAME ' + totalFrames + ' / ' + totalFrames;
+                const fullText = 'KADR ' + totalFrames + ' / ' + totalFrames;
                 const fullAscii = getAsciiProgressBar(totalFrames, totalFrames);
                 if (trialStageBadge) { trialStageBadge.textContent = 'ANALİZ EDİLİR...'; trialStageBadge.className = 'trial-badge analyzing'; }
                 if (trialStageDesc)  trialStageDesc.textContent = 'Model təhlil edir...';
@@ -1137,12 +1322,12 @@ function initWebSocket() {
                 if (trialProgressFill)  trialProgressFill.style.width = '100%';
 
                 if (predictionHeaderTitle) predictionHeaderTitle.textContent = 'Analiz';
-                if (predictionStateBadge) { predictionStateBadge.textContent = 'ANALYZING'; predictionStateBadge.className = 'trial-badge analyzing'; }
+                if (predictionStateBadge) { predictionStateBadge.textContent = 'ANALİZ EDİLİR'; predictionStateBadge.className = 'trial-badge analyzing'; }
                 if (smoothPred) smoothPred.textContent = 'ANALİZ EDİLİR...';
                 if (smoothConf) smoothConf.textContent = '100%';
 
-                if (btnStartTrial) { btnStartTrial.textContent = '⏳ ANALİZ EDİLİR...'; btnStartTrial.disabled = true; }
-                setStatus('26 frame toplandı. Analiz edilir...');
+                if (btnStartTrial) { btnStartTrial.textContent = 'ANALİZ EDİLİR...'; btnStartTrial.disabled = true; }
+                setStatus('26 kadr toplandı. Analiz edilir...');
                 return;
             }
 
@@ -1150,7 +1335,7 @@ function initWebSocket() {
                 const pred = data.prediction || data.smoothed_prediction || data.raw_prediction || '-';
                 const conf = (typeof data.confidence === 'number') ? data.confidence : ((typeof data.smoothed_confidence === 'number') ? data.smoothed_confidence : (data.raw_confidence || 0.0));
                 const noHand = (pred === 'ƏL AŞKARLANMADI' || data.raw_prediction === 'ƏL AŞKARLANMADI');
-                const fullText = 'FRAME ' + totalFrames + ' / ' + totalFrames;
+                const fullText = 'KADR ' + totalFrames + ' / ' + totalFrames;
                 const fullAscii = getAsciiProgressBar(totalFrames, totalFrames);
 
                 if (trialFrameCounter) trialFrameCounter.textContent = fullText;
@@ -1160,14 +1345,14 @@ function initWebSocket() {
 
                 if (noHand) {
                     if (trialStageBadge) { trialStageBadge.textContent = 'ƏL AŞKARLANMADI'; trialStageBadge.className = 'trial-badge ready'; }
-                    if (trialStageDesc)  trialStageDesc.textContent = '< 5 frame aşkarlandı';
+                    if (trialStageDesc)  trialStageDesc.textContent = '< 5 kadr aşkarlandı';
                     if (predictionStateBadge) { predictionStateBadge.textContent = 'ƏL AŞKARLANMADI'; predictionStateBadge.className = 'trial-badge ready'; }
                     if (smoothPred) smoothPred.textContent = 'ƏL AŞKARLANMADI';
                     if (smoothConf) smoothConf.textContent = '0%';
                     if (rawPred) rawPred.textContent = 'ƏL AŞKARLANMADI';
                     if (rawConf) rawConf.textContent = '0%';
                     updateHandStatus('Not Detecting');
-                    setStatus('FRAME 26 / 26 — ƏL AŞKARLANMADI (< 5 frame). Növbəti trial üçün [SPACE] və ya NEXT TRIAL sıxın.');
+                    setStatus('KADR 26 / 26 — ƏL AŞKARLANMADI (< 5 kadr). Növbəti sınaq üçün [SPACE] və ya NÖVBƏTİ SINAQ sıxın.');
                 } else {
                     if (trialStageBadge) { trialStageBadge.textContent = 'NƏTİCƏ'; trialStageBadge.className = 'trial-badge result'; }
                     if (trialStageDesc)  trialStageDesc.textContent = 'Tamamlandı';
@@ -1177,35 +1362,35 @@ function initWebSocket() {
                     if (rawPred) rawPred.textContent = data.raw_prediction || pred;
                     if (rawConf) rawConf.textContent = ((data.raw_confidence || conf) * 100).toFixed(2) + '%';
                     updateHandStatus('Detecting');
-                    setStatus('NƏTİCƏ: ' + pred + ' (' + (conf * 100).toFixed(2) + '%). Növbəti trial üçün [SPACE] və ya NEXT TRIAL sıxın.');
+                    setStatus('NƏTİCƏ: ' + pred + ' (' + (conf * 100).toFixed(2) + '%). Növbəti sınaq üçün [SPACE] və ya NÖVBƏTİ SINAQ sıxın.');
 
                     if (data.segment_event && data.segment_event.label) {
                         addDetectedWord(data.segment_event.label, data.segment_event.confidence);
                     }
                 }
 
-                if (btnStartTrial) { btnStartTrial.textContent = '▶ NEXT TRIAL [SPACE]'; btnStartTrial.disabled = false; }
+                if (btnStartTrial) { btnStartTrial.textContent = 'NÖVBƏTİ SINAQ [SPACE]'; btnStartTrial.disabled = false; }
                 if (btnSkipTrial)  { btnSkipTrial.disabled = false; }
                 return;
             }
 
             if (wordState === 'READY') {
-                if (trialStageBadge) { trialStageBadge.textContent = 'READY'; trialStageBadge.className = 'trial-badge ready'; }
-                if (trialStageDesc)  trialStageDesc.textContent = 'START TRIAL [SPACE]';
-                if (trialFrameCounter) trialFrameCounter.textContent = 'FRAME 0 / ' + totalFrames;
+                if (trialStageBadge) { trialStageBadge.textContent = 'HAZIRDIR'; trialStageBadge.className = 'trial-badge ready'; }
+                if (trialStageDesc)  trialStageDesc.textContent = 'SINAĞA BAŞLA [SPACE]';
+                if (trialFrameCounter) trialFrameCounter.textContent = 'KADR 0 / ' + totalFrames;
                 if (trialProgressAscii) trialProgressAscii.textContent = getAsciiProgressBar(0, totalFrames);
                 if (trialProgressFill)  trialProgressFill.style.width = '0%';
 
-                if (predictionHeaderTitle) predictionHeaderTitle.textContent = 'Prediction';
-                if (predictionStateBadge) { predictionStateBadge.textContent = 'READY'; predictionStateBadge.className = 'trial-badge ready'; }
+                if (predictionHeaderTitle) predictionHeaderTitle.textContent = 'Proqnoz';
+                if (predictionStateBadge) { predictionStateBadge.textContent = 'HAZIRDIR'; predictionStateBadge.className = 'trial-badge ready'; }
                 if (smoothPred) smoothPred.textContent = '-';
                 if (smoothConf) smoothConf.textContent = '0%';
                 if (rawPred) rawPred.textContent = '-';
                 if (rawConf) rawConf.textContent = '0%';
 
-                if (btnStartTrial) { btnStartTrial.textContent = '▶ START TRIAL [SPACE]'; btnStartTrial.disabled = false; }
+                if (btnStartTrial) { btnStartTrial.textContent = 'SINAĞA BAŞLA [SPACE]'; btnStartTrial.disabled = false; }
                 if (btnSkipTrial)  { btnSkipTrial.disabled = false; }
-                setStatus('Hazırdır. Trial üçün [SPACE] və ya START TRIAL sıxın.');
+                setStatus('Hazırdır. Sınaq üçün [SPACE] və ya SINAĞA BAŞLA sıxın.');
                 return;
             }
 
@@ -1224,7 +1409,7 @@ function initWebSocket() {
         console.log('WebSocket disconnected');
         updateModelStatus('Not Loaded');
         if (isStreaming) {
-            setStatus('Connection lost. Attempting to reconnect...');
+            setStatus('Bağlantı kəsildi. Yenidən qoşulmağa çalışılır...');
             setTimeout(initWebSocket, 3000);
         }
     };
@@ -1239,12 +1424,12 @@ function startCamera() {
     if (isStreaming) return Promise.resolve();
 
     showLoading(true);
-    setStatus('Starting camera...');
+    setStatus('Kamera başladılır...');
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         showLoading(false);
-        setStatus('Error: Camera API not available');
-        alert('Your browser does not support camera access.');
+        setStatus('Xəta: Kamera API mövcud deyil');
+        alert('Brauzeriniz kameraya girişi dəstəkləmir.');
         return Promise.reject(new Error('Camera API not available'));
     }
 
@@ -1278,7 +1463,7 @@ function startCamera() {
         stopBtn.disabled = false;
         resetBtn.disabled = false;
 
-        setStatus('Camera started. Sending frames...');
+        setStatus('Kamera başladıldı. Kadrlar göndərilir...');
         updateCameraStatus('On');
         showLoading(false);
         startFrameLoop();
@@ -1286,8 +1471,8 @@ function startCamera() {
     .catch(err => {
         console.error('Error starting camera:', err);
         showLoading(false);
-        setStatus('Error: Could not start camera');
-        alert('Could not start the camera. Please check permissions and try again.');
+        setStatus('Xəta: Kamera başladıla bilmədi');
+        alert('Kamera başladıla bilmədi. Zəhmət olmasa icazələri yoxlayıb yenidən cəhd edin.');
         throw err;
     });
 }
@@ -1312,14 +1497,16 @@ function stopCamera() {
     resetBtn.disabled = false;
 
     updateCameraStatus('Off');
-    handStatusEl.textContent = 'Not Detecting';
-    handStatusEl.className = 'value disconnected';
+    if (handStatusEl) {
+        handStatusEl.textContent = 'Not Detecting';
+        handStatusEl.className = 'value disconnected';
+    }
     smoothPred.textContent = '-';
     smoothConf.textContent = '0%';
     rawPred.textContent = '-';
     rawConf.textContent = '0%';
 
-    setStatus('Camera stopped');
+    setStatus('Kamera dayandırıldı');
     showLoading(false);
 }
 
@@ -1366,16 +1553,16 @@ function startFrameLoop() {
 
 function resetBuffer() {
     framesSent = 0;
-    bufferEl.textContent = '0/26';
+    if (bufferEl) bufferEl.textContent = '0/26';
     updateHandStatus('Not Detecting');
-    if (trialStageBadge) { trialStageBadge.textContent = 'READY'; trialStageBadge.className = 'trial-badge ready'; }
-    if (trialStageDesc)  trialStageDesc.textContent = 'START TRIAL [SPACE]';
-    if (trialFrameCounter) trialFrameCounter.textContent = 'FRAME 0 / 26';
+    if (trialStageBadge) { trialStageBadge.textContent = 'HAZIRDIR'; trialStageBadge.className = 'trial-badge ready'; }
+    if (trialStageDesc)  trialStageDesc.textContent = 'SINAĞA BAŞLA [SPACE]';
+    if (trialFrameCounter) trialFrameCounter.textContent = 'KADR 0 / 26';
     if (trialProgressAscii) trialProgressAscii.textContent = getAsciiProgressBar(0, 26);
     if (trialProgressFill)  trialProgressFill.style.width = '0%';
-    if (predictionHeaderTitle) predictionHeaderTitle.textContent = 'Prediction';
-    if (predictionStateBadge) { predictionStateBadge.textContent = 'READY'; predictionStateBadge.className = 'trial-badge ready'; }
-    if (btnStartTrial) { btnStartTrial.textContent = '▶ START TRIAL [SPACE]'; btnStartTrial.disabled = false; }
+    if (predictionHeaderTitle) predictionHeaderTitle.textContent = 'Proqnoz';
+    if (predictionStateBadge) { predictionStateBadge.textContent = 'HAZIRDIR'; predictionStateBadge.className = 'trial-badge ready'; }
+    if (btnStartTrial) { btnStartTrial.textContent = 'SINAĞA BAŞLA [SPACE]'; btnStartTrial.disabled = false; }
     if (smoothPred) smoothPred.textContent = '-';
     if (smoothConf) smoothConf.textContent = '0%';
     if (rawPred) rawPred.textContent = '-';
@@ -1384,7 +1571,7 @@ function resetBuffer() {
         ws.send(JSON.stringify({ type: 'reset', mode: currentMode }));
     }
     if (isStreaming) {
-        setStatus('Buffer reset');
+        setStatus('Yaddaş sıfırlandı');
     }
 }
 
@@ -1421,32 +1608,45 @@ function addDetectedWord(label, confidence) {
 function renderHistory() {
     if (!historyGrid) return;
     if (predictionHistory.length === 0) {
-        historyGrid.innerHTML = '<span class="history-empty">No words detected yet.</span>';
+        historyGrid.innerHTML = '<span class="history-empty">Hələ heç bir söz aşkarlanmayıb.</span>';
         return;
     }
+    const emptyMsg = historyGrid.querySelector('.history-empty');
+    if (emptyMsg) emptyMsg.remove();
+
     // Build the selection-order lookup so we can show "②" inside each chip.
     const orderByIndex = new Map();
     selectedWords.forEach((idx, i) => orderByIndex.set(idx, i + 1));
 
-    const html = predictionHistory.map((entry, idx) => {
+    // Incremental patch (vanilla stand-in for framer-motion's `layout` prop):
+    // predictionHistory only ever grows (or resets to empty via clearHistory),
+    // so existing chips are updated in place and only a genuinely new index
+    // gets a freshly-created, animated-in element.
+    predictionHistory.forEach((entry, idx) => {
         const order = orderByIndex.get(idx);
         const isSelected = order !== undefined;
         const orderPrefix = isSelected
             ? '<span class="chip-order">' + order + '</span>' : '';
         const confPct = (entry.confidence * 100).toFixed(0) + '%';
-        return '<div class="history-chip' + (isSelected ? ' selected' : '') + '" data-history-idx="' + idx + '">'
-            + '<div class="chip-label">' + orderPrefix + escapeHtml(entry.label) + '</div>'
-            + '<div class="chip-conf">' + confPct + '</div>'
-            + '</div>';
-    }).join('');
-    historyGrid.innerHTML = html;
 
-    // Attach click handlers (rebuilt on every render).
-    historyGrid.querySelectorAll('.history-chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-            const i = parseInt(chip.getAttribute('data-history-idx'), 10);
-            if (!isNaN(i)) toggleSelection(i);
-        });
+        let chip = historyGrid.querySelector('.history-chip[data-history-idx="' + idx + '"]');
+        if (!chip) {
+            chip = document.createElement('div');
+            chip.className = 'history-chip entering';
+            chip.setAttribute('data-history-idx', String(idx));
+            chip.addEventListener('click', () => toggleSelection(idx));
+            chip.addEventListener('animationend', () => chip.classList.remove('entering'), { once: true });
+            historyGrid.appendChild(chip);
+        }
+        chip.classList.toggle('selected', isSelected);
+        // Confidence-coded status dot: purely presentational bucketing of the
+        // same confidence value already carried on the entry.
+        chip.classList.toggle('conf-high', entry.confidence >= 0.8);
+        chip.classList.toggle('conf-mid', entry.confidence >= 0.5 && entry.confidence < 0.8);
+        chip.classList.toggle('conf-low', entry.confidence < 0.5);
+        chip.innerHTML = '<span class="chip-dot"></span>'
+            + '<div class="chip-label">' + orderPrefix + escapeHtml(entry.label) + '</div>'
+            + '<div class="chip-conf">' + confPct + '</div>';
     });
 }
 
@@ -1465,24 +1665,51 @@ function toggleSelection(historyIdx) {
 function renderSelected() {
     if (!selectedListEl || !sentenceBoxEl) return;
     if (selectedWords.length === 0) {
-        selectedListEl.innerHTML = '<span class="history-empty">No words selected yet.</span>';
-        sentenceBoxEl.textContent = 'Final sentence will appear here.';
+        selectedListEl.innerHTML = '<span class="history-empty">Hələ heç bir söz seçilməyib.</span>';
+        sentenceBoxEl.textContent = 'Yekun cümlə burada görünəcək.';
         sentenceBoxEl.classList.add('empty');
         return;
     }
-    const lines = selectedWords.map((histIdx, i) => {
+    const emptyMsg = selectedListEl.querySelector('.history-empty');
+    if (emptyMsg) emptyMsg.remove();
+
+    // Incremental patch, keyed by the underlying history index (not by list
+    // position): drop nodes for entries the user deselected, then create or
+    // reposition the rest in the current selection order. Only brand-new
+    // entries get the pop-in animation; re-ordered/updated ones just move.
+    const currentIdxSet = new Set(selectedWords.map(String));
+    selectedListEl.querySelectorAll('.selected-item').forEach(node => {
+        if (!currentIdxSet.has(node.getAttribute('data-hist-idx'))) {
+            node.remove();
+        }
+    });
+
+    selectedWords.forEach((histIdx, i) => {
         const entry = predictionHistory[histIdx];
-        if (!entry) return '';
-        return '<div class="selected-item">'
-            + '<span class="order">' + (i + 1) + '.</span>'
-            + '<span>' + escapeHtml(entry.label) + '</span>'
-            + '</div>';
-    }).join('');
-    selectedListEl.innerHTML = lines;
-    sentenceBoxEl.textContent = selectedWords
+        if (!entry) return;
+        let item = selectedListEl.querySelector('.selected-item[data-hist-idx="' + histIdx + '"]');
+        if (!item) {
+            item = document.createElement('div');
+            item.className = 'selected-item entering';
+            item.setAttribute('data-hist-idx', String(histIdx));
+            item.addEventListener('animationend', () => item.classList.remove('entering'), { once: true });
+            item.innerHTML = '<span class="order"></span><span class="label"></span>';
+        }
+        item.querySelector('.order').textContent = (i + 1) + '.';
+        item.querySelector('.label').textContent = entry.label;
+        selectedListEl.appendChild(item); // appendChild on an existing node just repositions it
+    });
+
+    const newSentence = selectedWords
         .map(i => (predictionHistory[i] ? predictionHistory[i].label : ''))
         .filter(Boolean)
         .join(' ');
+    if (sentenceBoxEl.textContent !== newSentence) {
+        sentenceBoxEl.textContent = newSentence;
+        sentenceBoxEl.classList.remove('pulse');
+        void sentenceBoxEl.offsetWidth; // restart the CSS animation reliably
+        sentenceBoxEl.classList.add('pulse');
+    }
     sentenceBoxEl.classList.remove('empty');
 }
 
@@ -1508,6 +1735,26 @@ function escapeHtml(s) {
         .replace(/'/g, '&#39;');
 }
 
+// ---------------------------------------------------------------------------
+// Confidence gauge ring: purely presentational. Reads the existing #smoothConf
+// text (already authoritative, set throughout the WebSocket message handler
+// above) and mirrors it onto a --pct CSS variable for the conic-gradient ring.
+// Does not write back into any pipeline state.
+// ---------------------------------------------------------------------------
+(function initConfidenceGauge() {
+    const gaugeWrap = document.getElementById('confidence-gauge-wrap');
+    if (!gaugeWrap || !smoothConf) return;
+    function syncGauge() {
+        const match = smoothConf.textContent.match(/(\d+(?:\.\d+)?)\s*%/);
+        const pct = match ? Math.max(0, Math.min(100, parseFloat(match[1]))) : 0;
+        gaugeWrap.style.setProperty('--pct', String(pct));
+    }
+    new MutationObserver(syncGauge).observe(smoothConf, {
+        childList: true, characterData: true, subtree: true
+    });
+    syncGauge();
+})();
+
 // Status update functions
 function setStatus(message) {
     if (statusTextEl) {
@@ -1523,6 +1770,11 @@ function updateCameraStatus(status) {
         } else {
             cameraStatusEl.className = 'value disconnected';
         }
+    }
+    // Purely presentational: pulses the camera frame's border while active.
+    const videoContainerEl = document.querySelector('.video-container');
+    if (videoContainerEl) {
+        videoContainerEl.classList.toggle('active', status === 'On' || status === 'Streaming');
     }
 }
 
@@ -1596,13 +1848,13 @@ async function setMode(newMode) {
         }
 
         if (!isStreaming) {
-            setStatus('Alphabet mode: starting camera...');
+            setStatus('Əlifba rejimi: kamera başladılır...');
             await startCamera();
         } else {
             startFrameLoop();
         }
 
-        setStatus('Alphabet mode aktivdir. Əlinizi kameraya göstərin.');
+        setStatus('Əlifba rejimi aktivdir. Əlinizi kameraya göstərin.');
         renderSpelledWord();
     } else {
         wordBtn.classList.add('active');      wordBtn.setAttribute('aria-selected', 'true');
@@ -1615,7 +1867,7 @@ async function setMode(newMode) {
             try { ws.send(JSON.stringify({ type: 'reset', mode: 'word' })); } catch (_) {}
         }
 
-        setStatus('Word mode: Trial başlatmaq üçün [SPACE] və ya START TRIAL sıxın.');
+        setStatus('Söz rejimi: Sınaq başlatmaq üçün [SPACE] və ya SINAĞA BAŞLA sıxın.');
         if (isStreaming) startFrameLoop();
     }
 }
@@ -1625,7 +1877,7 @@ function renderSpelledWord(justAddedLabel) {
     if (!el) return;
     if (!spelledWord) {
         el.classList.add('empty');
-        el.textContent = 'Spell a word with your hand...';
+        el.textContent = 'Əlinizlə söz hecalayın...';
         return;
     }
     el.classList.remove('empty');
@@ -1660,7 +1912,7 @@ function commitSpelledWordToSentence() {
     if (ws && ws.readyState === WebSocket.OPEN) {
         try { ws.send(JSON.stringify({ type: 'alphabet_action', action: 'clear', mode: 'alphabet' })); } catch (_) {}
     }
-    setStatus('Added "' + word + '" to sentence.');
+    setStatus('"' + word + '" cümləyə əlavə edildi.');
 }
 
 document.getElementById('mode-word').addEventListener('click',     () => setMode('word'));

@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SIGNA — Real-Time Sign Translator</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!--
+  Tailwind, compiled at build time via @tailwindcss/vite (see vite.config.js)
+  instead of the cdn.tailwindcss.com runtime — the CDN build ships a
+  MutationObserver-driven JIT compiler that re-scans the DOM on every
+  mutation, which is pathological here since the gesture pipeline rewrites
+  prediction/confidence DOM nodes on every camera frame (~30-60/sec). The
+  CDN script also prints its own "should not be used in production" warning.
+-->
+
+<!--
+  NOTE: MediaPipe Hands / Camera / Drawing-utils are intentionally NOT loaded
+  as static <script> tags here. They are fetched dynamically at runtime (see
+  the bottom script block) so that a slow, blocked, or offline CDN can never
+  delay or break the UI's own event-listener wiring below.
+-->
+
+<style>
+  :root{
+    --bg:            #0a0b0f;
+    --bg-2:          #0d0e13;
+    --panel:         rgba(255,255,255,0.035);
+    --panel-solid:   #131419;
+    --panel-2:       rgba(255,255,255,0.05);
+    --panel-2-solid: #191a20;
+    --line:          rgba(255,255,255,0.08);
+    --line-soft:     rgba(255,255,255,0.06);
+    --teal:          #2dd4bf;
+    --teal-dim:      rgba(45,212,191,0.14);
+    --violet:        #8b5cf6;
+    --amber:         #fbbf24;
+    --rose:          #fb7185;
+    --text:          #f2f3f5;
+    --text-dim:      #92939d;
+    --shadow-soft:   0 1px 0 rgba(255,255,255,0.05) inset, 0 24px 60px -28px rgba(0,0,0,0.65);
+    --shadow-lift:   0 10px 30px -10px rgba(0,0,0,0.55);
+    --ease-out:      cubic-bezier(0.16,1,0.3,1);
+  }
+
+  *{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  html{ scroll-behavior: smooth; }
+  ::selection{ background: rgba(45,212,191,0.28); color: #f2f3f5; }
+
+  body{
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(45,212,191,0.10), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 10%, rgba(139,92,246,0.08), transparent),
+      radial-gradient(ellipse 70% 45% at 0% 100%, rgba(45,212,191,0.05), transparent);
+    font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+    color: var(--text);
+    letter-spacing: -0.005em;
+  }
+  .font-display{ font-family:'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; }
+  .font-mono{ font-family:'JetBrains Mono', monospace; }
+
+  /* Accessible, low-noise focus ring — keyboard users only */
+  :focus-visible{
+    outline: 2px solid rgba(45,212,191,0.75);
+    outline-offset: 3px;
+    border-radius: 8px;
+  }
+
+  .panel{
+    /* Opaque gradient-over-solid, not a translucent glass surface, so it
+       doesn't need backdrop-filter — that would blur content behind it on
+       every paint for a visual effect the low-alpha gradient here can't
+       even show, at real GPU cost on panels this large and hover-heavy. */
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015)),
+      var(--panel-solid);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: var(--shadow-soft);
+  }
+
+  @keyframes pulse-dot{
+    0%,100%{ box-shadow: 0 0 0 0 currentColor; opacity:1; }
+    70%{ box-shadow: 0 0 0 7px transparent; opacity:0.85; }
+  }
+  .dot-pulse{ animation: pulse-dot 1.8s ease-out infinite; }
+
+  @keyframes flash-commit{
+    0%{ box-shadow: 0 0 0 0 rgba(45,212,191,0.55) inset, 0 0 0 0 rgba(45,212,191,0.0); }
+    35%{ box-shadow: 0 0 0 0 rgba(45,212,191,0.0) inset, 0 0 55px 4px rgba(45,212,191,0.35); }
+    100%{ box-shadow: 0 0 0 0 rgba(45,212,191,0.0) inset, 0 0 0 0 rgba(45,212,191,0.0); }
+  }
+  .commit-flash{ animation: flash-commit 0.5s ease-out; }
+
+  @keyframes blink{ 0%,49%{ opacity:1;} 50%,100%{ opacity:0;} }
+  .cursor-blink{ animation: blink 1s step-end infinite; }
+
+  @keyframes spin-slow{ from{ transform: rotate(0deg);} to{ transform: rotate(360deg);} }
+  .spin-slow{ animation: spin-slow 12s linear infinite; }
+
+  @keyframes drawer-in{ from{ transform: translateX(100%);} to{ transform: translateX(0);} }
+  .drawer-in{ animation: drawer-in 0.3s var(--ease-out); }
+
+  @keyframes fade-in{ from{ opacity:0;} to{ opacity:1;} }
+  .fade-in{ animation: fade-in 0.2s ease-out; }
+
+  progress-ring circle{ transition: stroke-dashoffset 0.08s linear, stroke 0.2s ease; }
+
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.12); border-radius:8px; }
+  ::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,0.18); }
+  ::-webkit-scrollbar-track{ background:transparent; }
+
+  @media (prefers-reduced-motion: reduce){
+    .dot-pulse, .commit-flash, .cursor-blink, .spin-slow, .drawer-in, .fade-in{ animation: none !important; }
+    *{ transition-duration: 0.001ms !important; }
+  }
+
+  /* ---------------- Camera / media frame ---------------- */
+  .media-frame{
+    position: relative;
+    border-radius: 26px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: #000;
+    box-shadow:
+      0 0 0 1px rgba(45,212,191,0.06),
+      0 30px 70px -30px rgba(0,0,0,0.75),
+      0 0 90px -35px rgba(45,212,191,0.22);
+    transition: box-shadow .3s ease;
+  }
+
+  .status-pill{
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* ---------------- Buttons ---------------- */
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:0.55rem;
+    padding: 0.75rem 1.1rem;
+    border-radius: 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015)), var(--panel-2-solid);
+    color: var(--text);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset;
+    transition: border-color .18s ease, background .18s ease, transform .15s var(--ease-out), box-shadow .18s ease;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .btn:hover{
+    border-color: rgba(255,255,255,0.16);
+    background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)), #1d1e25;
+    transform: translateY(-1.5px);
+    box-shadow: var(--shadow-lift);
+  }
+  .btn:active{ transform: translateY(0) scale(0.97); box-shadow: none; }
+  .btn-primary{
+    background: linear-gradient(135deg, rgba(45,212,191,0.18), rgba(139,92,246,0.12));
+    border-color: rgba(45,212,191,0.35);
+    color: var(--teal);
+  }
+  .btn-primary:hover{
+    border-color: rgba(45,212,191,0.6);
+    background: linear-gradient(135deg, rgba(45,212,191,0.28), rgba(139,92,246,0.16));
+    box-shadow: var(--shadow-lift), 0 0 32px -12px rgba(45,212,191,0.5);
+  }
+
+  .chip{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:0.95rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9px;
+    background: var(--teal-dim);
+    border: 1px solid rgba(45,212,191,0.25);
+    color: var(--teal);
+    transition: transform .15s var(--ease-out);
+  }
+
+  .switch{ width:42px; height:24px; border-radius:999px; background: var(--panel-2); border: 1px solid var(--line); position:relative; transition:background .2s ease, border-color .2s ease; flex-shrink:0; cursor:pointer; }
+  .switch::after{ content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:999px; background:#8a8a94; box-shadow: 0 2px 6px rgba(0,0,0,0.4); transition: transform .22s var(--ease-out), background .2s ease; }
+  .switch.on{ background: rgba(45,212,191,0.22); border-color: rgba(45,212,191,0.4); }
+  .switch.on::after{ transform: translateX(18px); background: var(--teal); box-shadow: 0 2px 10px rgba(45,212,191,0.5); }
+
+  .history-item{
+    display:flex; align-items:flex-start; gap:0.75rem;
+    padding: 0.95rem 1rem;
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01)), var(--panel-2-solid);
+    border-radius: 14px;
+    transition: border-color .18s ease, transform .15s var(--ease-out);
+  }
+  .history-item:hover{ border-color: rgba(255,255,255,0.16); }
+  .history-icon-btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:28px; height:28px; border-radius:9px;
+    border:1px solid var(--line); background:transparent; color:var(--text-dim);
+    transition: border-color .15s ease, color .15s ease, background .15s ease, transform .15s var(--ease-out);
+  }
+  .history-icon-btn:hover{ border-color:rgba(255,255,255,0.2); color:var(--text); background:rgba(255,255,255,0.06); transform: translateY(-1px); }
+  .history-icon-btn-danger:hover{ border-color: rgba(251,113,133,0.5); color: var(--rose); }
+
+  .alphabet-cell{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    aspect-ratio:1; border-radius:14px; border:1px solid var(--line); background: var(--panel-2-solid);
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:1.25rem; color:var(--text-dim);
+    transition: border-color .15s ease, color .15s ease, background .15s ease, transform .15s var(--ease-out);
+  }
+  .alphabet-cell:hover{ transform: translateY(-2px); }
+  .alphabet-cell.trained{ color:var(--teal); border-color:rgba(45,212,191,0.3); background:var(--teal-dim); }
+  .alphabet-cell .dot{ width:5px; height:5px; border-radius:999px; background:currentColor; opacity:0.6; }
+
+  /* Toast — always present in the DOM, visibility purely via opacity so the
+     transition can animate (avoids Tailwind's display:none `.hidden`). */
+  #toast{
+    position:fixed; left:50%; bottom:32px; z-index:200;
+    transform:translateX(-50%) translateY(10px);
+    display:flex; align-items:center; gap:8px;
+    background: rgba(19,20,25,0.9); border:1px solid rgba(255,255,255,0.12); color:#f2f3f5;
+    font-family:'JetBrains Mono', monospace; font-size:12px;
+    padding:11px 18px; border-radius:999px;
+    box-shadow: var(--shadow-lift);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    opacity:0; pointer-events:none;
+    transition: opacity .25s ease, transform .25s var(--ease-out);
+  }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+  <script type="module" crossorigin src="/assets/index-BSg-l1ft.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-AinPq7QA.css">
+</head>
+
+<body class="min-h-screen">
+
+  <div class="max-w-7xl mx-auto px-6 py-8 lg:py-12">
+
+    <!-- ============ HEADER ============ -->
+    <header class="flex items-center justify-between mb-8 lg:mb-10">
+      <div class="flex items-center gap-3.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400/20 to-violet-500/20 border border-teal-400/30 flex items-center justify-center shadow-[0_8px_24px_-10px_rgba(45,212,191,0.35)]">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path>
+            <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"></path>
+            <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"></path>
+            <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6.29-3.34l-3.6-5.19a2 2 0 0 1 3.16-2.43L8 13"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 class="font-display text-lg font-700 tracking-tight leading-none">SIGNA</h1>
+          <p class="text-[11px] text-[var(--text-dim)] font-mono tracking-wide mt-1">REAL-TIME FINGERSPELLING ENGINE</p>
+        </div>
+      </div>
+      <div class="status-pill hidden sm:flex items-center gap-2 font-mono text-[11px] text-[var(--text-dim)] border border-[var(--line)] bg-white/[0.03] rounded-full px-3.5 py-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-teal-400 dot-pulse text-teal-400"></span>
+        CLIENT-SIDE · NO SERVER · NO DATA LEAVES BROWSER
+      </div>
+    </header>
+
+    <!-- ============ MAIN GRID ============ -->
+    <main class="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-7 lg:gap-8">
+
+      <!-- ================= LEFT: CAMERA PANEL ================= -->
+      <section class="panel p-5 lg:p-6 flex flex-col">
+        <div class="flex items-center justify-between mb-4 px-1">
+          <h2 class="font-display text-sm font-600 text-[var(--text-dim)] tracking-wide">LIVE FEED</h2>
+          <div id="handStatusBadge" class="status-pill flex items-center gap-2 font-mono text-[11px] px-3 py-1.5 rounded-full border border-[var(--line)] bg-[var(--panel-2)]">
+            <span id="handStatusDot" class="w-1.5 h-1.5 rounded-full bg-amber-400 dot-pulse text-amber-400"></span>
+            <span id="handStatusText" class="text-[var(--text-dim)]">SEARCHING…</span>
+          </div>
+        </div>
+
+        <div class="media-frame relative" style="aspect-ratio:16/9;">
+          <video id="inputVideo" class="absolute inset-0 w-full h-full object-cover" style="transform:scaleX(-1);" playsinline autoplay muted></video>
+          <canvas id="overlayCanvas" class="absolute inset-0 w-full h-full" style="transform:scaleX(-1);"></canvas>
+
+          <!-- loading state -->
+          <div id="loadingOverlay" class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80 backdrop-blur-sm">
+            <div class="w-8 h-8 border-2 border-teal-400/30 border-t-teal-400 rounded-full animate-spin"></div>
+            <p class="font-mono text-xs text-[var(--text-dim)]" id="loadingText">Initializing camera…</p>
+          </div>
+
+          <!-- camera-offline / error state -->
+          <div id="errorOverlay" class="hidden absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/90 text-center px-8">
+            <p class="font-display text-sm font-600 text-rose-400" id="errorTitle">Camera Offline</p>
+            <p class="font-mono text-[11px] text-[var(--text-dim)] max-w-xs leading-relaxed" id="errorText">Click Demo Toggle to preview.</p>
+            <button id="btnEnableDemoFromOverlay" class="btn btn-primary mt-1">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              Enable Demo Mode
+            </button>
+          </div>
+
+          <!-- demo mode banner -->
+          <div id="demoBanner" class="status-pill hidden absolute top-3 left-3 font-mono text-[10px] tracking-wide px-2.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/40 text-amber-300">
+            ◆ DEMO AUTO-TYPE ACTIVE — CAMERA INPUT PAUSED
+          </div>
+
+          <!-- FPS -->
+          <div class="status-pill absolute top-3 right-3 font-mono text-[11px] px-2.5 py-1.5 rounded-full bg-black/50 border border-white/10">
+            <span class="text-[var(--text-dim)]">FPS</span>
+            <span id="fpsCounter" class="text-teal-400 ml-1">0</span>
+          </div>
+        </div>
+
+        <p class="mt-4 px-1 text-[11px] font-mono text-[var(--text-dim)] leading-relaxed">
+          Full Azerbaijani fingerspelling alphabet (32 letters) matched against trained landmark prototypes ·
+          <span class="text-zinc-300">SPACE</span> thumbs up ·
+          <span class="text-zinc-300">DEL</span> pointing index.
+          Hold steady for 1.2s to commit.
+        </p>
+        <p class="mt-2 px-1 text-[11px] font-mono text-[var(--text-dim)]" id="modelStatus">
+          AzSL model: <span class="text-amber-300">loading…</span>
+        </p>
+      </section>
+
+      <!-- ================= RIGHT: TRANSLATION PANEL ================= -->
+      <section class="flex flex-col gap-7">
+
+        <!-- Live Translation Card -->
+        <div id="letterCard" class="panel p-6 lg:p-7 flex items-center gap-6">
+          <div class="relative w-28 h-28 flex-shrink-0 flex items-center justify-center">
+            <div class="absolute inset-0 rounded-full border border-[var(--line)] spin-slow" style="border-style:dashed; opacity:0.35;"></div>
+            <svg width="112" height="112" viewBox="0 0 112 112" class="-rotate-90">
+              <circle cx="56" cy="56" r="50" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6"></circle>
+              <circle id="progressRing" cx="56" cy="56" r="50" fill="none" stroke="#2dd4bf" stroke-width="6" stroke-linecap="round"></circle>
+            </svg>
+            <span id="liveLetter" class="font-display absolute text-4xl font-700">–</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-mono text-[11px] text-[var(--text-dim)] tracking-wide mb-1.5">ACTIVE PREDICTION</p>
+            <p id="predictionLabel" class="font-display text-xl font-600 mb-3 truncate">Awaiting gesture…</p>
+            <div class="w-full h-1.5 bg-[var(--panel-2)] rounded-full overflow-hidden mb-2">
+              <div id="confidenceBar" class="h-full bg-gradient-to-r from-teal-400 to-violet-400 transition-[width] duration-200 ease-out" style="width:0%"></div>
+            </div>
+            <p class="font-mono text-[11px] text-[var(--text-dim)]">CONFIDENCE <span id="confidenceValue" class="text-teal-400">0%</span></p>
+            <p id="secondCandidate" class="font-mono text-[10px] text-[var(--text-dim)] mt-1.5 truncate">&nbsp;</p>
+          </div>
+        </div>
+
+        <!-- Sentence Builder -->
+        <div class="panel p-6 flex-1 flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-display text-sm font-600 text-[var(--text-dim)] tracking-wide">SENTENCE BUILDER</h2>
+            <span id="charCount" class="font-mono text-[11px] text-[var(--text-dim)]">0 chars</span>
+          </div>
+
+          <div class="mb-4">
+            <p class="font-mono text-[10px] text-[var(--text-dim)] mb-2 tracking-wide">CURRENT WORD</p>
+            <div id="currentWordChips" class="flex flex-wrap gap-1.5 min-h-[2.25rem] items-center">
+              <span class="text-[var(--text-dim)] text-sm font-mono">—</span>
+            </div>
+          </div>
+
+          <div class="flex-1 flex flex-col">
+            <p class="font-mono text-[10px] text-[var(--text-dim)] mb-2 tracking-wide">SENTENCE</p>
+            <div class="panel !bg-[var(--panel-2)] !rounded-xl p-4 lg:p-5 flex-1 min-h-[110px]">
+              <p id="sentenceOutput" class="font-mono text-[15px] leading-relaxed text-zinc-100 break-words">
+                <span class="text-[var(--text-dim)]">Start signing to build your sentence…</span><span class="cursor-blink text-teal-400">▍</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="panel p-5">
+          <div class="grid grid-cols-2 gap-2.5 mb-4">
+            <button id="btnCopy" class="btn btn-primary justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              Copy Text
+            </button>
+            <button id="btnSpeak" class="btn justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.5 8.5a5 5 0 0 1 0 7"></path><path d="M18 6a9 9 0 0 1 0 12"></path></svg>
+              Read Aloud
+            </button>
+            <button id="btnHistory" class="btn justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"></path><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path><path d="M12 7v5l4 2"></path></svg>
+              Session History
+            </button>
+            <button id="btnAlphabet" class="btn justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+              Alphabet Reference
+            </button>
+            <button id="btnClear" class="btn justify-center col-span-2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+              Clear Sentence
+            </button>
+          </div>
+
+          <div class="flex items-center justify-between pt-4 border-t border-[var(--line)]">
+            <div>
+              <p class="font-display text-sm font-600">Demo Auto-Type Mode</p>
+              <p class="font-mono text-[10px] text-[var(--text-dim)] mt-0.5">Simulate gestures — works with zero camera access</p>
+            </div>
+            <button id="demoToggle" class="switch" role="switch" aria-checked="false" aria-label="Toggle demo auto-type mode"></button>
+          </div>
+        </div>
+
+        <p class="text-center font-mono text-[10px] text-[var(--text-dim)]">
+          Shortcuts — <kbd class="text-zinc-300">Space</kbd> force space ·
+          <kbd class="text-zinc-300">Backspace</kbd> delete ·
+          <kbd class="text-zinc-300">Esc</kbd> clear ·
+          <kbd class="text-zinc-300">S</kbd> speak
+        </p>
+
+      </section>
+    </main>
+
+    <footer class="mt-8 text-center font-mono text-[10px] text-[var(--text-dim)]">
+      MediaPipe Hands · Azerbaijani alphabet nearest-centroid classifier · runs 100% in your browser
+    </footer>
+  </div>
+
+  <!-- ============ SESSION HISTORY DRAWER ============ -->
+  <div id="historyOverlay" class="hidden fixed inset-0 z-50">
+    <div id="historyBackdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm fade-in"></div>
+    <aside class="drawer-in absolute top-0 right-0 h-full w-full max-w-md panel !rounded-none !border-l !border-t-0 !border-b-0 !border-r-0 flex flex-col">
+      <div class="flex items-center justify-between px-6 py-5 border-b border-[var(--line)]">
+        <div>
+          <h2 class="font-display text-base font-700">Session History</h2>
+          <p class="text-[11px] font-mono text-[var(--text-dim)] mt-0.5">Saved locally in your browser</p>
+        </div>
+        <button id="historyCloseBtn" class="history-icon-btn" style="width:32px;height:32px;" aria-label="Close history">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-3">
+        <p id="historyEmpty" class="text-[13px] font-mono text-[var(--text-dim)] text-center mt-8">
+          No saved sentences yet. Clearing a sentence saves it here.
+        </p>
+        <div id="historyList" class="flex flex-col gap-3"></div>
+      </div>
+
+      <div class="px-6 py-5 border-t border-[var(--line)] grid grid-cols-2 gap-2.5">
+        <button id="historyDownloadAllBtn" class="btn justify-center">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Download All
+        </button>
+        <button id="historyClearBtn" class="btn justify-center">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+          Clear History
+        </button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ============ AZERBAIJANI ALPHABET REFERENCE DRAWER ============ -->
+  <div id="alphabetOverlay" class="hidden fixed inset-0 z-50">
+    <div id="alphabetBackdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm fade-in"></div>
+    <aside class="drawer-in absolute top-0 right-0 h-full w-full max-w-md panel !rounded-none !border-l !border-t-0 !border-b-0 !border-r-0 flex flex-col">
+      <div class="flex items-center justify-between px-6 py-5 border-b border-[var(--line)]">
+        <div>
+          <h2 class="font-display text-base font-700">Azerbaijani Alphabet</h2>
+          <p class="text-[11px] font-mono text-[var(--text-dim)] mt-0.5" id="alphabetSubtitle">Loading model coverage…</p>
+        </div>
+        <button id="alphabetCloseBtn" class="history-icon-btn" style="width:32px;height:32px;" aria-label="Close alphabet reference">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto px-6 py-5">
+        <div id="alphabetGrid" class="grid grid-cols-4 sm:grid-cols-6 gap-2.5"></div>
+        <div class="flex items-center gap-4 mt-5 pt-5 border-t border-[var(--line)] text-[11px] font-mono text-[var(--text-dim)]">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-teal-400 inline-block"></span> Trained</span>
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[var(--line)] inline-block"></span> Unavailable</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite">Copied!</div>
+
+</body>
+</html>

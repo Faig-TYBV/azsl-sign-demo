@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Azİşarə — Səssizliyi Sözə Çevirən Süni İntellekt</title>
+<style>
+html {
+    scroll-behavior: smooth;
+}
+
+:root {
+    --bg-dark: #333333;
+    --bg-deep: #262626;
+    --text-light: #EBEBEB;
+    --border-muted: #C2B280;
+    --accent-cyan: #A0FFFF;
+    --state-warning: #FFCC00;
+    --state-success: #6B8E23;
+    --font-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: var(--font-sans);
+    background: var(--bg-dark);
+    color: var(--text-light);
+    line-height: 1.6;
+}
+
+/* ---------- Header (transparent, fixed) ---------- */
+.site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.35rem clamp(1.1rem, 5vw, 3.5rem);
+    background: transparent;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    text-decoration: none;
+    color: var(--text-light);
+}
+
+.brand-mark {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: linear-gradient(140deg, rgba(160, 255, 255, 0.22), rgba(255, 204, 0, 0.12));
+    border: 1px solid rgba(194, 178, 128, 0.4);
+    box-shadow: 0 6px 22px rgba(160, 255, 255, 0.18);
+    flex-shrink: 0;
+}
+
+.brand-mark svg { width: 23px; height: 23px; display: block; }
+
+.brand-name {
+    font-size: 1.32rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.brand-name .accent {
+    background: linear-gradient(100deg, var(--accent-cyan), var(--state-warning));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+.nav-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.4rem;
+    border-radius: 999px;
+    background: var(--accent-cyan);
+    color: var(--bg-dark);
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    box-shadow: 0 4px 20px rgba(160, 255, 255, 0.3);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-cta:hover {
+    transform: translateY(-2px);
+    background: var(--state-warning);
+    box-shadow: 0 8px 28px rgba(255, 204, 0, 0.45);
+}
+
+.nav-cta:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 3px;
+}
+
+/* ---------- Hero (full-screen background video) ---------- */
+.hero {
+    position: relative;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 1.5rem;
+    background-color: var(--bg-deep);
+    overflow: hidden;
+}
+
+.hero-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Semi-transparent dark layer above the video so header nav and hero
+   typography stay crisp and legible. */
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: rgba(0, 0, 0, 0.45);
+    pointer-events: none;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 10;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.4rem;
+}
+
+.hero-eyebrow {
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--border-muted);
+}
+
+.hero-title {
+    font-size: clamp(2.1rem, 5.6vw, 4.2rem);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+}
+
+.hero-title .accent {
+    background: linear-gradient(100deg, var(--accent-cyan), var(--state-warning));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+.hero-subtitle {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: var(--text-light);
+    opacity: 0.85;
+    max-width: 620px;
+}
+
+.hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 0.8rem;
+}
+
+.btn-hero-primary {
+    padding: 0.9rem 1.9rem;
+    border-radius: 999px;
+    background: var(--accent-cyan);
+    color: var(--bg-dark);
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 8px 28px rgba(160, 255, 255, 0.35);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-hero-primary:hover {
+    transform: translateY(-2px);
+    background: var(--state-warning);
+    box-shadow: 0 10px 34px rgba(255, 204, 0, 0.45);
+}
+
+.btn-hero-secondary {
+    padding: 0.9rem 1.9rem;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-light);
+    font-weight: 700;
+    text-decoration: none;
+    border: 1.5px solid rgba(194, 178, 128, 0.5);
+    transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-hero-secondary:hover {
+    border-color: var(--accent-cyan);
+    background: rgba(160, 255, 255, 0.1);
+    box-shadow: 0 0 20px rgba(160, 255, 255, 0.25);
+}
+
+/* Scroll indicator: bouncing chevron, bottom-center of hero */
+.scroll-indicator {
+    position: absolute;
+    bottom: clamp(1.5rem, 4vh, 2.75rem);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--text-light);
+    text-decoration: none;
+    opacity: 0.85;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.scroll-indicator:hover { opacity: 1; }
+
+.scroll-indicator span {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--border-muted);
+}
+
+.scroll-indicator svg {
+    width: 26px;
+    height: 26px;
+    animation: scrollBounce 1.8s ease-in-out infinite;
+}
+
+@keyframes scrollBounce {
+    0%, 100% { transform: translateY(0); opacity: 0.6; }
+    50%      { transform: translateY(8px); opacity: 1; }
+}
+
+/* ---------- About section ---------- */
+#about-section {
+    min-height: 100vh;
+    background-color: var(--bg-dark);
+    color: var(--text-light);
+    padding: clamp(4rem, 8vw, 6rem) clamp(1.5rem, 6vw, 4rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.about-inner {
+    width: 100%;
+    max-width: 1100px;
+}
+
+.about-heading-row {
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto clamp(2.5rem, 6vw, 4rem);
+}
+
+.about-eyebrow {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-cyan);
+    margin-bottom: 0.75rem;
+    display: block;
+}
+
+.about-heading {
+    font-size: clamp(1.9rem, 4vw, 2.75rem);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin-bottom: 1rem;
+}
+
+.about-description {
+    font-size: 1.05rem;
+    color: var(--border-muted);
+}
+
+.about-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.75rem;
+}
+
+.about-card {
+    background: rgba(61, 61, 61, 0.55);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgba(194, 178, 128, 0.22);
+    border-radius: 18px;
+    padding: 2rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    transition: border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.about-card:hover {
+    border-color: rgba(160, 255, 255, 0.45);
+    box-shadow: 0 0 28px rgba(160, 255, 255, 0.15);
+    transform: translateY(-4px);
+}
+
+.about-card-icon {
+    width: 52px;
+    height: 52px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    font-size: 1.5rem;
+    background: linear-gradient(140deg, rgba(160, 255, 255, 0.18), rgba(255, 204, 0, 0.1));
+    border: 1px solid rgba(194, 178, 128, 0.3);
+}
+
+.about-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-light);
+}
+
+.about-card-text {
+    font-size: 0.95rem;
+    color: var(--border-muted);
+}
+
+.about-cta-row {
+    text-align: center;
+    margin-top: clamp(2.5rem, 6vw, 4rem);
+}
+
+.about-cta-row p {
+    color: var(--border-muted);
+    margin-bottom: 1.1rem;
+    font-size: 1rem;
+}
+
+@media (max-width: 480px) {
+    .site-header { padding: 1.05rem 1.1rem; }
+    .brand-name { font-size: 1.16rem; }
+    .nav-cta { padding: 0.55rem 1.1rem; font-size: 0.85rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .scroll-indicator svg { animation: none; }
+    .about-card, .nav-cta, .btn-hero-primary, .btn-hero-secondary {
+        transition: none;
+    }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+    <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="url(#brandGrad)" stroke-width="1.7"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <defs>
+                    <linearGradient id="brandGrad" x1="0" y1="0" x2="24" y2="24">
+                        <stop offset="0%" stop-color="#A0FFFF"/>
+                        <stop offset="100%" stop-color="#FFCC00"/>
+                    </linearGradient>
+                </defs>
+                <path d="M8 12V5.6a1.6 1.6 0 0 1 3.2 0V11"/>
+                <path d="M11.2 10.6V4.4a1.6 1.6 0 0 1 3.2 0V11"/>
+                <path d="M14.4 11.2V6.2a1.6 1.6 0 0 1 3.2 0V14a7 7 0 0 1-7 7h-.6a6 6 0 0 1-5.2-3l-1.6-2.8a1.7 1.7 0 0 1 2.7-2l1.9 2"/>
+            </svg>
+        </span>
+        <span class="brand-name">Az<span class="accent">İşarə</span></span>
+    </a>
+
+    <a class="nav-cta" href="/login">Daxil ol / Qeydiyyat</a>
+</header>
+
+<section class="hero">
+    <video class="hero-video" autoplay loop muted playsinline>
+        <source src="/static/hero.mp4" type="video/mp4">
+    </video>
+    <div class="hero-overlay"></div>
+
+    <div class="hero-content">
+        <span class="hero-eyebrow">Azərbaycan İşarə Dili &middot; Real Vaxt Rejimi</span>
+        <h1 class="hero-title">Səssizliyi <span class="accent">Sözə</span> Çevirən Süni İntellekt</h1>
+        <p class="hero-subtitle">
+            Azİşarə kompüter görməsi ilə Azərbaycan işarə dilini real vaxtda mətnə çevirir
+            və ünsiyyət arasındakı məsafəni aradan qaldırır.
+        </p>
+        <div class="hero-actions">
+            <a class="btn-hero-primary" href="/login">İndi Başla</a>
+            <a class="btn-hero-secondary" href="#about-section">Layihə Haqqında</a>
+        </div>
+    </div>
+
+    <a class="scroll-indicator" href="#about-section" aria-label="Aşağı sürüşdürün">
+        <span>Sürüşdürün</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6"/>
+        </svg>
+    </a>
+</section>
+
+<section id="about-section">
+    <div class="about-inner">
+        <div class="about-heading-row">
+            <span class="about-eyebrow">Missiya</span>
+            <h2 class="about-heading">Layihənin Məqsədi</h2>
+            <p class="about-description">
+                Azİşarə real vaxt rejimində işləyən kompüter görməsi texnologiyasından istifadə edərək
+                Azərbaycan işarə dilini mətnə və nitqə, eləcə də əksinə &mdash; mətn və nitqi işarə dilinə
+                &mdash; çevirməklə eşitmə qabiliyyəti məhdud insanlarla eşidən cəmiyyət arasındakı
+                ünsiyyət boşluğunu aradan qaldırır.
+            </p>
+        </div>
+
+        <div class="about-grid">
+            <div class="about-card">
+                <div class="about-card-icon">🤟</div>
+                <h3 class="about-card-title">Əl İşarəsi → Mətn</h3>
+                <p class="about-card-text">
+                    Kamera vasitəsilə tutulan əl hərəkətləri MediaPipe ilə emal olunur və
+                    GRU əsaslı model tərəfindən real vaxtda Azərbaycan sözlərinə çevrilir.
+                </p>
+            </div>
+            <div class="about-card">
+                <div class="about-card-icon">🔊</div>
+                <h3 class="about-card-title">Mətn/Nitq → İşarə</h3>
+                <p class="about-card-text">
+                    Əks istiqamətdə, yazılı və ya səsli mesajlar işarə dilinə uyğun formada
+                    təqdim olunaraq ünsiyyəti hər iki tərəf üçün asanlaşdırır.
+                </p>
+            </div>
+            <div class="about-card">
+                <div class="about-card-icon">🌉</div>
+                <h3 class="about-card-title">Əlçatanlıq Körpüsü</h3>
+                <p class="about-card-text">
+                    Məqsədimiz texnologiyanı əlçatan etməklə təhsildə, işdə və gündəlik həyatda
+                    bərabər ünsiyyət imkanı yaratmaqdır.
+                </p>
+            </div>
+        </div>
+
+        <div class="about-cta-row">
+            <p>Hazırsınız? Hesabınızı yaradın və işarə dilini öyrənməyə başlayın.</p>
+            <a class="btn-hero-primary" href="/login">Qeydiyyatdan Keç</a>
+        </div>
+    </div>
+</section>
+
+</body>
+</html>

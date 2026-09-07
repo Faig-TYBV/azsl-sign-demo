@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qeydiyyat — Azİşarə</title>
+<style>
+:root {
+    --bg-dark: #333333;
+    --bg-deep: #262626;
+    --text-light: #EBEBEB;
+    --border-muted: #C2B280;
+    --accent-cyan: #A0FFFF;
+    --state-warning: #FFCC00;
+    --state-success: #6B8E23;
+    --state-danger: #E0846B;
+    --glass-bg: rgba(51, 51, 51, 0.68);
+    --glass-border: rgba(194, 178, 128, 0.35);
+    --field-bg: rgba(38, 38, 38, 0.75);
+    --font-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-deep);
+    color: var(--text-light);
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* ---------- Ambient radial glows ---------- */
+.ambient {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(58% 46% at 18% 14%, rgba(160, 255, 255, 0.16) 0%, rgba(160, 255, 255, 0) 68%),
+        radial-gradient(52% 44% at 84% 22%, rgba(255, 204, 0, 0.13) 0%, rgba(255, 204, 0, 0) 66%),
+        radial-gradient(64% 54% at 50% 104%, rgba(160, 255, 255, 0.14) 0%, rgba(160, 255, 255, 0) 70%),
+        linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-deep) 100%);
+}
+
+/* ---------- Floating letter field ---------- */
+#letter-field {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* ---------- Mount animations (vanilla-CSS stand-in for framer-motion's
+   initial={{opacity:0,y:20}} / animate={{opacity:1,y:0}}, with a stagger) ---------- */
+@keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.brand, .login-link, .register-card, .field, .submit-btn, .card-footer {
+    animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.brand            { animation-delay: 0s; }
+.login-link       { animation-delay: 0.06s; }
+.register-card    { animation-delay: 0.1s; }
+#field-name       { animation-delay: 0.2s; }
+#field-email      { animation-delay: 0.26s; }
+#field-password   { animation-delay: 0.32s; }
+#field-confirm    { animation-delay: 0.38s; }
+.submit-btn       { animation-delay: 0.46s; }
+.card-footer      { animation-delay: 0.52s; }
+
+/* ---------- Header ---------- */
+.site-header {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.35rem clamp(1.1rem, 5vw, 3.5rem);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    text-decoration: none;
+    color: var(--text-light);
+}
+
+.brand-mark {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: linear-gradient(140deg, rgba(160, 255, 255, 0.22), rgba(255, 204, 0, 0.12));
+    border: 1px solid rgba(194, 178, 128, 0.4);
+    box-shadow: 0 6px 22px rgba(160, 255, 255, 0.18);
+    flex-shrink: 0;
+}
+
+.brand-mark svg { width: 23px; height: 23px; display: block; }
+
+.brand-name {
+    font-size: 1.32rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.brand-name .accent {
+    background: linear-gradient(100deg, var(--accent-cyan), var(--state-warning));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+.login-link {
+    color: var(--border-muted);
+    text-decoration: none;
+    font-size: 0.97rem;
+    font-weight: 600;
+    padding: 0.5rem 1.05rem;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    transition: color 0.25s ease-in-out, background-color 0.25s ease-in-out,
+                border-color 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
+}
+
+.login-link:hover,
+.login-link:focus-visible {
+    color: var(--text-light);
+    background-color: rgba(160, 255, 255, 0.14);
+    border-color: rgba(160, 255, 255, 0.4);
+    box-shadow: 0 0 16px rgba(160, 255, 255, 0.35);
+    outline: none;
+}
+
+.login-link:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
+}
+
+/* ---------- Layout ---------- */
+.page {
+    position: relative;
+    z-index: 2;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem clamp(1rem, 5vw, 3rem) 3.5rem;
+}
+
+/* ---------- Glass card ---------- */
+.register-card {
+    width: 100%;
+    max-width: 470px;
+    padding: clamp(1.7rem, 4vw, 2.6rem);
+    border-radius: 22px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(22px) saturate(135%);
+    -webkit-backdrop-filter: blur(22px) saturate(135%);
+    box-shadow:
+        0 28px 70px rgba(2, 3, 12, 0.62),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    transition: opacity 0.45s ease, transform 0.45s ease, border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.register-card:hover, .register-card:focus-within {
+    border-color: rgba(160, 255, 255, 0.4);
+    box-shadow:
+        0 28px 70px rgba(2, 3, 12, 0.62),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 0 30px rgba(160, 255, 255, 0.12);
+}
+
+.register-card.submitting {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.985);
+}
+
+.card-title {
+    font-size: clamp(1.42rem, 3.4vw, 1.78rem);
+    font-weight: 700;
+    line-height: 1.28;
+    letter-spacing: -0.015em;
+    margin-bottom: 0.55rem;
+}
+
+.card-subtitle {
+    font-size: 0.96rem;
+    color: var(--border-muted);
+    margin-bottom: 1.85rem;
+}
+
+/* ---------- Form ---------- */
+.field { margin-bottom: 1.05rem; }
+
+.field label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--border-muted);
+    margin-bottom: 0.42rem;
+}
+
+.field input {
+    width: 100%;
+    padding: 0.78rem 0.95rem;
+    font-family: inherit;
+    font-size: 0.97rem;
+    color: var(--text-light);
+    background: var(--field-bg);
+    border: 1px solid rgba(194, 178, 128, 0.22);
+    border-radius: 11px;
+    transition: border-color 0.22s ease-in-out, box-shadow 0.22s ease-in-out, background 0.22s ease-in-out;
+}
+
+.field input::placeholder { color: var(--border-muted); opacity: 0.65; }
+
+.field input:focus {
+    outline: none;
+    border-color: rgba(160, 255, 255, 0.75);
+    background: rgba(38, 38, 38, 0.92);
+    box-shadow: 0 0 0 3px rgba(160, 255, 255, 0.2), 0 0 16px rgba(160, 255, 255, 0.25);
+}
+
+.field.invalid input {
+    border-color: rgba(224, 132, 107, 0.75);
+}
+
+.field.invalid input:focus {
+    box-shadow: 0 0 0 3px rgba(224, 132, 107, 0.2);
+}
+
+.field-error {
+    display: none;
+    font-size: 0.8rem;
+    color: var(--state-danger);
+    margin-top: 0.34rem;
+}
+
+.field.invalid .field-error { display: block; }
+
+/* ---------- Submit ---------- */
+.submit-btn {
+    width: 100%;
+    margin-top: 0.7rem;
+    padding: 0.88rem 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--bg-dark);
+    background: linear-gradient(100deg, var(--accent-cyan) 0%, #C6FFFF 52%, var(--accent-cyan) 100%);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 12px 30px rgba(160, 255, 255, 0.28);
+    transition: transform 0.18s ease-in-out, box-shadow 0.25s ease-in-out, filter 0.25s ease-in-out;
+}
+
+.submit-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+    box-shadow: 0 16px 38px rgba(160, 255, 255, 0.4);
+}
+
+.submit-btn:active {
+    transform: translateY(0);
+    filter: brightness(0.96);
+    box-shadow: 0 8px 20px rgba(255, 204, 0, 0.3);
+}
+
+.submit-btn:focus-visible {
+    outline: 2px solid var(--state-warning);
+    outline-offset: 3px;
+}
+
+.submit-btn:disabled {
+    cursor: default;
+    filter: saturate(0.7) brightness(0.9);
+    transform: none;
+}
+
+.submit-btn svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.22s ease;
+}
+
+.submit-btn:hover svg { transform: translateX(3px); }
+
+/* ---------- Footer link ---------- */
+.card-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--border-muted);
+}
+
+.card-footer a {
+    color: var(--accent-cyan);
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.25s ease-in-out, text-shadow 0.25s ease-in-out;
+}
+
+.card-footer a:hover,
+.card-footer a:focus-visible {
+    text-decoration: underline;
+    text-shadow: 0 0 10px rgba(160, 255, 255, 0.6);
+}
+
+@media (max-width: 480px) {
+    .site-header { padding: 1.05rem 1.1rem; }
+    .brand-name { font-size: 1.16rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .register-card,
+    .submit-btn,
+    .submit-btn svg { transition: none; }
+
+    .brand, .login-link, .register-card, .field, .submit-btn, .card-footer {
+        animation: none;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="ambient"></div>
+<canvas id="letter-field" aria-hidden="true"></canvas>
+
+<div class="page">
+    <header class="site-header">
+        <a class="brand" href="/">
+            <span class="brand-mark" aria-hidden="true">
+                <!-- Stylized hand -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="url(#brandGrad)" stroke-width="1.7"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <defs>
+                        <linearGradient id="brandGrad" x1="0" y1="0" x2="24" y2="24">
+                            <stop offset="0%" stop-color="#A0FFFF"/>
+                            <stop offset="100%" stop-color="#FFCC00"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M8 12V5.6a1.6 1.6 0 0 1 3.2 0V11"/>
+                    <path d="M11.2 10.6V4.4a1.6 1.6 0 0 1 3.2 0V11"/>
+                    <path d="M14.4 11.2V6.2a1.6 1.6 0 0 1 3.2 0V14a7 7 0 0 1-7 7h-.6a6 6 0 0 1-5.2-3l-1.6-2.8a1.7 1.7 0 0 1 2.7-2l1.9 2"/>
+                </svg>
+            </span>
+            <span class="brand-name">Az<span class="accent">İşarə</span></span>
+        </a>
+
+        <a class="login-link" href="/app">Daxil ol</a>
+    </header>
+
+    <main>
+        <section class="register-card" id="register-card">
+            <h1 class="card-title">Azİşarə Platformasında Qeydiyyat</h1>
+            <p class="card-subtitle">
+                Hesabınızı yaradın və real vaxt rejimində işarə dilini öyrənməyə başlayın.
+            </p>
+
+            <form id="register-form" novalidate>
+                <div class="field" id="field-name">
+                    <label for="fullname">Ad və Soyad</label>
+                    <input type="text" id="fullname" name="fullname" autocomplete="name"
+                           placeholder="Məsələn: Aygün Məmmədova">
+                    <p class="field-error" id="error-name">Ad və Soyad daxil edilməlidir.</p>
+                </div>
+
+                <div class="field" id="field-email">
+                    <label for="email">E-poçt</label>
+                    <input type="email" id="email" name="email" autocomplete="email"
+                           placeholder="ad@numune.az">
+                    <p class="field-error" id="error-email">Düzgün e-poçt ünvanı daxil edin.</p>
+                </div>
+
+                <div class="field" id="field-password">
+                    <label for="password">Şifrə</label>
+                    <input type="password" id="password" name="password" autocomplete="new-password"
+                           placeholder="Ən azı 6 simvol">
+                    <p class="field-error" id="error-password">Şifrə ən azı 6 simvoldan ibarət olmalıdır.</p>
+                </div>
+
+                <div class="field" id="field-confirm">
+                    <label for="confirm">Şifrənin təsdiqi</label>
+                    <input type="password" id="confirm" name="confirm" autocomplete="new-password"
+                           placeholder="Şifrəni təkrar daxil edin">
+                    <p class="field-error" id="error-confirm">Şifrələr uyğun gəlmir.</p>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submit-btn">
+                    <span>Qeydiyyatı Tamamla</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M5 12h13"/>
+                        <path d="M12.5 5.5 19 12l-6.5 6.5"/>
+                    </svg>
+                </button>
+            </form>
+
+            <p class="card-footer">
+                Artıq hesabınız var? <a href="/app">Daxil olun</a>
+            </p>
+        </section>
+    </main>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    /* Where the user lands after a successful registration.
+       '/app' is the existing, already-working CV workspace. */
+    var APP_URL = '/app';
+
+    /* ===================================================================
+     * Background: chaotic drifting Azerbaijani letters & words
+     * =================================================================== */
+    var CHARS = ['ə', 'ı', 'ö', 'ü', 'ç', 'ş', 'ğ', 'A', 'B', 'C', 'Ç', 'D',
+                 'E', 'Ə', 'G', 'Ğ', 'H', 'X', 'I', 'İ', 'K', 'Q', 'L', 'M',
+                 'N', 'O', 'Ö', 'S', 'Ş', 'T', 'U', 'Ü', 'Y', 'Z'];
+    var WORDS = ['Salam', 'Təşəkkür', 'Öyrən', 'İşarə', 'Dil',
+                 'Ünsiyyət', 'Danış', 'Mənimsə'];
+
+    var canvas = document.getElementById('letter-field');
+    var ctx = canvas.getContext('2d');
+    var reduceMotion = window.matchMedia &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var particles = [];
+    var width = 0, height = 0, dpr = 1;
+
+    function rand(min, max) { return min + Math.random() * (max - min); }
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    function makeParticle(seeded) {
+        var isWord = Math.random() < 0.3;
+        var size = isWord ? rand(15, 30) : rand(18, 54);
+        return {
+            text: isWord ? pick(WORDS) : pick(CHARS),
+            x: seeded ? rand(0, width) : rand(-80, width + 80),
+            y: seeded ? rand(0, height) : rand(-80, height + 80),
+            size: size,
+            /* independent drift in a random direction */
+            vx: rand(-0.34, 0.34),
+            vy: rand(-0.34, 0.34),
+            angle: rand(-Math.PI, Math.PI),
+            spin: rand(-0.0022, 0.0022),
+            baseAlpha: isWord ? rand(0.05, 0.11) : rand(0.05, 0.14),
+            pulseAmp: rand(0.25, 0.6),
+            pulseSpeed: rand(0.00035, 0.0011),
+            pulsePhase: rand(0, Math.PI * 2),
+            hue: Math.random() < 0.68 ? 'cyan' : 'yellow',
+            weight: isWord ? 600 : 500
+        };
+    }
+
+    function particleCount() {
+        var area = width * height;
+        return Math.max(26, Math.min(88, Math.round(area / 15000)));
+    }
+
+    function resize() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        var target = particleCount();
+        while (particles.length < target) particles.push(makeParticle(true));
+        if (particles.length > target) particles.length = target;
+    }
+
+    function wrap(p) {
+        var pad = 120;
+        if (p.x < -pad) p.x = width + pad;
+        else if (p.x > width + pad) p.x = -pad;
+        if (p.y < -pad) p.y = height + pad;
+        else if (p.y > height + pad) p.y = -pad;
+    }
+
+    function draw(now) {
+        ctx.clearRect(0, 0, width, height);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        for (var i = 0; i < particles.length; i++) {
+            var p = particles[i];
+
+            if (!reduceMotion) {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.angle += p.spin;
+                wrap(p);
+            }
+
+            var pulse = 1 + p.pulseAmp * Math.sin(now * p.pulseSpeed + p.pulsePhase);
+            var alpha = Math.max(0, p.baseAlpha * pulse);
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.angle);
+            ctx.font = p.weight + ' ' + p.size.toFixed(1) + "px 'Segoe UI', Tahoma, sans-serif";
+            ctx.fillStyle = p.hue === 'cyan'
+                ? 'rgba(160, 255, 255, ' + alpha.toFixed(3) + ')'
+                : 'rgba(255, 204, 0, ' + alpha.toFixed(3) + ')';
+            ctx.fillText(p.text, 0, 0);
+            ctx.restore();
+        }
+    }
+
+    var rafId = null;
+    function loop(now) {
+        draw(now);
+        rafId = window.requestAnimationFrame(loop);
+    }
+
+    function start() {
+        if (rafId === null) rafId = window.requestAnimationFrame(loop);
+    }
+    function stop() {
+        if (rafId !== null) {
+            window.cancelAnimationFrame(rafId);
+            rafId = null;
+        }
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+    document.addEventListener('visibilitychange', function () {
+        if (document.hidden) stop(); else start();
+    });
+    start();
+
+    /* ===================================================================
+     * Registration form: client-side validation + redirect
+     * =================================================================== */
+    var form = document.getElementById('register-form');
+    var card = document.getElementById('register-card');
+    var submitBtn = document.getElementById('submit-btn');
+
+    var fields = {
+        name:     { wrap: document.getElementById('field-name'),     input: document.getElementById('fullname') },
+        email:    { wrap: document.getElementById('field-email'),    input: document.getElementById('email') },
+        password: { wrap: document.getElementById('field-password'), input: document.getElementById('password') },
+        confirm:  { wrap: document.getElementById('field-confirm'),  input: document.getElementById('confirm') }
+    };
+
+    var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+    function setError(key, message) {
+        var f = fields[key];
+        f.wrap.classList.add('invalid');
+        f.input.setAttribute('aria-invalid', 'true');
+        if (message) {
+            f.wrap.querySelector('.field-error').textContent = message;
+        }
+    }
+
+    function clearError(key) {
+        var f = fields[key];
+        f.wrap.classList.remove('invalid');
+        f.input.removeAttribute('aria-invalid');
+    }
+
+    function validate() {
+        var firstInvalid = null;
+
+        var name = fields.name.input.value.trim();
+        if (name.length < 2) {
+            setError('name', 'Ad və Soyad daxil edilməlidir.');
+            firstInvalid = firstInvalid || fields.name.input;
+        } else {
+            clearError('name');
+        }
+
+        var email = fields.email.input.value.trim();
+        if (!EMAIL_RE.test(email)) {
+            setError('email', 'Düzgün e-poçt ünvanı daxil edin.');
+            firstInvalid = firstInvalid || fields.email.input;
+        } else {
+            clearError('email');
+        }
+
+        var password = fields.password.input.value;
+        if (password.length < 6) {
+            setError('password', 'Şifrə ən azı 6 simvoldan ibarət olmalıdır.');
+            firstInvalid = firstInvalid || fields.password.input;
+        } else {
+            clearError('password');
+        }
+
+        var confirm = fields.confirm.input.value;
+        if (confirm.length === 0) {
+            setError('confirm', 'Şifrənin təsdiqi daxil edilməlidir.');
+            firstInvalid = firstInvalid || fields.confirm.input;
+        } else if (confirm !== password) {
+            setError('confirm', 'Şifrələr uyğun gəlmir.');
+            firstInvalid = firstInvalid || fields.confirm.input;
+        } else {
+            clearError('confirm');
+        }
+
+        return firstInvalid;
+    }
+
+    /* Re-validate a touched field once the user starts fixing it. */
+    Object.keys(fields).forEach(function (key) {
+        fields[key].input.addEventListener('input', function () {
+            if (fields[key].wrap.classList.contains('invalid')) validate();
+        });
+    });
+
+    form.addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        var firstInvalid = validate();
+        if (firstInvalid) {
+            firstInvalid.focus();
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.querySelector('span').textContent = 'Yönləndirilir...';
+
+        /* Fade the card out, then hand off to the existing app view. */
+        card.classList.add('submitting');
+        window.setTimeout(function () {
+            window.location.href = APP_URL;
+        }, reduceMotion ? 0 : 420);
+    });
+})();
+</script>
+
+</body>
+</html>
