@@ -1,0 +1,43 @@
+# What NOT to upload to Cloud Build when running `gcloud run deploy --source .`
+# (without this file gcloud falls back to .gitignore, which would still upload
+# the on-disk node_modules — 3000+ files.)
+#
+# Keep: src/, the model files under outputs/vocabulary_24_cap50/,
+#       src/models/hand_landmarker.task, Dockerfile, requirements*.txt
+
+.git/
+.github/
+node_modules/
+dist/
+data/
+dataset/
+docs/
+tests/
+.venv/
+venv/
+**/__pycache__/
+*.pyc
+
+# secrets / local-only
+.env
+.env.local
+valus.txt
+values.txt
+secrets.txt
+creds.txt
+
+# other platforms
+api/
+vercel.json
+.vercelignore
+fly.toml
+render.yaml
+
+# training artefacts we don't serve (the production checkpoint IS kept)
+outputs/error_analysis/
+outputs/reports/
+outputs/vocabulary_analysis/
+outputs/vocabulary_24_cap50/train/
+outputs/vocabulary_24_cap50/val/
+outputs/vocabulary_24_cap50/test/
+outputs/vocabulary_24_cap50/training/

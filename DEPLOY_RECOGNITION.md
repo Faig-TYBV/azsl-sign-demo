@@ -45,7 +45,7 @@ memory fits.
 
 | | Free? | CPU | Verdict |
 | --- | --- | --- | --- |
-| **Google Cloud Run** | ✅ within free tier | 1–2 vCPU while serving | Best free option. Scales to zero, so a demo stays inside the monthly allowance. ~30–60 s cold start. |
+| **Google Cloud Run** | ✅ within free tier | 1 vCPU while serving | **Best free option — walkthrough in [DEPLOY_CLOUDRUN.md](DEPLOY_CLOUDRUN.md).** Scales to zero, so a demo stays inside the monthly allowance. ~30–60 s cold start. |
 | **Fly.io** | ❌ ~$4–7/mo at 512 MB–1 GB | 1 shared vCPU | Most reliable. `auto_stop_machines="suspend"` resumes in seconds, and scale-to-zero means you pay for very little. |
 | **Render free** | ✅ | **0.1 CPU** | Memory fits, CPU does not — real-time video will crawl. Not recommended. |
 | **Render Starter** | ❌ ~$7/mo | 0.5 CPU | Workable but weaker than Fly for the same money. |
