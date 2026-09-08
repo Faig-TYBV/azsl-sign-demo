@@ -1,0 +1,36 @@
+# Keep the image small. The recognition backend needs src/, the model files
+# under outputs/vocabulary_24_cap50/, and src/models/hand_landmarker.task.
+.git/
+.github/
+node_modules/
+dist/
+data/
+dataset/
+docs/
+tests/
+.venv/
+venv/
+**/__pycache__/
+*.pyc
+
+# secrets / local-only
+.env
+.env.local
+valus.txt
+values.txt
+secrets.txt
+creds.txt
+
+# Vercel-only
+api/
+vercel.json
+.vercelignore
+
+# training artefacts we don't serve (the production checkpoint is kept)
+outputs/error_analysis/
+outputs/reports/
+outputs/vocabulary_analysis/
+outputs/vocabulary_24_cap50/train/
+outputs/vocabulary_24_cap50/val/
+outputs/vocabulary_24_cap50/test/
+outputs/vocabulary_24_cap50/training/

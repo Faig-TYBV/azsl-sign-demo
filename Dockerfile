@@ -1,0 +1,30 @@
+# Recognition backend (src/web_demo/backend.py) — for Render / Fly / any
+# container host. This is the full app: MediaPipe + the GRU model + the /ws
+# WebSocket, plus the same pages and auth API the Vercel deploy serves.
+FROM python:3.12-slim
+
+# MediaPipe pulls opencv-contrib-python, which needs these even headless.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libgl1 \
+        libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt requirements-recognition.txt ./
+
+# Install the CPU-only torch wheel first (the default PyPI build bundles CUDA
+# and is several GB — far too big and completely unused here).
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu "torch>=2.3.0" \
+ && pip install --no-cache-dir -r requirements.txt -r requirements-recognition.txt
+
+COPY . .
+
+# Azerbaijani text in the log lines needs UTF-8 stdout.
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONUTF8=1 \
+    PORT=8000
+
+EXPOSE 8000
+
+CMD ["sh", "-c", "python -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port ${PORT}"]

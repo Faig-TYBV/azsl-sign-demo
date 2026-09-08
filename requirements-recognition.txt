@@ -6,7 +6,7 @@
 #
 uvicorn[standard]>=0.30.0
 websockets>=12.0
-opencv-python>=4.9.0        # on a headless server, swap for opencv-python-headless
+opencv-python-headless>=4.9.0   # headless: no GUI libs needed on a server
 mediapipe>=0.10.11
 torch>=2.3.0
 numpy>=1.26.0

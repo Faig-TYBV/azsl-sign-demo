@@ -54,7 +54,7 @@ from src.inference.alphabet_classifier import AlphabetClassifier, AlphabetStabil
 from src.data.normalization import FeatureNormalizer
 from src.inference.predict import get_device
 from src.web_demo import db as auth_db
-from src.web_demo.webapp import build_web_layer
+from src.web_demo.webapp import build_web_layer, verify_ws_token
 
 app = FastAPI(title="AzSLD Web Demo Backend")
 
@@ -239,9 +239,14 @@ async def startup_event():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    # SessionMiddleware also populates websocket.session — reject anonymous
-    # sockets so the recognition stream matches the gated /app page.
-    if websocket.session.get("uid") is None:
+    # Two ways in, so the socket is gated like the /app page either way:
+    #   * same origin  -> SessionMiddleware populates websocket.session
+    #   * cross origin -> ?token=... signed by the page's origin with the same
+    #                     SESSION_SECRET (cookies can't cross domains)
+    uid = websocket.session.get("uid")
+    if uid is None:
+        uid = verify_ws_token(websocket.query_params.get("token", ""))
+    if uid is None:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 

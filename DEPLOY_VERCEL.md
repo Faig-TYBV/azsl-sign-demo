@@ -72,17 +72,18 @@ Push to `main` (or click **Deploy**). Then check:
 | `.python-version` | pins Python 3.12 |
 | `src/web_demo/webapp.py` | the shared ML-free web layer (`backend.py` uses it too) |
 
-## Recognition backend (optional, separate host)
+## Recognition backend (separate host)
 
-`src/web_demo/backend.py` is the full app. On Fly.io / Render / Railway:
+To get camera recognition working too, run `src/web_demo/backend.py` on a
+container host and set `RECOGNITION_WS_URL` here.
 
-```
-pip install -r requirements.txt -r requirements-recognition.txt   # web + ML stack
-python -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port $PORT
-```
+**See [DEPLOY_RENDER.md](DEPLOY_RENDER.md)** for the full Vercel + Render walkthrough.
 
-Set the same `DATABASE_URL` / `SESSION_SECRET` there, then put that host's URL in
-Vercel's `RECOGNITION_WS_URL` as `wss://<host>` (no path). Both origins share the
-session cookie only if they're the same site; otherwise the recognition socket
-still connects but is treated as unauthenticated — for a single-origin setup,
-host the whole `backend.py` on the container platform and skip Vercel.
+Short version: the repo `Dockerfile` builds the recognition backend; give it the
+same `DATABASE_URL` and the **identical** `SESSION_SECRET`, then set
+`RECOGNITION_WS_URL=wss://<that-host>` on Vercel and redeploy.
+
+The session cookie cannot cross origins, so the page fetches a short-lived
+signed token from `GET /api/ws-token` and passes it on the socket URL; the
+recognition backend verifies it with the shared `SESSION_SECRET`. Same-origin
+deployments keep using the cookie and never touch that path.

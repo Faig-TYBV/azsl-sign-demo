@@ -1,0 +1,24 @@
+# Render blueprint for the recognition backend.
+# Render Dashboard -> New -> Blueprint -> point at this repo.
+#
+# NOTE ON PLAN: torch + MediaPipe + the GRU model need roughly 700 MB-1 GB
+# resident. The free plan (512 MB) will OOM, and it also spins down after 15
+# minutes idle (~1 min cold start). "standard" (2 GB) is the first plan that
+# comfortably fits; "starter" (512 MB) is likely to be killed.
+services:
+  - type: web
+    name: azsl-recognition
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: standard
+    region: frankfurt
+    healthCheckPath: /login
+    envVars:
+      # Same Neon database as Vercel.
+      - key: DATABASE_URL
+        sync: false
+      # MUST match the Vercel value — it verifies the /ws tokens Vercel issues.
+      - key: SESSION_SECRET
+        sync: false
+      - key: SESSION_COOKIE_SECURE
+        value: "1"

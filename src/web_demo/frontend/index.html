@@ -1237,10 +1237,29 @@ function handleAlphabetBackendResponse(data) {
 const AZSL_CONFIG = window.__AZSL_CONFIG__ || { recognitionWsUrl: '' };
 let recognitionOffline = false;
 
-function recognitionWsEndpoint() {
+// Builds the socket URL. For a separate recognition backend (Vercel pages +
+// Render /ws) the session cookie cannot cross origins, so we first ask our own
+// origin for a short-lived signed token and pass it on the URL.
+async function recognitionWsEndpoint() {
     const base = AZSL_CONFIG.recognitionWsUrl;
     if (base === null || base === undefined) return null;
-    if (base) return base.replace(/\/+$/, '') + '/ws';
+
+    if (base) {
+        let token = null;
+        try {
+            const r = await fetch('/api/ws-token', { credentials: 'same-origin' });
+            if (r.ok) token = (await r.json()).token;
+        } catch (e) {
+            console.error('ws-token fetch failed', e);
+        }
+        if (!token) {
+            setStatus('Sessiya doğrulanmadı. Zəhmət olmasa yenidən daxil olun.');
+            return null;
+        }
+        return base.replace(/\/+$/, '').replace(/^http/, 'ws') +
+               '/ws?token=' + encodeURIComponent(token);
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     return `${protocol}//${window.location.host}/ws`;
 }
@@ -1283,11 +1302,20 @@ function applyRecognitionOfflineUI() {
     });
 }
 
-function initWebSocket() {
-    const wsUrl = recognitionWsEndpoint();
-    if (!wsUrl) {
+async function initWebSocket() {
+    const configured = AZSL_CONFIG.recognitionWsUrl;
+    if (configured === null || configured === undefined) {
+        // No recognition backend at all (Vercel-only deploy).
         recognitionOffline = true;
         applyRecognitionOfflineUI();
+        return;
+    }
+
+    const wsUrl = await recognitionWsEndpoint();
+    if (!wsUrl) {
+        // Backend is configured but we couldn't get a token — transient;
+        // recognitionOffline stays false so the retry loop can recover.
+        setTimeout(initWebSocket, 5000);
         return;
     }
     ws = new WebSocket(wsUrl);

@@ -21,6 +21,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from pydantic import BaseModel, EmailStr, field_validator
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -38,6 +39,43 @@ RECOGNITION_WS_URL = os.getenv("RECOGNITION_WS_URL", "").strip()
 # Set by build_web_layer(): the value injected into index.html as
 # window.__AZSL_CONFIG__.recognitionWsUrl  ("" | "<url>" | None).
 _injected_ws_url: str | None = None
+
+
+# --------------------------------------------------------------------------- #
+# Cross-origin WebSocket auth
+#
+# When the recognition backend lives on another host (Vercel pages + Render
+# /ws), the browser will NOT send the azsl_session cookie to that origin — the
+# two are different registrable domains, so no shared cookie is possible. The
+# page therefore asks its own origin for a short-lived signed token and passes
+# it on the socket URL; the recognition backend verifies it with the same
+# SESSION_SECRET. Same-origin deployments keep using the cookie and never touch
+# this path.
+# --------------------------------------------------------------------------- #
+WS_TOKEN_SALT = "azsl-ws-token"
+WS_TOKEN_MAX_AGE = 120  # seconds — only has to survive page-load -> connect
+
+
+def _ws_serializer() -> URLSafeTimedSerializer:
+    return URLSafeTimedSerializer(
+        os.getenv("SESSION_SECRET", "dev-insecure-secret-set-SESSION_SECRET"),
+        salt=WS_TOKEN_SALT,
+    )
+
+
+def issue_ws_token(user_id: int) -> str:
+    return _ws_serializer().dumps({"uid": int(user_id)})
+
+
+def verify_ws_token(token: str):
+    """Return the user id encoded in a valid, unexpired token, else None."""
+    if not token:
+        return None
+    try:
+        data = _ws_serializer().loads(token, max_age=WS_TOKEN_MAX_AGE)
+        return int(data["uid"])
+    except (BadSignature, SignatureExpired, KeyError, TypeError, ValueError):
+        return None
 
 
 # --------------------------------------------------------------------------- #
@@ -198,6 +236,13 @@ async def api_logout(request: Request):
 @api_router.get("/me")
 async def api_me(user=Depends(require_user)):
     return {"user": user.public_dict()}
+
+
+@api_router.get("/ws-token")
+async def api_ws_token(user=Depends(require_user)):
+    """Short-lived token so a cross-origin recognition backend can authenticate
+    this signed-in user (cookies don't cross origins)."""
+    return {"token": issue_ws_token(user.id), "expires_in": WS_TOKEN_MAX_AGE}
 
 
 page_router = APIRouter(tags=["pages"])
