@@ -239,7 +239,7 @@ Open the Vercel URL and sign in:
 | "Sessiya doğrulanmadı" | `/api/ws-token` returned 401 — not logged in on Vercel |
 | First connect hangs | cold start (Render ~60 s; Fly ~1–3 s suspended, ~20 s stopped) |
 | Logs show `Killed` / OOM | instance too small — needs ~300 MB idle plus ~50 MB per viewer |
-| `libGL.so.1: cannot open shared object file` | not using the repo `Dockerfile` (it installs `libgl1`) |
+| `libEGL.so.1` / `libGL.so.1: cannot open shared object file` | MediaPipe needs a graphics stack even in CPU mode. The repo `Dockerfile` installs libgl1, libegl1, libgles2, libglib2.0-0, libsm6, libxext6, libxrender1 — make sure you are building from it. |
 
 ## Note: local development never uses any of this
 
