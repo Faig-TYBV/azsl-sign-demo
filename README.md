@@ -130,21 +130,31 @@ The trained models are committed — nothing to download.
 
 ## Running the Web Demo
 
-Launch the production FastAPI backend:
+This is a Python project — there is no `npm run dev`.
 
-```powershell
-.\.venv\Scripts\python.exe -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port 8000
+**Full app** (pages, auth and camera recognition):
+
+```bash
+py -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port 8000
 ```
 
 Once the console displays:
 ```text
-Loading Experiment 8 word model and normalizer...
-Experiment 8 model (24 classes) and normalizer loaded successfully on cuda
-Loading alphabet classifier...
+Experiment 8 model (24 classes) and normalizer loaded successfully on cpu
 Alphabet classifier loaded successfully.
+Auth database ready (PostgreSQL).
 WebSocket backend started.
 Uvicorn running on http://0.0.0.0:8000
 ```
+
+**Light mode** (pages + auth only, no torch/MediaPipe, starts in ~2 s — needs
+only `requirements.txt`):
+
+```bash
+py -m uvicorn api.index:app --host 0.0.0.0 --port 8000
+```
+
+See [SETUP.md](SETUP.md) for `.env` and database setup.
 
 Open `http://localhost:8000` in your web browser (Chrome, Edge, or Safari).
 

@@ -27,16 +27,22 @@ pip install -r requirements.txt -r requirements-recognition.txt
 - `requirements.txt` — web layer + auth (small)
 - `requirements-recognition.txt` — torch, MediaPipe, OpenCV (large, ~10 min)
 
-## 3. A PostgreSQL database
+## 3. A database
+
+> **Sharing a `localhost` password does not work.** `localhost:5432` on your
+> teammate's machine is *their* Postgres, not yours — your local database is not
+> reachable from another computer. Share the **Neon** URL instead, or have each
+> person run their own local Postgres with their own password.
 
 Pick one:
 
-**a) Share the team's cloud database (easiest).** Ask Faiq for the Neon
-`DATABASE_URL`. Everyone then shares one set of accounts.
+**a) Shared Neon database — recommended, nothing to install.**
+Ask Faiq for the `DATABASE_URL`. Everyone shares one set of accounts, and there
+is no PostgreSQL to set up locally.
 
-**b) Your own local Postgres.** Install PostgreSQL, then the app creates the
-database and the `users` table on first start — you only need the server running
-and the password right.
+**b) Your own local Postgres.** Install PostgreSQL and use your own password.
+The app creates the database and the `users` table on first start. Your accounts
+are then separate from everyone else's.
 
 ## 4. Create `.env`
 
@@ -66,20 +72,42 @@ py -c "import secrets; print(secrets.token_hex(32))"
 
 ## 5. Run
 
+**This is a Python project — there is no `npm run dev`.** (The old Vite frontend
+was removed; the pages are static HTML served by FastAPI.)
+
+### Full app — pages, auth *and* camera recognition
+
 ```bash
 py -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port 8000
 ```
 
-Open **http://localhost:8000**. Register, log in, start the camera. One process
-serves the pages, the auth API and the `/ws` recognition socket on the same
-origin — no tunnel or token needed locally.
-
-You should see:
+Takes ~15 s to start (loading torch + MediaPipe + the GRU model). You should see:
 
 ```
 Auth database ready (PostgreSQL).
 WebSocket backend started.
 ```
+
+### Light mode — pages and auth only, no ML
+
+If you are only working on the HTML/CSS/JS or the login flow, run the web layer
+on its own:
+
+```bash
+py -m uvicorn api.index:app --host 0.0.0.0 --port 8000
+```
+
+Starts in ~2 s, and needs **only `requirements.txt`** — you can skip the ~10
+minute `requirements-recognition.txt` install entirely. The workspace page loads
+and shows a "recognition offline" notice; everything else works normally.
+
+Either way, open **http://localhost:8000**.
+
+### Or: don't run it locally at all
+
+Pushing to `main` redeploys https://azsl-sign-demo.onrender.com automatically.
+That's fine for an occasional check, but each rebuild takes ~5-10 minutes, so
+it's a poor edit-test loop. Run locally while developing.
 
 ---
 
