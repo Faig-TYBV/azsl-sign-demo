@@ -32,6 +32,7 @@ primary_region = "fra"          # Frankfurt — closest to Azerbaijan
 
 [[vm]]
   size = "shared-cpu-1x"
-  # torch + MediaPipe + the GRU model need ~700 MB-1 GB resident.
-  # 1gb is tight; 2gb is safe.
-  memory = "2gb"
+  # Measured on this app: 298 MB idle (model loaded), +~50 MB per concurrent
+  # viewer — so ~450 MB with 3 people connected. 1gb leaves comfortable room;
+  # bump to 2gb only if you expect more than ~10 at once.
+  memory = "1gb"

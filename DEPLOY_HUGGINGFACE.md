@@ -1,5 +1,10 @@
 # Deploy the whole app to Hugging Face Spaces (free)
 
+> **⚠️ Out of date:** Hugging Face now requires a PRO subscription for Docker
+> Spaces; only Static Spaces are free. This guide no longer describes a free
+> deployment. See [DEPLOY_RECOGNITION.md](DEPLOY_RECOGNITION.md) for the current
+> options.
+
 This is the simplest working deployment: **one Space runs everything** — landing
 page, registration, login, *and* the recognition WebSocket. Same origin, so the
 session cookie just works and none of the cross-origin token machinery is

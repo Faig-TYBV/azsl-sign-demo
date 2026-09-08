@@ -23,23 +23,35 @@ the socket URL. The recognition backend verifies it with the same
 `SESSION_SECRET`. **Both hosts must have a byte-identical `SESSION_SECRET`** or
 every connection is closed with code 1008.
 
+## What this app actually needs
+
+Measured on the real thing, not estimated:
+
+| | RSS |
+| --- | --- |
+| Idle, model loaded | **298 MB** |
+| + 1 concurrent viewer | 361 MB |
+| + 2 viewers | 406 MB |
+| + 3 viewers | 452 MB |
+
+So roughly **300 MB + ~50 MB per concurrent viewer**. A 512 MB instance holds
+3–4 people; 1 GB is comfortable.
+
+**CPU matters more than RAM here.** Every frame is a JPEG decode plus a MediaPipe
+landmark pass at ~15 fps, so a fractional-CPU instance can't keep up even if the
+memory fits.
+
 ## Which host?
 
-torch + MediaPipe + the GRU model need roughly **700 MB–1 GB resident**, so the
-512 MB tiers on either platform get OOM-killed.
+| | Free? | CPU | Verdict |
+| --- | --- | --- | --- |
+| **Google Cloud Run** | ✅ within free tier | 1–2 vCPU while serving | Best free option. Scales to zero, so a demo stays inside the monthly allowance. ~30–60 s cold start. |
+| **Fly.io** | ❌ ~$4–7/mo at 512 MB–1 GB | 1 shared vCPU | Most reliable. `auto_stop_machines="suspend"` resumes in seconds, and scale-to-zero means you pay for very little. |
+| **Render free** | ✅ | **0.1 CPU** | Memory fits, CPU does not — real-time video will crawl. Not recommended. |
+| **Render Starter** | ❌ ~$7/mo | 0.5 CPU | Workable but weaker than Fly for the same money. |
+| **HF Spaces** | ❌ | — | Docker Spaces now require PRO; only Static Spaces are free. |
 
-| | Fly.io | Render |
-| --- | --- | --- |
-| 2 GB, always on | ~$11/mo | ~$25/mo (Standard) |
-| Scale to zero when idle | ✅ `auto_stop_machines` | ❌ (free tier spins down, but 512 MB won't fit) |
-| Cold start | ~1–3 s with `suspend` (RAM snapshot) | ~60 s |
-| Config in repo | `fly.toml` | `render.yaml` |
-
-If you do want a host, **Fly is the better fit** — cheaper, and `auto_stop_machines = "suspend"`
-snapshots RAM so a resume skips the ~15 s torch/MediaPipe load. For a demo used
-occasionally you pay for very little running time.
-
-*(Prices are approximate — check current pricing before committing.)*
+*(Prices and free-tier limits change — check current pricing before committing.)*
 
 ---
 
@@ -77,7 +89,7 @@ fly status
 If `azsl-recognition` is taken, `fly launch` will offer another name — update
 `app =` in `fly.toml` to match.
 
-# Option B — Render
+# Option B — Render (Starter or above; free tier CPU is too weak)
 
 **Dashboard → New → Web Service → connect `Faig-TYBV/azsl-sign-demo`.**
 
@@ -85,7 +97,7 @@ If `azsl-recognition` is taken, `fly launch` will offer another name — update
 | --- | --- |
 | Runtime | **Docker** (picks up the repo `Dockerfile`) |
 | Region | Frankfurt |
-| Instance type | **Standard (2 GB)** — Free/Starter are 512 MB and will be OOM-killed |
+| Instance type | **Starter or above** — the free tier is 0.1 CPU and cannot keep up with 15 fps video |
 | Health check path | `/login` |
 
 Environment variables: `DATABASE_URL` (same Neon string), `SESSION_SECRET`
@@ -184,7 +196,7 @@ Open the Vercel URL and sign in:
 | WS closes immediately, code **1008** | `SESSION_SECRET` differs between the two hosts |
 | "Sessiya doğrulanmadı" | `/api/ws-token` returned 401 — not logged in on Vercel |
 | First connect hangs | cold start (Render ~60 s; Fly ~1–3 s suspended, ~20 s stopped) |
-| Logs show `Killed` / OOM | instance too small — needs ~1 GB, use 2 GB |
+| Logs show `Killed` / OOM | instance too small — needs ~300 MB idle plus ~50 MB per viewer |
 | `libGL.so.1: cannot open shared object file` | not using the repo `Dockerfile` (it installs `libgl1`) |
 
 ## Note: local development never uses any of this
