@@ -1,16 +1,16 @@
 # Render blueprint for the recognition backend.
 # Render Dashboard -> New -> Blueprint -> point at this repo.
 #
-# NOTE ON PLAN: torch + MediaPipe + the GRU model need roughly 700 MB-1 GB
-# resident. The free plan (512 MB) will OOM, and it also spins down after 15
-# minutes idle (~1 min cold start). "standard" (2 GB) is the first plan that
-# comfortably fits; "starter" (512 MB) is likely to be killed.
+# PLAN: measured need is ~300 MB idle + ~50 MB per concurrent viewer, so the
+# free plan's 512 MB fits 3-4 people. Its 0.1 CPU caps throughput at ~8 fps
+# (a 26-frame word trial takes ~3.3 s instead of ~1.7 s) and it sleeps after
+# 15 minutes idle (~50 s cold start). Upgrade to "starter" to lift the fps cap.
 services:
   - type: web
     name: azsl-recognition
     runtime: docker
     dockerfilePath: ./Dockerfile
-    plan: standard
+    plan: free
     region: frankfurt
     healthCheckPath: /login
     envVars:

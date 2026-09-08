@@ -1138,7 +1138,10 @@ let captureCanvas = null;
 let captureCtx = null;
 const CAPTURE_WIDTH = 480;
 const CAPTURE_HEIGHT = 360;
-const FRAME_INTERVAL_MS = 66; // ~15 fps, fast real-time responsiveness
+const FRAME_INTERVAL_MS = 66; // ceiling (~15 fps); actual rate self-paces to the backend
+const FRAME_INFLIGHT_TIMEOUT_MS = 2000; // give up waiting on a reply after this
+let frameInFlight = false;
+let frameInFlightSince = 0;
 const FRAME_LOG_INTERVAL = 30; // log every N sent frames
 // DOM elements
 const video = document.getElementById('video');
@@ -1348,6 +1351,9 @@ async function initWebSocket() {
     };
 
     ws.onmessage = (event) => {
+        // Every server message is a reply to the frame we sent — release the
+        // in-flight lock so the next one can go out.
+        frameInFlight = false;
         try {
             const data = JSON.parse(event.data);
 
@@ -1519,6 +1525,7 @@ async function initWebSocket() {
 
     ws.onclose = () => {
         console.log('WebSocket disconnected');
+        frameInFlight = false;   // a reconnect must not inherit a stale lock
         updateModelStatus('Not Loaded');
         if (isStreaming && !recognitionOffline) {
             setStatus('Bağlantı kəsildi. Yenidən qoşulmağa çalışılır...');
@@ -1645,6 +1652,19 @@ function startFrameLoop() {
         if (!ws || ws.readyState !== WebSocket.OPEN) {
             return;
         }
+
+        // Self-pacing: never have more than one frame in flight. On a slow
+        // instance (e.g. a 0.1-CPU free tier) a fixed 15 fps timer would queue
+        // frames faster than they're processed and latency would grow without
+        // bound. Waiting for the previous reply makes the send rate track
+        // whatever the backend can actually manage. FRAME_INTERVAL_MS is now a
+        // ceiling rather than a fixed rate.
+        if (frameInFlight) {
+            if (performance.now() - frameInFlightSince < FRAME_INFLIGHT_TIMEOUT_MS) return;
+            frameInFlight = false;   // reply lost — don't stall forever
+        }
+        frameInFlight = true;
+        frameInFlightSince = performance.now();
 
         captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
         const dataUrl = captureCanvas.toDataURL('image/jpeg', 0.7);

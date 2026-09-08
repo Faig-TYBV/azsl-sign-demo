@@ -37,19 +37,32 @@ Measured on the real thing, not estimated:
 So roughly **300 MB + ~50 MB per concurrent viewer**. A 512 MB instance holds
 3–4 people; 1 GB is comfortable.
 
-**CPU matters more than RAM here.** Every frame is a JPEG decode plus a MediaPipe
-landmark pass at ~15 fps, so a fractional-CPU instance can't keep up even if the
-memory fits.
+**CPU is the real limit, not RAM.** Every frame is a JPEG decode plus a MediaPipe
+landmark pass, so a fractional-CPU instance simply runs at fewer frames per
+second — it still works, just slower.
 
 ## Which host?
 
-| | Free? | CPU | Verdict |
-| --- | --- | --- | --- |
-| **Google Cloud Run** | ✅ within free tier | 1 vCPU while serving | **Best free option — walkthrough in [DEPLOY_CLOUDRUN.md](DEPLOY_CLOUDRUN.md).** Scales to zero, so a demo stays inside the monthly allowance. ~30–60 s cold start. |
-| **Fly.io** | ❌ ~$4–7/mo at 512 MB–1 GB | 1 shared vCPU | Most reliable. `auto_stop_machines="suspend"` resumes in seconds, and scale-to-zero means you pay for very little. |
-| **Render free** | ✅ | **0.1 CPU** | Memory fits, CPU does not — real-time video will crawl. Not recommended. |
-| **Render Starter** | ❌ ~$7/mo | 0.5 CPU | Workable but weaker than Fly for the same money. |
-| **HF Spaces** | ❌ | — | Docker Spaces now require PRO; only Static Spaces are free. |
+A frame costs **12.3 ms** of CPU (JPEG decode + MediaPipe), measured. At 15 fps
+that's ~18% of one core.
+
+| | Free? | Card needed? | CPU | Verdict |
+| --- | --- | --- | --- | --- |
+| **Render free** | ✅ | **No** | 0.1 → **~8 fps** | **Start here.** Degraded but working, and the only option that needs no card. 512 MB fits 3–4 viewers. Sleeps after 15 min (~50 s cold start). |
+| **Google Cloud Run** | ✅ within free tier | **Yes** (~$50 hold) | 1 vCPU | Better performance, but the card hold is a blocker for many. [DEPLOY_CLOUDRUN.md](DEPLOY_CLOUDRUN.md) |
+| **Fly.io** | ❌ ~$4–7/mo | Yes | 1 shared vCPU | Most reliable; `suspend` resumes in seconds. |
+| **Render Starter** | ❌ ~$7/mo | Yes | 0.5 CPU | Removes the fps limit without changing anything else. |
+| **HF Spaces** | ❌ | Yes | — | Docker Spaces now require PRO. |
+
+On a 0.1-CPU instance a 26-frame word trial takes ~3.3 s instead of ~1.7 s. The
+frontend self-paces (one frame in flight at a time), so a slow backend degrades
+the frame rate instead of building an ever-growing queue.
+
+> **Want it fast on a free tier?** The real fix is to run MediaPipe in the
+> browser and send landmarks (~500 bytes) instead of JPEG frames, leaving the
+> server with just the 203 K-parameter GRU. That drops per-frame server cost
+> from 12.3 ms to well under 1 ms and cuts bandwidth ~40×. It's a real
+> refactor, not a config change — ask if you want it.
 
 *(Prices and free-tier limits change — check current pricing before committing.)*
 
@@ -89,7 +102,7 @@ fly status
 If `azsl-recognition` is taken, `fly launch` will offer another name — update
 `app =` in `fly.toml` to match.
 
-# Option B — Render (Starter or above; free tier CPU is too weak)
+# Option B — Render (free tier works; no credit card)
 
 **Dashboard → New → Web Service → connect `Faig-TYBV/azsl-sign-demo`.**
 
@@ -97,7 +110,7 @@ If `azsl-recognition` is taken, `fly launch` will offer another name — update
 | --- | --- |
 | Runtime | **Docker** (picks up the repo `Dockerfile`) |
 | Region | Frankfurt |
-| Instance type | **Starter or above** — the free tier is 0.1 CPU and cannot keep up with 15 fps video |
+| Instance type | **Free** works (~8 fps, sleeps after 15 min idle). **Starter** removes the fps limit. |
 | Health check path | `/login` |
 
 Environment variables: `DATABASE_URL` (same Neon string), `SESSION_SECRET`
