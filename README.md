@@ -20,6 +20,12 @@ The system runs end-to-end with high responsiveness: browser camera input is str
 
 ---
 
+## Getting started
+
+Clone, create `.env`, install dependencies, run — see **[SETUP.md](SETUP.md)**.
+
+Live demo: https://azsl-sign-demo.onrender.com
+
 ## Key Features
 
 1. **Dual Recognition Modes**:
@@ -110,40 +116,29 @@ The production model is trained under **Experiment 8 (Vocabulary 24, Cap 50)**:
 | **Feature Normalizer** | `outputs/vocabulary_24_cap50/metadata/feature_normalization_stats_24.json` | 126-dim per-dimension mean & std | 6.6 KB |
 | **Dataset Split** | `outputs/vocabulary_24_cap50/dataset_split_24_cap50.json` | Official 24-class partition (865 train / 676 val / 676 test) | 160 KB |
 | **Alphabet Model** | `src/web_demo/frontend/models/azsl_hierarchical_model.json` | Weights and scalers for fingerspelling | 476 KB |
-| **MediaPipe Task** | `models/hand_landmarker.task` | Google MediaPipe Hand Landmarker model | 7.46 MB |
+| **MediaPipe Task** | `src/models/hand_landmarker.task` | Google MediaPipe Hand Landmarker model | 7.46 MB |
 
 ---
 
 ## Installation & Setup
 
-### 1. Clone the Repository
+**See [SETUP.md](SETUP.md) for the full walkthrough.** In short:
+
 ```bash
-git clone https://github.com/NurlanAslnzade/Holberton-azsl-word-recognition.git
-cd Holberton-azsl-word-recognition
+git clone https://github.com/Faig-TYBV/azsl-sign-demo.git
+cd azsl-sign-demo
+
+pip install -r requirements.txt -r requirements-recognition.txt
+
+cp .env.example .env      # then edit DATABASE_URL and SESSION_SECRET
 ```
 
-### 2. Create Virtual Environment & Install Dependencies
+> `requirements.txt` is the **web + auth** layer only; the recognition stack
+> (torch, MediaPipe, OpenCV) lives in `requirements-recognition.txt`. Installing
+> only the first will start the server but fail to load the models. The split
+> exists so serverless hosts can install just the small half.
 
-**Windows (PowerShell):**
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
-
-**macOS / Linux:**
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 3. Setup MediaPipe Model (if not present)
-If `models/hand_landmarker.task` is not present, download it from Google's official MediaPipe repository:
-```bash
-mkdir -p models
-curl -o models/hand_landmarker.task -L https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task
-```
+The trained models are committed — nothing to download.
 
 ---
 
