@@ -1357,6 +1357,16 @@ async function initWebSocket() {
         try {
             const data = JSON.parse(event.data);
 
+            // Sent immediately on connect, before the backend builds its
+            // MediaPipe landmarker (slow on a throttled instance). Purely a
+            // keep-alive + progress signal; READY follows.
+            if (data.status === 'CONNECTING') {
+                updateModelStatus('Loading');
+                setStatus(data.message || 'Model hazırlanır...');
+                setLoadingText('Model hazırlanır...');
+                return;
+            }
+
             if (data.error) {
                 console.error('Backend error:', data.error);
                 setStatus('Error: ' + data.error);

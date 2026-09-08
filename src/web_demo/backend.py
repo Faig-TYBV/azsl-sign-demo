@@ -253,15 +253,34 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     print("Client connected", flush=True)
 
+    state = ConnectionState()
+
+    # Greet the client IMMEDIATELY, before doing any slow work. Building the
+    # MediaPipe landmarker costs ~300 ms of CPU, which on a throttled instance
+    # (Render free is 0.1 CPU) becomes seconds of wall time — and doing it first
+    # left the socket silent long enough that the proxy in front of us closed it
+    # as idle (observed: handshake at 0.3 s, killed at 20.3 s with code 1006).
+    await websocket.send_text(json.dumps({
+        "status": "CONNECTING",
+        "message": "Model hazırlanır...",
+    }))
+
+    # ...then build it off the event loop, so the health check and other
+    # sockets stay responsive while this one initialises.
     try:
-        landmarker = create_hand_landmarker(HAND_LANDMARKER_TASK)
+        state.landmarker = await asyncio.to_thread(
+            create_hand_landmarker, HAND_LANDMARKER_TASK
+        )
+        print("Landmarker ready for client", flush=True)
     except FileNotFoundError as e:
         await websocket.send_text(json.dumps({"error": str(e)}))
         await websocket.close()
         return
-
-    state = ConnectionState()
-    state.landmarker = landmarker
+    except Exception as e:  # noqa: BLE001 - surface the reason instead of a bare 1006
+        print(f"[WS] landmarker init failed: {type(e).__name__}: {e}", flush=True)
+        await websocket.send_text(json.dumps({"error": f"landmarker init failed: {e}"}))
+        await websocket.close()
+        return
 
     await websocket.send_text(json.dumps({
         "status": "READY",
