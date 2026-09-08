@@ -1,3 +1,7 @@
+# --- Node / build output (leftovers from the old Vite frontend) ---
+node_modules/
+dist/
+
 # --- Virtual environments ---
 .venv/
 venv/
