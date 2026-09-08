@@ -34,9 +34,11 @@ The app creates the `users` **table** automatically on first request; it does
 ## 2. Import the repo into Vercel
 
 Vercel → **Add New… → Project** → import
-`github.com/murad-2007ML/Holberton_SignLanguage_Project`.
-Framework preset: **Other**. Leave build/output settings empty — `vercel.json`
-handles routing (everything → `api/index.py`).
+`github.com/Faig-TYBV/azsl-sign-demo`.
+Framework preset: **Other**. **Root Directory must be `./`** (if Vercel
+auto-detects FastAPI it will suggest `api` — clear it, or `src/` never gets
+deployed). Leave build/output settings empty — `vercel.json` handles routing
+(everything → `api/index.py`).
 
 ## 3. Environment variables (Project → Settings → Environment Variables)
 
@@ -77,7 +79,7 @@ Push to `main` (or click **Deploy**). Then check:
 To get camera recognition working too, run `src/web_demo/backend.py` on a
 container host and set `RECOGNITION_WS_URL` here.
 
-**See [DEPLOY_RENDER.md](DEPLOY_RENDER.md)** for the full Vercel + Render walkthrough.
+**See [DEPLOY_RECOGNITION.md](DEPLOY_RECOGNITION.md)** for the full walkthrough (Fly.io or Render).
 
 Short version: the repo `Dockerfile` builds the recognition backend; give it the
 same `DATABASE_URL` and the **identical** `SESSION_SECRET`, then set

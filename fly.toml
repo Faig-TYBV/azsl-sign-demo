@@ -1,0 +1,37 @@
+# Fly.io config for the recognition backend (src/web_demo/backend.py).
+# Uses the same Dockerfile as Render.
+#
+#   fly launch --no-deploy --copy-config     # first time (creates the app)
+#   fly secrets set DATABASE_URL='...' SESSION_SECRET='...' SESSION_COOKIE_SECURE=1
+#   fly deploy
+#
+# Rename `app` if that name is taken — it decides your <app>.fly.dev hostname.
+
+app = "azsl-recognition"
+primary_region = "fra"          # Frankfurt — closest to Azerbaijan
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+
+  # Scale to zero when idle. "suspend" snapshots RAM, so a resume takes a couple
+  # of seconds instead of re-loading torch + MediaPipe (~15 s cold boot).
+  # Switch to "stop" if suspend isn't available for this app.
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  # WebSockets are long-lived; don't let an idle /ws be reaped mid-session.
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 50
+    soft_limit = 25
+
+[[vm]]
+  size = "shared-cpu-1x"
+  # torch + MediaPipe + the GRU model need ~700 MB-1 GB resident.
+  # 1gb is tight; 2gb is safe.
+  memory = "2gb"
