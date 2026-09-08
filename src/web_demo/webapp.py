@@ -248,6 +248,19 @@ async def api_ws_token(user=Depends(require_user)):
 page_router = APIRouter(tags=["pages"])
 
 
+@page_router.get("/health")
+async def health():
+    """
+    Liveness only — deliberately touches no database.
+
+    Free hosts sleep after ~15 minutes idle, so this is the endpoint an uptime
+    pinger should hit. Pinging a page route instead would open a DB session on
+    every ping and keep the (also free, also auto-suspending) Postgres awake,
+    burning its compute-hour allowance for nothing.
+    """
+    return {"ok": True}
+
+
 @page_router.get("/")
 async def root():
     return _serve_page("landing.html")

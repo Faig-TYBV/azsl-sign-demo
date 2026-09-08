@@ -111,12 +111,41 @@ If `azsl-recognition` is taken, `fly launch` will offer another name — update
 | Runtime | **Docker** (picks up the repo `Dockerfile`) |
 | Region | Frankfurt |
 | Instance type | **Free** works (~8 fps, sleeps after 15 min idle). **Starter** removes the fps limit. |
-| Health check path | `/login` |
+| Health check path | `/health` (no DB access) |
 
 Environment variables: `DATABASE_URL` (same Neon string), `SESSION_SECRET`
 (identical to Vercel), `SESSION_COOKIE_SECURE=1`.
 
 There's also a `render.yaml` blueprint if you prefer **New → Blueprint**.
+
+## Stopping it from sleeping
+
+A free service spins down after **15 minutes with no requests**. It isn't gone —
+the next request wakes it in **~50 s**, and it stays up while people are using it
+(an open WebSocket counts as traffic). So only the first visitor after a quiet
+spell ever waits.
+
+Two ways to avoid even that:
+
+**a) Warm it up manually.** Open the URL yourself a minute before the demo. Free,
+nothing to set up, and enough for a scheduled meeting.
+
+**b) Keep it awake with an uptime pinger.** Free, no card:
+[cron-job.org](https://cron-job.org) or [UptimeRobot](https://uptimerobot.com) →
+add a monitor for
+
+```
+https://<your-service>.onrender.com/health
+```
+
+every **10 minutes**.
+
+> **Ping `/health`, not `/` or `/login`.** `/health` deliberately touches no
+> database. The page routes open a DB session, which would wake your Neon
+> instance every 10 minutes and burn its free compute-hour allowance for nothing.
+
+Render's free plan includes 750 instance-hours/month and a month is ~730 hours,
+so keeping one service awake continuously does fit — but only one.
 
 ---
 

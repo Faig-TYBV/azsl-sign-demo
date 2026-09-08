@@ -12,7 +12,7 @@ services:
     dockerfilePath: ./Dockerfile
     plan: free
     region: frankfurt
-    healthCheckPath: /login
+    healthCheckPath: /health
     envVars:
       # Same Neon database as Vercel.
       - key: DATABASE_URL
