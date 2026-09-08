@@ -21,8 +21,11 @@ RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu 
 COPY . .
 
 # Azerbaijani text in the log lines needs UTF-8 stdout.
+# MPLCONFIGDIR: matplotlib arrives as a MediaPipe dependency and tries to write
+# a config dir under $HOME, which isn't writable on some hosts (HF Spaces).
 ENV PYTHONUNBUFFERED=1 \
     PYTHONUTF8=1 \
+    MPLCONFIGDIR=/tmp/matplotlib \
     PORT=8000
 
 EXPOSE 8000

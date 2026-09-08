@@ -1,3 +1,17 @@
+---
+title: AzSL Sign Language Recognition
+emoji: 🤟
+colorFrom: indigo
+colorTo: purple
+sdk: docker
+app_port: 8000
+pinned: false
+short_description: Real-time Azerbaijani Sign Language recognition (words + fingerspelling)
+---
+
+<!-- The block above is Hugging Face Spaces configuration; GitHub ignores it.
+     See DEPLOY_HUGGINGFACE.md for the deployment walkthrough. -->
+
 # Azerbaijani Sign Language (AzSL) Recognition
 
 Production-ready, real-time Azerbaijani Sign Language (AzSL) recognition platform featuring both **Word-level continuous gesture recognition** (24 curated vocabulary signs) and **Alphabet fingerspelling recognition** with sentence assembly workflows.
