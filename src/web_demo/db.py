@@ -52,6 +52,11 @@ _serverless = bool(os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
 _engine_kwargs = dict(pool_pre_ping=True, future=True)
 if _serverless:
     _engine_kwargs = dict(poolclass=NullPool, future=True)
+    # psycopg3 auto-prepares statements after a few uses; a transaction-mode
+    # pooler (Neon/Supabase "-pooler" URL, PgBouncer) can't carry those across
+    # connections. Disabling it lets either the pooled or the direct URL work.
+    if DATABASE_URL.startswith(("postgresql+psycopg:", "postgresql:")):
+        _engine_kwargs["connect_args"] = {"prepare_threshold": None}
 
 _engine = create_engine(DATABASE_URL, **_engine_kwargs)
 SessionLocal = sessionmaker(bind=_engine, expire_on_commit=False, future=True)
