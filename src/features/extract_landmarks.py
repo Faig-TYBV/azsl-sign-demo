@@ -45,7 +45,13 @@ MAX_HANDS = 2
 # Preprocessing version — bump when normalization / layout changes.
 PREPROCESSING_VERSION = "v1.0-wrist-scale-normalized"
 
-DEFAULT_MODEL_PATH = Path("models/hand_landmarker.task")
+# Absolute, resolved from this file — NOT relative to the working directory.
+# The bundle lives at <repo>/src/models/hand_landmarker.task; a CWD-relative
+# "models/hand_landmarker.task" only resolved when the process happened to be
+# launched from a directory containing one, which broke predict.py, the
+# extraction scripts and two tests, and forced backend.py to pass its own
+# absolute path as a workaround.
+DEFAULT_MODEL_PATH = Path(__file__).resolve().parents[1] / "models" / "hand_landmarker.task"
 
 
 @dataclass
@@ -419,4 +425,4 @@ def normalize_sequence(
 
         return compute_v2_features(landmarks_3d, validity_mask=validity_mask, raw_wrists_seq=raw_wrists)
     else:
-        raise ValueError(f"Unknown preprocessing version: {version!r}. Expected 'v1' or 'v2'.")
+        raise ValueError(f"Unknown preprocessing version: {version!r}. Expected 'v1' or 'v2'.")
