@@ -1,0 +1,16 @@
+# Sign-language recognition backend (src/web_demo/backend.py).
+# Run this on a long-lived host (Fly.io / Render / Railway / a VM) — NOT Vercel.
+#
+#     pip install -r requirements.txt -r requirements-recognition.txt
+#     python -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port $PORT
+#
+uvicorn[standard]>=0.30.0
+websockets>=12.0
+opencv-python>=4.9.0        # on a headless server, swap for opencv-python-headless
+mediapipe>=0.10.11
+torch>=2.3.0
+numpy>=1.26.0
+websocket-client>=1.8.0
+httpx>=0.27.0
+scikit-learn>=1.4.0
+pytest>=8.0.0

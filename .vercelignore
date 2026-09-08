@@ -1,5 +1,6 @@
-# Keep the Vercel upload / function bundle small. The serverless function needs
-# only: api/index.py, src/web_demo/{webapp,db}.py, and src/web_demo/frontend/.
+# Keep the Vercel upload small. The serverless function needs only:
+#   api/index.py, src/web_demo/{__init__,webapp,db}.py, src/web_demo/frontend/**
+# and the root requirements.txt (now the slim web-only set).
 
 node_modules/
 data/
@@ -11,11 +12,8 @@ docs/
 scripts/
 **/__pycache__/
 
-# root requirements.txt is the FULL (container) set — hide it so the Python
-# builder installs api/requirements.txt instead.
-requirements.txt
-
 # recognition stack — never imported by the serverless function
+requirements-recognition.txt
 src/web_demo/backend.py
 src/web_demo/requirements.txt
 src/features/

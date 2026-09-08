@@ -6,6 +6,11 @@ venv/
 .env
 .env.local
 *.session_secret
+# scratch files people paste credentials into
+valus.txt
+values.txt
+secrets.txt
+creds.txt
 
 # --- Datasets and generated features (NEVER commit) ---
 # Raw videos (~1.4 GB) and all extracted .npz feature files live under data/

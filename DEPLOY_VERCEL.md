@@ -65,8 +65,10 @@ Push to `main` (or click **Deploy**). Then check:
 | --- | --- |
 | `vercel.json` | routes every path to the one Python function |
 | `api/index.py` | the serverless entrypoint — auth + pages, **no ML imports** |
-| `api/requirements.txt` | slim deps (fastapi, sqlalchemy, psycopg, argon2, itsdangerous, dotenv, email-validator) |
-| `.vercelignore` | hides `node_modules/`, `outputs/`, the ML source dirs, model binaries, and the full root `requirements.txt` so the function bundle stays small |
+| `requirements.txt` | **slim, web-only** — this is what Vercel installs (fastapi, sqlalchemy, psycopg, argon2, itsdangerous, dotenv, email-validator) |
+| `requirements-recognition.txt` | the ML stack (torch, mediapipe, opencv…) — container hosts only, never installed by Vercel |
+| `api/requirements.txt` | same slim list, next to the entrypoint (belt & braces) |
+| `.vercelignore` | hides `node_modules/`, `outputs/`, the ML source dirs and model binaries. **Note:** a pattern without a slash matches in *every* directory — that's why the root `requirements.txt` is no longer listed here (it was also hiding `api/requirements.txt`, so Vercel installed nothing and the function crashed with `FUNCTION_INVOCATION_FAILED`). |
 | `.python-version` | pins Python 3.12 |
 | `src/web_demo/webapp.py` | the shared ML-free web layer (`backend.py` uses it too) |
 
@@ -75,7 +77,7 @@ Push to `main` (or click **Deploy**). Then check:
 `src/web_demo/backend.py` is the full app. On Fly.io / Render / Railway:
 
 ```
-pip install -r requirements.txt            # full set incl. torch/mediapipe/opencv
+pip install -r requirements.txt -r requirements-recognition.txt   # web + ML stack
 python -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port $PORT
 ```
 
