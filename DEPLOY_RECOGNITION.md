@@ -48,15 +48,16 @@ that's ~18% of one core.
 
 | | Free? | Card needed? | CPU | Verdict |
 | --- | --- | --- | --- | --- |
-| **Render free** | ✅ | **No** | 0.1 → **~8 fps** | **Start here.** Degraded but working, and the only option that needs no card. 512 MB fits 3–4 viewers. Sleeps after 15 min (~50 s cold start). |
+| **Render free** | ✅ | **No** | nominally 0.1, bursts higher | **Start here — verified working.** Measured ~21 fps round-trip end-to-end (empty frames; expect less with a hand actually being tracked, and less again with several viewers). 512 MB fits 3–4 viewers. Sleeps after 15 min (~50 s cold start). |
 | **Google Cloud Run** | ✅ within free tier | **Yes** (~$50 hold) | 1 vCPU | Better performance, but the card hold is a blocker for many. [DEPLOY_CLOUDRUN.md](DEPLOY_CLOUDRUN.md) |
 | **Fly.io** | ❌ ~$4–7/mo | Yes | 1 shared vCPU | Most reliable; `suspend` resumes in seconds. |
 | **Render Starter** | ❌ ~$7/mo | Yes | 0.5 CPU | Removes the fps limit without changing anything else. |
 | **HF Spaces** | ❌ | Yes | — | Docker Spaces now require PRO. |
 
-On a 0.1-CPU instance a 26-frame word trial takes ~3.3 s instead of ~1.7 s. The
-frontend self-paces (one frame in flight at a time), so a slow backend degrades
-the frame rate instead of building an ever-growing queue.
+The frontend self-paces — one frame in flight at a time — so a slow backend
+degrades the frame rate instead of building an ever-growing queue. That means a
+fractional-CPU instance stays usable; a word trial just takes a little longer
+than the nominal 1.7 s.
 
 > **Want it fast on a free tier?** The real fix is to run MediaPipe in the
 > browser and send landmarks (~500 bytes) instead of JPEG frames, leaving the
