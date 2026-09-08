@@ -426,6 +426,14 @@ async def websocket_endpoint(websocket: WebSocket):
 
             msg_type = message.get("type")
 
+            # Heartbeat. Handled before anything else — it must not touch the
+            # mode/trial state machine. The client sends these while the camera
+            # is off so the socket carries traffic; otherwise a proxy in front
+            # of us closes it as idle after ~20 s.
+            if msg_type == "ping":
+                await websocket.send_text(json.dumps({"type": "pong"}))
+                continue
+
             # Mode switch and state isolation
             mode = message.get("mode", state.active_mode)
             if mode != state.active_mode:

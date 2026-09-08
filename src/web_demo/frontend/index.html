@@ -1142,6 +1142,26 @@ const FRAME_INTERVAL_MS = 66; // ceiling (~15 fps); actual rate self-paces to th
 const FRAME_INFLIGHT_TIMEOUT_MS = 2000; // give up waiting on a reply after this
 let frameInFlight = false;
 let frameInFlightSince = 0;
+
+// Proxies in front of the backend (Render's included) close a WebSocket that
+// carries no traffic for ~20 s. Frames only flow once the camera is started, so
+// without this the socket dies while the page sits on the "press Kameranı
+// Başlat" screen.
+const HEARTBEAT_MS = 8000;
+let heartbeatId = null;
+let reconnectAttempts = 0;
+
+function startHeartbeat() {
+    stopHeartbeat();
+    heartbeatId = setInterval(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            try { ws.send(JSON.stringify({ type: 'ping' })); } catch (e) { /* closing */ }
+        }
+    }, HEARTBEAT_MS);
+}
+function stopHeartbeat() {
+    if (heartbeatId) { clearInterval(heartbeatId); heartbeatId = null; }
+}
 const FRAME_LOG_INTERVAL = 30; // log every N sent frames
 // DOM elements
 const video = document.getElementById('video');
@@ -1345,17 +1365,26 @@ async function initWebSocket() {
 
     ws.onopen = () => {
         console.log('WebSocket connected');
+        reconnectAttempts = 0;
+        startHeartbeat();
         updateModelStatus('Loaded');
         setStatus('Model yükləndi. Sınaq üçün [SPACE] və ya SINAĞA BAŞLA sıxın.');
         setLoadingText('WebSocket qoşuldu');
     };
 
     ws.onmessage = (event) => {
-        // Every server message is a reply to the frame we sent — release the
-        // in-flight lock so the next one can go out.
+        let parsed;
+        try { parsed = JSON.parse(event.data); } catch (e) { return; }
+
+        // Heartbeat reply — not a reply to a frame, so it must not release the
+        // in-flight lock (that would let an extra frame slip out early).
+        if (parsed.type === 'pong') return;
+
+        // Every other server message answers the frame we sent — release the
+        // lock so the next one can go out.
         frameInFlight = false;
         try {
-            const data = JSON.parse(event.data);
+            const data = parsed;
 
             // Sent immediately on connect, before the backend builds its
             // MediaPipe landmarker (slow on a throttled instance). Purely a
@@ -1536,11 +1565,18 @@ async function initWebSocket() {
     ws.onclose = () => {
         console.log('WebSocket disconnected');
         frameInFlight = false;   // a reconnect must not inherit a stale lock
+        stopHeartbeat();
         updateModelStatus('Not Loaded');
-        if (isStreaming && !recognitionOffline) {
-            setStatus('Bağlantı kəsildi. Yenidən qoşulmağa çalışılır...');
-            setTimeout(initWebSocket, 3000);
-        }
+        if (recognitionOffline) return;
+
+        // Reconnect whether or not the camera is running. Previously this was
+        // gated on isStreaming, so a socket that dropped while idle (before the
+        // user pressed "Kameranı Başlat") was never re-established — pressing
+        // start then failed with "backend ilə bağlantı yoxdur".
+        reconnectAttempts += 1;
+        const delay = Math.min(3000 * reconnectAttempts, 15000);
+        setStatus('Bağlantı kəsildi. Yenidən qoşulmağa çalışılır...');
+        setTimeout(initWebSocket, delay);
     };
 
     ws.onerror = (error) => {

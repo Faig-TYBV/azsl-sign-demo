@@ -38,4 +38,6 @@ ENV PYTHONUNBUFFERED=1 \
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "python -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port ${PORT}"]
+# --ws-ping-interval 10: uvicorn's 20 s default races the ~20 s idle timeout of
+# the proxy in front of the app, which was closing sockets mid-session.
+CMD ["sh", "-c", "python -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port ${PORT} --ws-ping-interval 10 --ws-ping-timeout 30"]
