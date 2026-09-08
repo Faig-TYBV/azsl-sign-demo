@@ -1,7 +1,11 @@
-# Recognition backend on a container host (Fly.io or Render)
+# Running the recognition backend (your machine, Fly.io, or Render)
 
-Vercel serves the pages and auth; a container host runs the sign-language
-recognition (`/ws`). They share one Neon database and one `SESSION_SECRET`.
+Vercel serves the pages and auth; something else has to run the sign-language
+recognition (`/ws`), because it needs a persistent WebSocket process holding
+MediaPipe + PyTorch in memory.
+
+> **Don't want to pay for hosting?** Skip to **[Option C — your own machine](#option-c--your-own-machine-free)**.
+> Running everything locally costs nothing and needs no configuration at all.
 
 ```
 browser ──HTTPS──> Vercel        (pages, /api/register, /api/login, /api/ws-token)
@@ -31,7 +35,7 @@ torch + MediaPipe + the GRU model need roughly **700 MB–1 GB resident**, so th
 | Cold start | ~1–3 s with `suspend` (RAM snapshot) | ~60 s |
 | Config in repo | `fly.toml` | `render.yaml` |
 
-**Fly is the better fit** — cheaper, and `auto_stop_machines = "suspend"`
+If you do want a host, **Fly is the better fit** — cheaper, and `auto_stop_machines = "suspend"`
 snapshots RAM so a resume skips the ~15 s torch/MediaPipe load. For a demo used
 occasionally you pay for very little running time.
 
@@ -39,7 +43,7 @@ occasionally you pay for very little running time.
 
 ---
 
-# Option A — Fly.io (recommended)
+# Option A — Fly.io (cheapest paid host)
 
 Install the CLI, then from the repo root:
 
@@ -91,7 +95,70 @@ There's also a `render.yaml` blueprint if you prefer **New → Blueprint**.
 
 ---
 
-## Point Vercel at whichever you chose
+# Option C — your own machine (free)
+
+No hosting bill. Two ways to do it.
+
+## C1. Everything local — simplest, nothing to configure
+
+```bash
+py -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port 8000
+```
+
+Open **http://localhost:8000**. This one process serves the pages, the auth API
+*and* `/ws` — same origin, cookie auth, no token, no tunnel. Everything works,
+including camera recognition. Ideal for demoing on your own laptop or to anyone
+on the same Wi-Fi (`http://<your-LAN-IP>:8000`).
+
+## C2. Public Vercel page + your laptop doing the ML
+
+Use a tunnel so the HTTPS page can reach your machine over `wss://`.
+(Browsers block plain `ws://` from an `https://` page, so a tunnel is required —
+it also gives you TLS for free.)
+
+**1. Start the backend with Vercel's `SESSION_SECRET`.** Only that has to match —
+`/ws` verifies the signed token and never touches the database, so your local
+`DATABASE_URL` can stay as-is.
+
+```powershell
+$env:SESSION_SECRET="<the same 64-char value as Vercel>"
+py -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port 8000
+```
+
+**2. Open a tunnel.** Cloudflare's quick tunnel needs no account:
+
+```powershell
+winget install --id Cloudflare.cloudflared
+cloudflared tunnel --url http://localhost:8000
+```
+
+It prints something like `https://tidy-otter-yak.trycloudflare.com`.
+
+*(ngrok works too and its free tier now includes one **static** domain, which is
+worth it if you restart often: `ngrok http 8000 --domain=your-name.ngrok-free.app`.)*
+
+**3. Point the deployed page at it — no redeploy needed.** Visit your Vercel
+`/app` once with a `?ws=` parameter:
+
+```
+https://azsl-sign-demo.vercel.app/app?ws=wss://tidy-otter-yak.trycloudflare.com
+```
+
+The URL is saved in `localStorage`, so every later visit uses it automatically.
+To go back to the default (or clear a dead tunnel):
+
+```
+https://azsl-sign-demo.vercel.app/app?ws=
+```
+
+**Caveats:** the quick-tunnel hostname changes on every restart (just re-visit
+with the new `?ws=`), and recognition only works while your machine and the
+tunnel are running. Anyone you share the link with is sending their camera
+frames to *your* computer.
+
+---
+
+## Point Vercel at a hosted backend (Options A and B)
 
 Vercel → project → **Settings → Environment Variables** → add:
 
@@ -120,7 +187,7 @@ Open the Vercel URL and sign in:
 | Logs show `Killed` / OOM | instance too small — needs ~1 GB, use 2 GB |
 | `libGL.so.1: cannot open shared object file` | not using the repo `Dockerfile` (it installs `libgl1`) |
 
-## Local development is unchanged
+## Note: local development never uses any of this
 
 One process, same origin, cookie auth — no token involved:
 

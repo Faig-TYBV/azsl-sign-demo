@@ -1237,6 +1237,26 @@ function handleAlphabetBackendResponse(data) {
 const AZSL_CONFIG = window.__AZSL_CONFIG__ || { recognitionWsUrl: '' };
 let recognitionOffline = false;
 
+// Runtime override so you can point a deployed page at a backend running
+// somewhere else (e.g. your laptop behind a tunnel) without redeploying:
+//     /app?ws=wss://abc-123.trycloudflare.com     -> use it and remember it
+//     /app?ws=                                    -> forget it, back to default
+const WS_OVERRIDE_KEY = 'azsl.wsOverride';
+(function readWsOverride() {
+    try {
+        const q = new URLSearchParams(window.location.search);
+        if (q.has('ws')) {
+            const v = (q.get('ws') || '').trim();
+            if (v) localStorage.setItem(WS_OVERRIDE_KEY, v);
+            else localStorage.removeItem(WS_OVERRIDE_KEY);
+            // drop the param so the token/URL isn't left in the address bar
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+        const saved = localStorage.getItem(WS_OVERRIDE_KEY);
+        if (saved) AZSL_CONFIG.recognitionWsUrl = saved;
+    } catch (e) { /* private mode / storage blocked — ignore */ }
+})();
+
 // Builds the socket URL. For a separate recognition backend (Vercel pages +
 // Render /ws) the session cookie cannot cross origins, so we first ask our own
 // origin for a short-lived signed token and pass it on the URL.
