@@ -35,17 +35,20 @@ body {
     position: relative;
 }
 
-/* ---------- Ambient radial glows ---------- */
+/* ---------- Ambient glow ----------
+   Sits below the letters canvas and behind the (transparent) hero column,
+   giving it atmospheric depth instead of a flat gray wash. The right
+   column paints over this with a solid #050505, so it only ever shows
+   through the left side. */
 .ambient {
     position: fixed;
     inset: 0;
     z-index: 0;
     pointer-events: none;
     background:
-        radial-gradient(58% 46% at 18% 14%, rgba(160, 255, 255, 0.16) 0%, rgba(160, 255, 255, 0) 68%),
-        radial-gradient(52% 44% at 84% 22%, rgba(255, 204, 0, 0.13) 0%, rgba(255, 204, 0, 0) 66%),
-        radial-gradient(64% 54% at 50% 104%, rgba(160, 255, 255, 0.14) 0%, rgba(160, 255, 255, 0) 70%),
-        linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-deep) 100%);
+        radial-gradient(ellipse 70% 65% at 38% 46%, rgba(23, 92, 88, 0.4) 0%, rgba(16, 23, 26, 0.82) 58%, rgba(7, 11, 13, 0.96) 100%),
+        radial-gradient(45% 38% at 80% 12%, rgba(255, 204, 0, 0.07) 0%, rgba(255, 204, 0, 0) 70%),
+        linear-gradient(180deg, #0b2226 0%, #070b0d 100%);
 }
 
 /* ---------- Floating letter field ---------- */
@@ -62,10 +65,11 @@ body {
     from { opacity: 0; transform: translateY(20px); }
     to   { opacity: 1; transform: translateY(0); }
 }
-.brand, .login-link, .register-card, .field, .submit-btn, .card-footer {
+.hero-logo, .hero-brand-name, .login-link, .register-card, .field, .submit-btn, .card-footer {
     animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-.brand            { animation-delay: 0s; }
+.hero-logo        { animation-delay: 0s; }
+.hero-brand-name  { animation-delay: 0.06s; }
 .login-link       { animation-delay: 0.06s; }
 .register-card    { animation-delay: 0.1s; }
 #field-name       { animation-delay: 0.2s; }
@@ -75,45 +79,100 @@ body {
 .submit-btn       { animation-delay: 0.46s; }
 .card-footer      { animation-delay: 0.52s; }
 
-/* ---------- Header ---------- */
-.site-header {
+/* ---------- Split shell: transparent hero left, solid pane right ---------- */
+.auth-shell {
     position: relative;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1.35rem clamp(1.1rem, 5vw, 3.5rem);
+    z-index: 2;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr;
 }
 
-.brand {
+@media (min-width: 1024px) {
+    .auth-shell { grid-template-columns: 1fr 1fr; }
+}
+
+/* ---------- Left: brand hero (stays transparent so the floating-letter
+   canvas keeps showing straight through it) ---------- */
+.hero-panel {
+    background: transparent;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.7rem;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 3rem 2rem;
+    text-align: center;
+}
+
+.hero-brand-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
     text-decoration: none;
-    color: var(--text-light);
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
-.brand-mark {
-    height: 36px;
+.hero-brand-link:hover { transform: scale(1.02); opacity: 0.92; }
+.hero-brand-link:active { transform: scale(0.96); opacity: 0.85; }
+
+.hero-brand-link:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 8px;
+    border-radius: 18px;
+}
+
+.hero-logo {
+    height: clamp(150px, 16vw, 220px);
     width: auto;
-    display: block;
     object-fit: contain;
-    flex-shrink: 0;
+    filter: drop-shadow(0 0 40px rgba(126, 251, 227, 0.18));
 }
 
-.brand-name {
-    font-size: 1.32rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
+.hero-brand-name {
+    font-size: clamp(2.75rem, 6vw, 3.75rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #fff;
+    filter: drop-shadow(0 0 40px rgba(126, 251, 227, 0.18));
 }
 
-.brand-name .accent {
-    background: linear-gradient(100deg, var(--accent-cyan), var(--state-warning));
+.hero-brand-name .accent {
+    background: linear-gradient(100deg, #7EFBE3, var(--state-warning));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     color: transparent;
+}
+
+/* ---------- Right: solid registration pane ---------- */
+.form-panel {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem clamp(1rem, 5vw, 3rem) 3.5rem;
+    background: #050505;
+}
+
+@media (min-width: 1024px) {
+    .form-panel {
+        padding: 3rem;
+        border-left: 1px solid rgba(255, 255, 255, 0.06);
+        box-shadow: -40px 0 80px -40px rgba(0, 0, 0, 0.65);
+    }
+}
+
+.form-panel .login-link {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
 }
 
 .login-link {
@@ -140,23 +199,6 @@ body {
 .login-link:focus-visible {
     outline: 2px solid var(--accent-cyan);
     outline-offset: 2px;
-}
-
-/* ---------- Layout ---------- */
-.page {
-    position: relative;
-    z-index: 2;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-main {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem clamp(1rem, 5vw, 3rem) 3.5rem;
 }
 
 /* ---------- Glass card ---------- */
@@ -343,8 +385,8 @@ main {
 }
 
 @media (max-width: 480px) {
-    .site-header { padding: 1.05rem 1.1rem; }
-    .brand-name { font-size: 1.16rem; }
+    .hero-panel { padding: 2.25rem 1.1rem; }
+    .form-panel { padding: 1.1rem 1.1rem 3rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -352,7 +394,7 @@ main {
     .submit-btn,
     .submit-btn svg { transition: none; }
 
-    .brand, .login-link, .register-card, .field, .submit-btn, .card-footer {
+    .hero-logo, .hero-brand-name, .login-link, .register-card, .field, .submit-btn, .card-footer {
         animation: none;
     }
 }
@@ -363,17 +405,17 @@ main {
 <div class="ambient"></div>
 <canvas id="letter-field" aria-hidden="true"></canvas>
 
-<div class="page">
-    <header class="site-header">
-        <a class="brand" href="/">
-            <img class="brand-mark" src="/static/assets/logo_1.png" alt="Azişarə">
-            <span class="brand-name">Az<span class="accent">İşarə</span></span>
+<div class="auth-shell">
+    <section class="hero-panel">
+        <a class="hero-brand-link" href="/" aria-label="Ana səhifəyə qayıt">
+            <img class="hero-logo" src="/static/assets/logo_1.png" alt="Azişarə">
+            <h2 class="hero-brand-name">Az<span class="accent">İşarə</span></h2>
         </a>
+    </section>
 
+    <section class="form-panel">
         <a class="login-link" id="header-auth-link" href="/login">Daxil ol</a>
-    </header>
 
-    <main>
         <section class="register-card" id="register-card">
             <h1 class="card-title" id="card-title">Azİşarə Platformasında Qeydiyyat</h1>
             <p class="card-subtitle" id="card-subtitle">
@@ -425,7 +467,7 @@ main {
                 Artıq hesabınız var? <a href="/login">Daxil olun</a>
             </p>
         </section>
-    </main>
+    </section>
 </div>
 
 <script>
