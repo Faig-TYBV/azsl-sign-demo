@@ -9,16 +9,20 @@ Shared by two entrypoints:
                               torch / mediapipe / opencv never get imported, so
                               the function stays well under Vercel's size limit)
 
-Nothing here imports the ML stack. The only project dependency is
-``src.web_demo.db`` (SQLAlchemy + argon2 + psycopg — all small wheels).
+Nothing here imports the ML stack (torch / mediapipe / opencv). Project
+dependencies are ``src.web_demo.db`` (SQLAlchemy + argon2 + psycopg — all
+small wheels) and ``edge_tts`` (a small async client that talks to Microsoft's
+free Edge neural-voice service over a websocket — no local model, no API key).
 """
 
 from __future__ import annotations
 
+import io
 import os
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
+import edge_tts
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
@@ -158,6 +162,20 @@ class LoginIn(BaseModel):
     password: str
 
 
+class TTSIn(BaseModel):
+    text: str
+
+    @field_validator("text")
+    @classmethod
+    def _not_blank(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Mətn boş ola bilməz.")
+        if len(v) > 500:
+            raise ValueError("Mətn çox uzundur (maks. 500 simvol).")
+        return v
+
+
 # --------------------------------------------------------------------------- #
 # Page rendering
 # --------------------------------------------------------------------------- #
@@ -243,6 +261,35 @@ async def api_ws_token(user=Depends(require_user)):
     """Short-lived token so a cross-origin recognition backend can authenticate
     this signed-in user (cookies don't cross origins)."""
     return {"token": issue_ws_token(user.id), "expires_in": WS_TOKEN_MAX_AGE}
+
+
+@api_router.post("/tts")
+async def api_tts(payload: TTSIn, user=Depends(require_user)):
+    """Azerbaijani text-to-speech for the sentence builder's "Səsləndir" button.
+
+    Uses edge-tts (Microsoft's free Edge neural-voice service — no API key,
+    no quota) rather than the client-side Web Speech API, since most browsers
+    / OSes don't ship an az-AZ voice at all.
+    """
+    communicate = edge_tts.Communicate(payload.text, voice="az-AZ-BanuNeural")
+    audio_buffer = io.BytesIO()
+    try:
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_buffer.write(chunk["data"])
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Səsləndirmə xidməti əlçatan deyil.",
+        ) from exc
+
+    audio_bytes = audio_buffer.getvalue()
+    if not audio_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Səsləndirmə xidməti əlçatan deyil.",
+        )
+    return Response(content=audio_bytes, media_type="audio/mpeg")
 
 
 page_router = APIRouter(tags=["pages"])
