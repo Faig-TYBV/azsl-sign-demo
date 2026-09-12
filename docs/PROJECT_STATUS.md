@@ -1,108 +1,141 @@
 # Project Status — AzSL Word Recognition
 
-**Status: PAUSED at feature-extraction stage (2026-08-23).**
-Do not delete, overwrite, reset or refactor existing files. Do not restart full extraction blindly — it is resumable.
+**Status: ACTIVE — live web demo built, in frontend/voice polish stage (2026-09-12).**
+Do not delete, overwrite, reset or refactor existing files without checking first —
+the trained checkpoint, curated vocabulary, and extracted feature set are all
+production inputs to the running demo, not intermediate scratch.
 
 ---
 
 ## 1. Current Project Goal
 
-Word-level sign language recognition for Azerbaijani Sign Language using the **AzSLD_Words_200** video dataset. The pipeline extracts MediaPipe hand landmarks from videos, normalizes and temporally preprocesses them into fixed-length sequences, and will later train sequence classifiers (e.g., LSTM/GRU/Transformer) to recognize signed words.
+Word-level sign language recognition for Azerbaijani Sign Language (AzSL), served
+as a real-time web demo: a browser opens a WebSocket to a backend that runs
+MediaPipe hand-landmark extraction + a trained GRU classifier and streams back
+predictions live. The ML pipeline (extraction → vocabulary curation → training →
+evaluation) is complete for a 24-word vocabulary; current work is the web
+product around it (auth, sentence builder, text-to-speech, fingerspelling mode,
+deployment).
 
 ## 2. Dataset Information
 
-- Location: `data/raw/AzSLD_Words_200/<word_label>/<video_hash>.mp4`
-- Total videos: **8,557**
-- Organization: one folder per word class (62+ classes observed so far)
-- Videos are hash-named `.mp4` files; original videos must remain untouched
-- Dataset contains both **one-hand and two-hand** signs
+- Source: `data/raw/AzSLD_Words_200/<word_label>/<video_hash>.mp4`
+- Total videos: **8,557**, across 200 word classes (hash-named `.mp4` files;
+  originals untouched)
+- Both one-hand and two-hand signs; `MAX_HANDS = 2`
+- Typical length ~9–33 frames (P50/P75 ≈ 26 → chosen target sequence length)
 
-## 3. Dataset Inspection Results
+## 3. Feature Extraction — COMPLETE
 
-- Videos open correctly with OpenCV; typical lengths ~9–33 frames (P50/P75 ≈ 26 frames → chosen target sequence length)
-- FPS read via `cv2.CAP_PROP_FPS`; some videos report unusual FPS values (handled)
-- Class folders contain only video files; no corrupt folder structure found
+Full extraction finished on 2026-08-24 (see `outputs/reports/full_extraction_report.txt`):
 
-## 4. Distribution Analysis Results
-
-- Pilot sample of 16 classes: 3 one-hand / 13 two-hand videos → two-hand support is mandatory (`MAX_HANDS = 2`)
-- Frame counts vary widely; uniform temporal resampling used so the full gesture is represented
-
-## 5. MediaPipe Pipeline Architecture
-
-Files under `src/features/`:
-
-| File | Purpose |
+| Metric | Value |
 |---|---|
-| `extract_landmarks.py` | MediaPipe Tasks API `HandLandmarker` (VIDEO mode, ≤2 hands). Per frame: 21 landmarks × (x,y,z) = 63 features/hand → 126/frame. No-detection frames kept with validity flag + zero-filled landmarks. Normalization: wrist-relative translation + scale by ‖wrist−MCP9‖ distance. Deterministic left/right slot ordering by handedness label. |
-| `preprocess_sequence.py` | Temporal resampling to 26 frames: longer sequences uniformly resampled across the FULL gesture; shorter end-padded; per-frame validity mask returned. |
-| `run_pilot_extraction.py` | Pilot run on N videos across classes; saves `.npz` + metadata + summary report. |
-| `run_full_extraction.py` | Full resumable extraction: per-video `.npz` under `data/features/full/<label>/`, append-only `extraction_metadata.jsonl`, skip-if-valid logic, incremental processing (never loads dataset into RAM), disk-space pre-check, progress logging every 100 videos. |
-| `visualize_extraction.py` | Debug grid visualization of drawn landmarks → `outputs/figures/`. |
-| `test_mediapipe_gpu.py` | Isolated GPU capability test (see §7). |
+| Total videos | 8,557 |
+| Successfully extracted | 8,557 (0 failed) |
+| Feature shape | `(26, 126)` per video |
+| Avg detection rate | 94.54% |
+| Total processing time | 3.67 h (CPU) |
 
-Feature file format (per video `.npz`, compressed):
-- `features` — `(26, 126)` float32, resampled+padded
-- `mask` — `(26,)` float32, 1.0 = real frame with hand detection
-- `frame_features` — `(n_frames, 126)` raw normalized per-frame features
-- `frame_valid` — `(n_frames,)` bool
-
+Pipeline files under `src/features/`: `extract_landmarks.py` (MediaPipe Tasks
+`HandLandmarker`, VIDEO mode, ≤2 hands, wrist-relative + scale normalization,
+deterministic left/right slot ordering), `preprocess_sequence.py` (uniform
+resample/pad to 26 frames + validity mask), `run_full_extraction.py`
+(resumable, per-video `.npz`, append-only `extraction_metadata.jsonl`).
 Preprocessing version tag: `v1.0-wrist-scale-normalized`.
 
-## 6. Pilot Extraction Results
+**GPU note (still applies):** the PyPI Windows MediaPipe wheel has no GPU
+(OpenGL/EGL) support — extraction is CPU-only by design. Do not install
+CUDA/cuDNN or change the MediaPipe version to chase this.
 
-- 16/16 videos successful, 0 failed
-- Average detection rate: **96.8%** (min 89.3%, max 100%)
-- One-hand: 3, two-hand: 13
-- Feature shape verified: `(26, 126)`
-- Avg feature file size ≈ 16 KB/video → full dataset ≈ **0.14 GB**
-- Estimated full CPU processing time ≈ **3 hours** (~1.3 s/video)
+## 4. Vocabulary Curation & Training — COMPLETE (Experiment 8)
 
-## 7. GPU Investigation and Conclusion
+The full 200-class label space was pruned to a **24-word demo vocabulary**
+(`outputs/vocabulary_analysis/final_vocabulary.json`) by dropping morphological
+variants and confusion attractors that hurt a shared baseline model — e.g.
+`MƏNİM`/`MƏNƏ`/`ONUN` around `MƏN`, `SİZİN` around `SİZ`, `İSTƏYİRƏM` around
+`İSTƏMƏK`, plus low-sample or low-F1 classes (`GÖRMƏK`, `BİLMƏK`, `O`, `İŞ`).
+Full rationale and rejected-class analysis are in that file and in
+`outputs/vocabulary_analysis/final_vocabulary_audit.md`.
 
-- Installed MediaPipe 1.0.1 exposes `BaseOptions.Delegate.GPU`
-- Test script `src/features/test_mediapipe_gpu.py`: CPU delegate works; GPU delegate fails with:
-  `NotImplementedError: ValidatedGraphConfig Initialization failed. ImageCloneCalculator: GPU processing is disabled in build flags`
-- **Conclusion:** the PyPI Windows wheel is compiled without GPU (OpenGL/EGL) support. Installing CUDA/cuDNN would NOT help (MediaPipe uses OpenGL ES, not CUDA). Keep CPU extraction. Do not change MediaPipe versions.
+**Experiment 8 model** (`outputs/vocabulary_24_cap50/EXPERIMENT_8_REPORT.md`):
 
-## 8. Existing Files and Purposes
+- 2-layer unidirectional GRU (hidden=128, dropout=0.3), mean+max temporal
+  pooling → 256-dim → Linear(256→24); 203,544 params
+- Trained on 866 sequences (capped 50/class), validated/tested on untouched
+  676/676 splits identical to the 200-class production partition
+- **Test accuracy 85.21%, macro-F1 74.21%, weighted-F1 86.03%**
+  (vs. 67.31% acc / 65.10% macro-F1 for the old 200-class model on the same
+  676 test sequences)
+- Checkpoint: `outputs/vocabulary_24_cap50/checkpoints/gru_24_cap50_best.pt`
+- Normalizer stats (fit on the 866 training sequences only):
+  `outputs/vocabulary_24_cap50/metadata/feature_normalization_stats_24.json`
 
-```
-models/hand_landmarker.task          MediaPipe HandLandmarker model bundle (verified)
-data/raw/AzSLD_Words_200/            Original dataset (UNTOUCHABLE)
-data/features/pilot/                 16 pilot .npz + pilot_metadata.json
-data/features/full/<label>/*.npz     Extracted features (resumable output)
-data/features/full/extraction_metadata.jsonl   Per-video metadata (append-only)
-outputs/figures/                     Debug visualizations
-outputs/reports/                     Logs and future reports
-src/features/*.py                    Pipeline modules (see §5)
-docs/PROJECT_STATUS.md               This document
-```
+This checkpoint is what the live backend loads — see §6.
 
-## 9. Already Extracted Samples
+## 5. Web Demo — BUILT AND WIRED (`src/web_demo/`)
 
-- **2,003 / 8,557** feature files exist in `data/features/full/` (62 classes covered)
-- Metadata lines in `extraction_metadata.jsonl`: 2,003
-- Running average detection rate so far: **95.8%**
+- **`webapp.py`** — ML-free layer: session cookies (`itsdangerous`-signed,
+  `SessionMiddleware`), register/login/logout/me (`src/web_demo/db.py`,
+  SQLAlchemy + argon2 + Postgres), Azerbaijani TTS via `edge-tts`
+  (`az-AZ-BanuNeural`, no API key/local model), and page routing
+  (`landing.html` → `register.html`/login → `app` workspace). Shared by both
+  entrypoints below so torch/mediapipe/opencv never load in the Vercel path.
+- **`backend.py`** — full container backend: everything in `webapp.py` plus
+  the `/ws` WebSocket. Loads the Experiment 8 checkpoint + normalizer at
+  startup, runs a per-connection state machine for **word mode**
+  (READY → COUNTDOWN → RECORDING → RESULT, 26-frame buffer, ambiguity gate,
+  hand-presence gate to suppress predictions on an empty/idle buffer) and a
+  separate **alphabet (fingerspelling) mode** (`AlphabetClassifier` +
+  `AlphabetStabilizer`: confidence floor, stable-frame hold, motion gate).
+- **`api/index.py`** — Vercel serverless entrypoint; imports only
+  `webapp.py`, so no ML deps ship to the function.
+- **Cross-origin auth for `/ws`:** when pages (Vercel) and recognition
+  (Fly/Render/Cloud Run) live on different origins, cookies can't cross, so
+  the page fetches a short-lived signed token (`/api/ws-token`) and passes it
+  on the socket URL instead.
+- **Frontend** (`src/web_demo/frontend/`): `landing.html`, `register.html`,
+  `index.html` (the workspace: webcam capture, word-mode trial UI, sentence
+  builder, TTS playback, recognition-WS wiring driven by
+  `window.__AZSL_CONFIG__.recognitionWsUrl`), `js/azsl_alphabet.js`
+  (client-side fingerspelling helper).
 
-*(Earlier status snapshots mentioned 681 and 1847 files; current verified count is 2,003. All are valid and will be skipped on resume.)*
+## 6. Deployment — three documented paths, pick one as canonical
 
-## 10. Remaining Work
+- `DEPLOY_VERCEL.md` — pages + auth API only (no `/ws`; needs a separate
+  recognition backend or the workspace shows "recognition offline")
+- `DEPLOY_RECOGNITION.md` — the recognition backend alone (local / Fly.io /
+  Render), paired with the Vercel deploy above
+- `DEPLOY_CLOUDRUN.md` — whole app on one origin (pages + auth + `/ws`),
+  simplest to reason about but loses Vercel's free static/CDN tier
+- `render.yaml`, `fly.toml`, `Dockerfile` back the container options
 
-1. Resume full extraction for remaining ~6,554 videos:
-   `python src/features/run_full_extraction.py` (skips existing valid files automatically)
-2. Run validation check over all outputs: expected count, shapes, corrupt files, label distribution, detection-rate statistics
-3. Write final report to `outputs/reports/full_extraction_report.json` / `.txt`
+**Open decision:** which of these is the actual target for users, vs. which
+are exploratory. Recommend picking one, verifying it end-to-end in a browser,
+and treating the others as fallback options in the docs rather than three
+equally-live paths.
 
-## 11. Planned Next ML Stages
+## 7. Known Gaps / Next Steps
 
-1. Train/val/test split stratified by word class (per-sample split; consider speaker-level splits if speaker IDs become available)
-2. Baseline sequence model: bidirectional LSTM/GRU on `(26, 126)` sequences with mask-aware masked loss/metrics
-3. Later: lightweight Transformer / temporal convolution; class balancing if distribution is skewed
-4. Evaluation: top-1/top-5 accuracy, confusion analysis, per-class F1
-5. No model training has been performed yet
+1. **No automated tests for `src/web_demo`** — `tests/` covers only the ML
+   modules (features, models, inference gates). Auth (register/login/session),
+   password hashing, and the TTS endpoint have no test coverage despite
+   handling user credentials.
+2. **`src/web_demo/README.md` is stale** — it still describes the old
+   Experiment 2 / 200-class checkpoint (`outputs/checkpoints/gru_temporal_pool_best.pt`)
+   and a no-auth local-Wi-Fi-only run flow. It should be rewritten to match
+   `backend.py` (Experiment 8 checkpoint, auth-gated `/app`, both word +
+   alphabet modes).
+3. **End-to-end deploy not yet verified** — recent commits are frontend/voice
+   iteration (`index.html`, TTS wiring); confirm the full webcam → `/ws` →
+   GRU → TTS round trip on an actual deployment, not just locally.
+4. **Vocabulary is 24 words** — expanding it (more classes, more per-class
+   cap) is the natural next ML step if the demo needs a larger sentence
+   vocabulary; re-run the same curation methodology
+   (`scripts/vocabulary_audit_and_selection.py`,
+   `scripts/prepare_vocabulary_24_cap50.py`) against a different class list.
 
-## 12. Important Decisions and Reasons
+## 8. Important Decisions and Reasons
 
 | Decision | Reason |
 |---|---|
@@ -111,30 +144,32 @@ docs/PROJECT_STATUS.md               This document
 | Keep no-detection frames + validity masks | Missing detections carry temporal info; loss can ignore them |
 | Wrist-relative + scale normalization | Invariance to position and camera distance |
 | Fixed left/right slot ordering | Consistent feature layout across frames/videos |
-| Per-video .npz storage (no single huge file) | Resumability, avoids RAM issues, scalable (~0.14 GB total anyway) |
-| Cumulative timestamp offset across videos | MediaPipe requires monotonically increasing timestamps per landmarker instance |
-| `max(1, ...)` timestamp increment | Some videos report odd FPS making increment round to 0 |
+| Per-video `.npz` storage (no single huge file) | Resumability, avoids RAM issues, scalable (~0.14 GB total) |
 | CPU-only extraction | Windows MediaPipe wheel compiled without GPU support (verified) |
-| Do not install CUDA/cuDNN or downgrade MediaPipe | Would not fix a wheel build-flag limitation |
+| 24-class vocabulary, cap 50 train/class | Removing morphological variants + confusion attractors and balancing the head class (`MƏN` was 51% of training data) raised accuracy +17.9 pts on an identical test set |
+| Normalizer fit on training split only | Avoids val/test leakage into feature scaling stats |
+| `webapp.py` split from `backend.py` | Lets the Vercel function stay ML-free and under its size limit while the container backend reuses the same auth/page code |
+| Signed short-lived `/api/ws-token` for cross-origin `/ws` | Session cookies don't cross registrable domains (Vercel pages vs. Fly/Render recognition host) |
+| Hand-presence + ambiguity gates on top of the GRU | The model has no trained "idle/no-hand" class, so raw softmax always emits a confident-looking top-1 even on an empty buffer |
+| `edge-tts` (`az-AZ-BanuNeural`) instead of Web Speech API | Most browsers/OSes ship no `az-AZ` voice locally; edge-tts is free and needs no API key |
 
 ---
 
 ## Reproducibility — How to Continue
 
 ```powershell
-# Environment: project venv at .venv (Python, mediapipe==1.0.1, opencv 5.0.0, numpy)
+# ML pipeline is complete; only re-run these if you're touching the vocabulary or model.
 
-# 1. Resume full extraction (safe & resumable; skips existing valid files)
-python src/features/run_full_extraction.py
+# Re-run vocabulary curation / training for a different class list
+python scripts/vocabulary_audit_and_selection.py
+python scripts/prepare_vocabulary_24_cap50.py
+python scripts/run_experiment_8_training.py
+python scripts/verify_vocabulary_24_cap50.py   # audits the checkpoint before it's trusted in backend.py
 
-# 2. Re-run pilot sanity check any time
-python src/features/run_pilot_extraction.py --num-videos 16 --seed 42
+# Run the web demo locally (full backend: pages + auth + /ws recognition)
+python -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port 8000
+# then open http://localhost:8000 , register/login, and go to /app
 
-# 3. Visual debug for one video
-python src/features/visualize_extraction.py "data/raw/AzSLD_Words_200/<LABEL>/<HASH>.mp4"
-
-# 4. GPU capability re-check (expected: NOT available)
-python src/features/test_mediapipe_gpu.py
-
-# Progress log during extraction: outputs/reports/full_extraction_log.txt
-# Per-video metadata: data/features/full/extraction_metadata.jsonl
+# Run the test suite (ML modules only today — see §7.1)
+pytest
+```
