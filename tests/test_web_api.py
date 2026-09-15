@@ -174,6 +174,41 @@ def test_call_overlay_backdrop_cannot_cover_the_remote_video():
     assert "$('remote-video').hidden = audioOnly;" in html
 
 
+def test_incoming_call_busy_check_ignores_stale_call_id():
+    """A leftover call.id must not silently swallow every future call.
+
+    call.id is set the moment call:incoming arrives, and survives a dropped
+    socket because the server's call:ended cannot reach a socket that is
+    already gone. Phones drop the socket whenever the tab is backgrounded, so
+    guarding on call.id meant a phone stopped ringing permanently after its
+    first interrupted call — with no error anywhere.
+
+    Busy must therefore mean a live peer connection or a modal already on
+    screen, never merely a non-null id.
+    """
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+
+    assert "const busy = call.pc || !$('incoming-modal').hidden;" in html, (
+        "the busy check must test a live connection or a visible modal"
+    )
+    assert "if (call.pc || call.id) { wsSend({ type: 'call:reject'" not in html, (
+        "the call.id-based busy check is the regression this guards against"
+    )
+    # And a reconnect must clear whatever the dead socket left behind.
+    assert "if (!call.pc) {" in html and "clearing stale call state after reconnect" in html
+
+
+def test_socket_state_is_visible_and_recovers_on_mobile():
+    """Silent disconnects are the hardest failure to report; make them visible."""
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+
+    assert 'id="conn-pill"' in html
+    assert "setConnState('live', 'Canlı')" in html
+    assert "setConnState('down', 'Bağlantı kəsildi')" in html
+    # Backgrounded phone tabs must not wait out the backoff before reconnecting.
+    assert "visibilitychange" in html
+
+
 def test_remote_video_playback_is_requested_explicitly():
     """autoplay alone is not enough for a stream that carries audio.
 

@@ -121,6 +121,30 @@ header {
     font-size: 0.9rem;
 }
 #auth-user { opacity: 0.8; }
+.conn-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 1px solid currentColor;
+}
+.conn-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+}
+.conn-pill.live { color: var(--state-success); }
+.conn-pill.live .conn-dot { box-shadow: 0 0 6px currentColor; }
+.conn-pill.connecting { color: var(--state-trial); }
+.conn-pill.connecting .conn-dot { animation: connPulse 1.2s ease-in-out infinite; }
+.conn-pill.down { color: var(--state-danger); }
+@keyframes connPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+
 #btn-logout {
     background: transparent;
     border: 1px solid currentColor;
@@ -653,6 +677,9 @@ header {
             <a class="nav-link" href="/friends" aria-current="page">Dostlar</a>
         </nav>
         <div class="auth-bar">
+            <span id="conn-pill" class="conn-pill connecting" role="status">
+                <span class="conn-dot" aria-hidden="true"></span><span id="conn-text">Bağlanır…</span>
+            </span>
             <span id="auth-user"></span>
             <button id="btn-logout" type="button">Çıxış</button>
         </div>
@@ -1241,6 +1268,17 @@ $('msg-input').addEventListener('input', () => {
 /* =========================================================================
    WebSocket
    ========================================================================= */
+/* The single most useful thing to see when a call never arrives: is this
+   device actually connected? Phones drop the socket whenever the tab is
+   backgrounded, and without an indicator that is invisible until someone
+   tries to call you and nothing happens. */
+function setConnState(kind, text) {
+    const pill = $('conn-pill');
+    if (!pill) return;
+    pill.className = 'conn-pill ' + kind;
+    $('conn-text').textContent = text;
+}
+
 function wsSend(payload) {
     if (state.ws && state.ws.readyState === WebSocket.OPEN) {
         state.ws.send(JSON.stringify(payload));
@@ -1275,6 +1313,7 @@ async function socialWsEndpoint() {
 async function connectSocket() {
     if (!SOCIAL_WS_ENABLED) {
         $('offline-banner').hidden = false;
+        setConnState('down', 'Canlı rejim yoxdur');
         startPolling();
         return;
     }
@@ -1294,6 +1333,7 @@ async function connectSocket() {
     ws.onopen = () => {
         state.wsReady = true;
         state.reconnectDelay = 1000;
+        setConnState('live', 'Canlı');
         // Proxies in front of free-tier hosts close idle sockets after ~20 s.
         clearInterval(state.heartbeat);
         state.heartbeat = setInterval(() => wsSend({ type: 'ping' }), 10000);
@@ -1308,6 +1348,12 @@ async function connectSocket() {
     ws.onclose = () => {
         state.wsReady = false;
         clearInterval(state.heartbeat);
+        setConnState('down', 'Bağlantı kəsildi');
+        // Mark ourselves — and everyone else — offline until the socket is back,
+        // so the call buttons cannot be pressed into a void.
+        state.friends.forEach((f) => { f.online = false; });
+        renderFriends();
+        updateChatHeader();
         // Exponential backoff, capped — a sleeping free instance can take ~50 s.
         setTimeout(connectSocket, state.reconnectDelay);
         state.reconnectDelay = Math.min(state.reconnectDelay * 2, 15000);
@@ -1320,6 +1366,19 @@ function handleSocketMessage(data) {
     switch (data.type) {
         case 'hello':
             state.me = state.me || data.user;
+
+            // Fresh socket, so anything the old one was doing is over. The
+            // server already tore down our calls when it saw the disconnect;
+            // clearing here stops a stale call.id from blocking the next
+            // incoming call. Only safe because an actually-live call keeps a
+            // peer connection, which we check first.
+            if (!call.pc) {
+                if (call.id) callLog('clearing stale call state after reconnect', call.id);
+                resetCall();
+            }
+
+            // Presence we cached before the drop is unreliable now.
+            state.friends.forEach((f) => { f.online = false; });
             (data.online || []).forEach((id) => {
                 const f = state.friends.find((x) => x.id === id);
                 if (f) f.online = true;
@@ -1770,8 +1829,19 @@ async function flushPendingIce() {
 
 async function handleCallSignal(data) {
     switch (data.type) {
-        case 'call:incoming':
-            if (call.pc || call.id) { wsSend({ type: 'call:reject', call_id: data.call_id }); return; }
+        case 'call:incoming': {
+            // "Busy" must mean a call that is genuinely in progress or already
+            // ringing -- NOT merely a non-null call.id. call.id survives a
+            // dropped socket (phones background the tab and kill it), and the
+            // server's call:ended can never reach a socket that is already
+            // gone, so a stale id would silently auto-reject every future call
+            // and the phone would just never ring.
+            const busy = call.pc || !$('incoming-modal').hidden;
+            if (busy) {
+                callLog('rejecting incoming call: already busy');
+                wsSend({ type: 'call:reject', call_id: data.call_id });
+                return;
+            }
             call.id = data.call_id;
             call.media = data.media;
             call.peer = data.from;
@@ -1782,6 +1852,7 @@ async function handleCallSignal(data) {
             $('incoming-modal').hidden = false;
             $('btn-accept').focus();
             break;
+        }
 
         case 'call:ringing':
             call.id = data.call_id;
@@ -1886,6 +1957,21 @@ $('btn-logout').addEventListener('click', async () => {
 
 window.addEventListener('beforeunload', () => {
     if (call.id) wsSend({ type: 'call:end', call_id: call.id });
+});
+
+/* Phones suspend background tabs and drop the socket -- often just from the
+   screen dimming. Waiting out the exponential backoff after unlocking can mean
+   15 seconds of appearing offline, which is exactly the window in which
+   somebody tries to call and nothing happens. Reconnect the moment the page is
+   visible again. */
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    if (!SOCIAL_WS_ENABLED) return;
+    if (state.ws && state.ws.readyState === WebSocket.OPEN) return;
+    callLog('page visible again — reconnecting now');
+    state.reconnectDelay = 1000;
+    setConnState('connecting', 'Bağlanır…');
+    connectSocket();
 });
 
 (async function boot() {
