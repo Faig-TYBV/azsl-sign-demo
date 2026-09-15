@@ -24,6 +24,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import time
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional, Set
@@ -106,6 +107,12 @@ async def _in_db(fn: Callable, *args, **kwargs):
 # --------------------------------------------------------------------------- #
 # Connection hub
 # --------------------------------------------------------------------------- #
+# A socket is considered dead if nothing has been received on it for this long.
+# The page sends a ping every 10 s, so three missed pings is a confident verdict
+# without being trigger-happy about a brief mobile stall.
+SOCKET_STALE_AFTER = 45.0
+
+
 class Hub:
     """Who is connected, and how to reach them.
 
@@ -114,23 +121,46 @@ class Hub:
     instance behind a load balancer, two users on different instances would not
     see each other. Scaling past one instance means putting a Redis pub/sub (or
     equivalent) behind ``send_to_user``; nothing else in this file would change.
+
+    **Presence is based on traffic, not registration.** A registered socket is
+    not necessarily a live one: the proxy in front of this app terminates the
+    WebSocket and holds its own connection to us, so when a phone loses signal
+    or freezes its tab, we can keep a dead entry long after the device is gone.
+    Writes to it succeed -- they land in a buffer nobody drains -- so the caller
+    is told the callee is ringing while the callee sees nothing at all. Every
+    inbound frame calls :meth:`touch`, and anything silent for
+    ``SOCKET_STALE_AFTER`` is treated as gone.
     """
 
     def __init__(self) -> None:
         self._sockets: Dict[int, Set[WebSocket]] = {}
+        self._last_seen: Dict[WebSocket, float] = {}
         self._lock = asyncio.Lock()
+
+    def touch(self, ws: WebSocket) -> None:
+        """Record that this socket just proved it is alive."""
+        self._last_seen[ws] = time.monotonic()
+
+    def _is_fresh(self, ws: WebSocket) -> bool:
+        seen = self._last_seen.get(ws)
+        return seen is not None and (time.monotonic() - seen) < SOCKET_STALE_AFTER
+
+    def _live_sockets(self, user_id: int) -> list[WebSocket]:
+        return [ws for ws in self._sockets.get(user_id, ()) if self._is_fresh(ws)]
 
     async def add(self, user_id: int, ws: WebSocket) -> bool:
         """Register a socket. Returns True if this user was previously offline."""
         async with self._lock:
             sockets = self._sockets.setdefault(user_id, set())
-            was_offline = not sockets
+            was_offline = not any(self._is_fresh(s) for s in sockets)
             sockets.add(ws)
+            self.touch(ws)
             return was_offline
 
     async def remove(self, user_id: int, ws: WebSocket) -> bool:
         """Drop a socket. Returns True if the user now has none left."""
         async with self._lock:
+            self._last_seen.pop(ws, None)
             sockets = self._sockets.get(user_id)
             if not sockets:
                 return False
@@ -138,22 +168,26 @@ class Hub:
             if not sockets:
                 self._sockets.pop(user_id, None)
                 return True
-            return False
+            return not any(self._is_fresh(s) for s in sockets)
 
     def is_online(self, user_id: int) -> bool:
-        return bool(self._sockets.get(user_id))
+        return bool(self._live_sockets(user_id))
 
     def online_ids(self) -> Set[int]:
-        return set(self._sockets.keys())
+        return {uid for uid in self._sockets if self._live_sockets(uid)}
 
     async def send_to_user(
         self, user_id: int, payload: dict, *, exclude: Optional[WebSocket] = None
     ) -> int:
-        """Fan a payload out to every socket this user holds. Returns how many."""
-        sockets = list(self._sockets.get(user_id, ()))
+        """Fan a payload out to this user's live sockets. Returns how many.
+
+        Silent sockets are skipped rather than written to, so the count is a
+        usable answer to "did this actually reach them?" -- which is what the
+        call invite relies on to avoid ringing into a void.
+        """
         text = json.dumps(payload, ensure_ascii=False)
         sent = 0
-        for ws in sockets:
+        for ws in self._live_sockets(user_id):
             if ws is exclude:
                 continue
             try:
@@ -589,6 +623,9 @@ async def social_websocket(websocket: WebSocket) -> None:
     try:
         while True:
             raw = await websocket.receive_text()
+            # Anything arriving on this socket -- including the client's 10 s
+            # heartbeat -- is what keeps it counted as live. See Hub's docstring.
+            hub.touch(websocket)
             try:
                 message = json.loads(raw)
             except json.JSONDecodeError:

@@ -566,6 +566,67 @@ def test_registry_tracks_and_drops_calls():
     assert registry.get(call.call_id) is None
 
 
+def test_hub_treats_a_silent_socket_as_gone(monkeypatch):
+    """A registered socket is not necessarily a live one.
+
+    The proxy in front of the app terminates the WebSocket and keeps its own
+    connection to us, so a phone that loses signal can leave an entry that
+    still accepts writes -- into a buffer nobody drains. That made the caller
+    hear "ringing" while the callee's device showed nothing, which is the worst
+    possible failure: it looks like the app working.
+    """
+    async def scenario():
+        hub = social.Hub()
+        ghost = FakeWS()
+        await hub.add(5, ghost)
+        assert hub.is_online(5) is True
+
+        # Nothing received on it for longer than the staleness window.
+        now = [0.0]
+        monkeypatch.setattr(social.time, "monotonic", lambda: now[0])
+        hub.touch(ghost)
+        now[0] += social.SOCKET_STALE_AFTER + 1
+
+        assert hub.is_online(5) is False, "a silent socket must not count as online"
+        assert 5 not in hub.online_ids()
+        # And crucially it is not written to, so the delivery count is honest.
+        assert await hub.send_to_user(5, {"type": "call:incoming"}) == 0
+        assert ghost.sent == [], "nothing should be written to a dead socket"
+
+        # A heartbeat brings it straight back.
+        hub.touch(ghost)
+        assert hub.is_online(5) is True
+        assert await hub.send_to_user(5, {"type": "x"}) == 1
+
+    asyncio.run(scenario())
+
+
+def test_hub_presence_ignores_a_stale_sibling_socket(monkeypatch):
+    """One dead tab must not make a user look online when they are not."""
+    async def scenario():
+        hub = social.Hub()
+        dead, alive = FakeWS(), FakeWS()
+        now = [0.0]
+        monkeypatch.setattr(social.time, "monotonic", lambda: now[0])
+
+        await hub.add(9, dead)
+        now[0] += social.SOCKET_STALE_AFTER + 1
+        # Second device connects; the first has gone silent.
+        await hub.add(9, alive)
+
+        assert hub.is_online(9) is True
+        # Only the live one is written to.
+        assert await hub.send_to_user(9, {"type": "ping"}) == 1
+        assert dead.sent == []
+        assert len(alive.sent) == 1
+
+        # Losing the live one leaves nobody, even though `dead` is registered.
+        assert await hub.remove(9, alive) is True
+        assert hub.is_online(9) is False
+
+    asyncio.run(scenario())
+
+
 def test_hub_tracks_presence_across_multiple_tabs():
     async def scenario():
         hub = social.Hub()
