@@ -364,6 +364,8 @@ header {
 .icon-btn:hover:not(:disabled) { border-color: var(--accent-cyan); color: var(--accent-cyan); }
 .icon-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(160, 255, 255, 0.3); }
 .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Looks unavailable but still receives clicks, so the handler can say why. */
+.icon-btn.unavailable { opacity: 0.4; cursor: not-allowed; }
 .icon-btn svg { width: 20px; height: 20px; fill: currentColor; }
 
 /* ---------- Chat panel ---------- */
@@ -1228,14 +1230,23 @@ function updateChatHeader() {
     $('chat-avatar').dataset.online = String(!!p.online);
     $('chat-name').textContent = p.full_name;
     $('chat-status').textContent = p.online ? 'Onlayn' : 'Oflayn';
+    // Deliberately NOT `disabled`. A disabled button fires no click event, so
+    // pressing it produced no message, no log line and no request — the button
+    // simply did nothing and there was no way to find out why, from either the
+    // browser or the server. Keep it clickable and let the handler explain.
     const canCall = SOCIAL_WS_ENABLED && p.online;
-    $('btn-audio-call').disabled = !canCall;
-    $('btn-video-call').disabled = !canCall;
     const why = !SOCIAL_WS_ENABLED
         ? 'Zəng bu yerləşdirmədə mövcud deyil.'
-        : (p.online ? '' : 'İstifadəçi oflayndır.');
-    $('btn-audio-call').title = why || 'Səsli zəng';
-    $('btn-video-call').title = why || 'Video zəng';
+        : (p.online ? '' : 'İstifadəçi oflayndır — zəng edilə bilməz.');
+    [['btn-audio-call', 'Səsli zəng'], ['btn-video-call', 'Video zəng']].forEach(
+        ([id, label]) => {
+            const btn = $(id);
+            btn.disabled = false;
+            btn.classList.toggle('unavailable', !canCall);
+            btn.title = why || label;
+            btn.dataset.blocked = why;   // read by the click handler
+        }
+    );
 }
 
 async function openChat(friend) {
@@ -2049,8 +2060,21 @@ async function handleCallSignal(data) {
     }
 }
 
-$('btn-audio-call').addEventListener('click', () => startCall('audio'));
-$('btn-video-call').addEventListener('click', () => startCall('video'));
+function onCallButton(media) {
+    const blocked = $(media === 'audio' ? 'btn-audio-call' : 'btn-video-call').dataset.blocked;
+    callLog('call button pressed', media, blocked ? '(blocked: ' + blocked + ')' : '');
+    if (blocked) {
+        toast(blocked, 'error');
+        // Presence may simply be stale — re-check rather than leaving the user
+        // stuck on a button that refuses to work.
+        loadFriends().catch(() => {});
+        return;
+    }
+    startCall(media);
+}
+
+$('btn-audio-call').addEventListener('click', () => onCallButton('audio'));
+$('btn-video-call').addEventListener('click', () => onCallButton('video'));
 $('btn-accept').addEventListener('click', acceptCall);
 $('btn-reject').addEventListener('click', rejectCall);
 $('btn-hangup').addEventListener('click', () => endCall('local'));
