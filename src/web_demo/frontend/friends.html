@@ -1336,8 +1336,13 @@ function setConnState(kind, text) {
 function wsSend(payload) {
     if (state.ws && state.ws.readyState === WebSocket.OPEN) {
         state.ws.send(JSON.stringify(payload));
+        if (payload.type !== 'ping') callLog('send', payload.type);
         return true;
     }
+    // Silently dropping this is how a call can vanish with no trace on either
+    // side: the button appears to work and the server never hears anything.
+    callLog('SEND FAILED (socket not open)', payload.type,
+            state.ws ? 'readyState=' + state.ws.readyState : 'no socket');
     return false;
 }
 
@@ -1834,8 +1839,28 @@ function hideCallUI() {
 }
 
 async function startCall(media) {
-    if (!state.activePeer || !state.wsReady) return;
-    if (call.pc) { toast('Artıq davam edən zəng var.', 'error'); return; }
+    // These used to return silently. A call that does nothing at all, with no
+    // message and nothing in the server log, is the hardest failure to report
+    // — the server never hears about it, so its logs show a perfectly healthy
+    // connection and no invite.
+    if (!state.activePeer) {
+        callLog('startCall aborted: no friend selected');
+        toast('Əvvəlcə dost seçin.', 'error');
+        return;
+    }
+    if (!state.wsReady) {
+        callLog('startCall aborted: socket not ready',
+                state.ws ? 'readyState=' + state.ws.readyState : 'no socket');
+        toast('Canlı bağlantı yoxdur. Səhifəni yeniləyin.', 'error');
+        return;
+    }
+    if (call.pc) {
+        callLog('startCall aborted: a call is already in progress');
+        toast('Artıq davam edən zəng var.', 'error');
+        return;
+    }
+    callLog('startCall', media, '-> uid=' + state.activePeer.id,
+            'peerOnline=' + !!state.activePeer.online);
 
     try {
         call.localStream = await getLocalStream(media);
@@ -1861,7 +1886,11 @@ async function startCall(media) {
     call.pc = createPeerConnection();
     call.localStream.getTracks().forEach((t) => call.pc.addTrack(t, call.localStream));
 
-    wsSend({ type: 'call:invite', to: call.peer.id, media: media });
+    const sent = wsSend({ type: 'call:invite', to: call.peer.id, media: media });
+    if (!sent) {
+        toast('Zəng göndərilə bilmədi — bağlantı kəsildi.', 'error');
+        endCall('local');
+    }
 }
 
 async function acceptCall() {
