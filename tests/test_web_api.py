@@ -551,3 +551,44 @@ def test_captions_area_grows_instead_of_being_capped():
     assert "max-height: 28vh" not in captions, (
         "the old fixed cap would waste the space the split now provides"
     )
+
+
+def test_interim_speech_is_shown_while_it_is_still_being_heard():
+    """An empty box while you are mid-sentence reads as the app missing you.
+
+    Chrome does not finalise a speech result until it detects a pause, so
+    writing only final results left several seconds of speaking with nothing on
+    screen. The provisional text is now rendered in place and firms up when the
+    engine commits.
+    """
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+
+    assert "function renderCompose()" in html
+    assert "committed: ''" in html, "confirmed and provisional text must be separable"
+    # The interim result goes to the compose line, not just the status strip.
+    onresult = html.split("rec.onresult = (ev) => {", 1)[1].split("rec.onerror", 1)[0]
+    assert "renderCompose()" in onresult
+    # And it is visibly provisional.
+    assert "classList.toggle('interim'" in html
+    assert ".conv-compose .field.interim" in html
+
+
+def test_send_uses_the_visible_text_including_provisional():
+    """Waiting for finalisation before you may send would reintroduce the delay."""
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+    send = html.split("function sendCaption() {", 1)[1].split("addCaptionLine", 1)[0]
+    assert "input.value.trim()" in send, (
+        "sending must read what is on screen, so provisional text can be sent "
+        "without waiting for the engine to commit"
+    )
+
+
+def test_typing_by_hand_is_not_overwritten_by_recognition():
+    """Recognition renders into the same field the user can correct."""
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+    assert "$('conv-input').addEventListener('input'" in html
+    handler = html.split("$('conv-input').addEventListener('input'", 1)[1][:260]
+    assert "conv.committed = e.target.value" in handler, (
+        "a hand edit must become the confirmed text, or the next render "
+        "discards it"
+    )

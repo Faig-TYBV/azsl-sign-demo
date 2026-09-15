@@ -2283,8 +2283,10 @@ function resetCall() {
         if (overlay) overlay.classList.remove('with-conv');
         const captions = $('conv-captions');
         if (captions) captions.innerHTML = '';
+        conv.committed = '';
+        conv.interim = '';
         const input = $('conv-input');
-        if (input) input.value = '';
+        if (input) { input.value = ''; input.classList.remove('interim'); }
         const btn = $('btn-captions');
         if (btn) btn.classList.remove('on');
         if (typeof renderConvModes === 'function') renderConvModes();
@@ -2453,6 +2455,7 @@ const conv = {
     rec: null,            // SpeechRecognition
     recRunning: false,
     interim: '',
+    committed: '',        // confirmed text; interim is rendered on top of it
     speechLang: 'az-AZ',
     recGeneration: 0,
     wrongScriptCount: 0,
@@ -2743,24 +2746,40 @@ function stopFramePump() {
 }
 
 /* ---- what the recogniser sends back ---- */
-function appendToCompose(text) {
+/* The compose line shows confirmed text plus whatever is currently being
+   heard, the provisional part styled as such.
+
+   Only final results used to be written here, and Chrome does not finalise
+   until it detects a pause — several seconds of speaking with an empty box,
+   which reads as the app having missed you. Showing the interim text makes the
+   recogniser's progress visible immediately; it firms up in place when the
+   engine commits. */
+function renderCompose() {
     const input = $('conv-input');
-    const joined = (input.value + ' ' + text).replace(/\s+/g, ' ').trim();
-    input.value = joined;
+    const gap = conv.committed && conv.interim ? ' ' : '';
+    input.value = conv.committed + gap + conv.interim;
+    input.classList.toggle('interim', !!conv.interim && !conv.committed);
+}
+
+/** Append a recognised word or phrase, with spacing. */
+function appendToCompose(text) {
+    conv.committed = (conv.committed + ' ' + text).replace(/\s+/g, ' ').trim();
+    conv.interim = '';
+    renderCompose();
 }
 
 /** Locally classified letters, applied exactly as the server's would be. */
 function applyLocalAlphabet(out) {
     if (out.moving) { convStatus('Hərəkət…'); return; }
     if (out.accepted) {
-        const input = $('conv-input');
         if (out.accepted === 'SPACE') {
-            input.value = (input.value + ' ').replace(/\s+/g, ' ');
+            conv.committed = (conv.committed + ' ').replace(/\s+/g, ' ');
         } else if (out.accepted === 'DEL') {
-            input.value = input.value.slice(0, -1);
+            conv.committed = conv.committed.slice(0, -1);
         } else {
-            input.value += out.accepted;
+            conv.committed += out.accepted;
         }
+        renderCompose();
         callLog('sign letter accepted (local)', out.accepted);
         convStatus('Qəbul edildi: ' + out.accepted);
         return;
@@ -2799,14 +2818,14 @@ function onRecognitionMessage(data) {
     // so the compose line stays editable instead of being overwritten.
     if (data.just_accepted && data.accepted_letter && data.accepted_letter !== '-') {
         const letter = data.accepted_letter;
-        const input = $('conv-input');
         if (letter === 'SPACE') {
-            input.value = (input.value + ' ').replace(/\s+/g, ' ');
+            conv.committed = (conv.committed + ' ').replace(/\s+/g, ' ');
         } else if (letter === 'DEL') {
-            input.value = input.value.slice(0, -1);
+            conv.committed = conv.committed.slice(0, -1);
         } else {
-            input.value += letter;
+            conv.committed += letter;
         }
+        renderCompose();
         callLog('sign letter accepted', letter);
     }
     if (data.mode === 'alphabet' && data.raw_prediction && data.raw_prediction !== '-') {
@@ -2928,7 +2947,8 @@ function startSpeech() {
             }
         }
         conv.interim = interim.trim();
-        if (conv.interim) convStatus('… ' + conv.interim);
+        renderCompose();
+        convStatus(conv.interim ? 'Eşidilir…' : 'Dinlənilir…');
     };
 
     rec.onerror = (ev) => {
@@ -2992,8 +3012,9 @@ function sendCaption() {
     if (!ok) { convStatus('Göndərilə bilmədi — bağlantı kəsildi.'); return; }
 
     addCaptionLine(text, true);
-    input.value = '';
+    conv.committed = '';
     conv.interim = '';
+    renderCompose();
     // Keep the server-side spelling buffer from carrying into the next phrase.
     recogSend({ type: 'alphabet_action', action: 'clear' });
 }
@@ -3117,11 +3138,19 @@ $('speech-lang').addEventListener('change', (e) => {
 });
 $('conv-send').addEventListener('click', sendCaption);
 $('conv-clear').addEventListener('click', () => {
-    $('conv-input').value = '';
+    conv.committed = '';
+    conv.interim = '';
+    renderCompose();
     recogSend({ type: 'alphabet_action', action: 'clear' });
 });
 $('conv-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); sendCaption(); }
+});
+// Hand edits take precedence, otherwise the next render would overwrite them.
+$('conv-input').addEventListener('input', (e) => {
+    conv.committed = e.target.value;
+    conv.interim = '';
+    e.target.classList.remove('interim');
 });
 $('sign-alphabet').addEventListener('click', () => {
     conv.signMode = 'alphabet';
