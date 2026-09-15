@@ -631,6 +631,21 @@ header {
     background: radial-gradient(circle at 50% 40%, rgba(160, 255, 255, 0.08), transparent 55%), #151515;
 }
 .call-audio-face .avatar { width: 120px; height: 120px; font-size: 2.6rem; }
+/* Sits exactly on top of #local-video and mirrors with it, so a landmark
+   drawn at the fingertip appears at the fingertip on screen. */
+#hand-overlay {
+    position: absolute;
+    right: 1rem;
+    bottom: 1rem;
+    width: clamp(110px, 24vw, 190px);
+    aspect-ratio: 3 / 4;
+    border-radius: 12px;
+    pointer-events: none;
+    transform: scaleX(-1);
+    z-index: 3;
+}
+#hand-overlay[hidden] { display: none !important; }
+
 #local-video {
     position: absolute;
     right: 1rem;
@@ -1015,6 +1030,10 @@ header {
             <div class="avatar lg" id="call-face-avatar"></div>
         </div>
         <video id="local-video" autoplay playsinline muted></video>
+        <!-- MediaPipe's 21 landmarks drawn over your own preview. Seeing
+             whether the hand is being tracked at all is the difference between
+             "the model is wrong" and "it never saw your hand". -->
+        <canvas id="hand-overlay" aria-hidden="true"></canvas>
 
         <!-- Shown only when the browser refuses to autoplay the remote stream.
              One click is user activation, which always unblocks it. -->
@@ -2287,6 +2306,11 @@ function resetCall() {
         conv.interim = '';
         const input = $('conv-input');
         if (input) { input.value = ''; input.classList.remove('interim'); }
+        const handCanvas = $('hand-overlay');
+        if (handCanvas) {
+            const hc = handCanvas.getContext('2d');
+            if (hc) hc.clearRect(0, 0, handCanvas.width, handCanvas.height);
+        }
         const btn = $('btn-captions');
         if (btn) btn.classList.remove('on');
         if (typeof renderConvModes === 'function') renderConvModes();
@@ -2536,6 +2560,79 @@ async function initLocalRecognition() {
     }
 }
 
+/* MediaPipe's hand skeleton: which of the 21 landmarks connect to which.
+   Index 0 is the wrist; each finger runs outward from it. */
+const HAND_CONNECTIONS = [
+    [0, 1], [1, 2], [2, 3], [3, 4],           // thumb
+    [0, 5], [5, 6], [6, 7], [7, 8],           // index
+    [9, 10], [10, 11], [11, 12],              // middle
+    [13, 14], [14, 15], [15, 16],             // ring
+    [0, 17], [17, 18], [18, 19], [19, 20],    // pinky
+    [5, 9], [9, 13], [13, 17],                // palm
+];
+
+/** Draw the tracked hands over the local preview.
+ *
+ *  Worth the pixels: without it there is no way to tell a hand the model read
+ *  wrongly from a hand it never detected, and those need completely different
+ *  fixes — move into frame, versus the gesture was ambiguous. */
+function drawHandOverlay(hands) {
+    const canvas = $('hand-overlay');
+    const video = $('local-video');
+    if (!canvas || !video) return;
+
+    // Match the backing store to the displayed size, or the drawing is blurry
+    // and offset on high-DPI screens.
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, Math.round(rect.width * dpr));
+    const h = Math.max(1, Math.round(rect.height * dpr));
+    if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!hands || !hands.length) return;
+
+    // object-fit: cover on the video crops the frame; replicate that crop so
+    // the landmarks land where the hand actually appears.
+    const vw = video.videoWidth || 1;
+    const vh = video.videoHeight || 1;
+    const scale = Math.max(canvas.width / vw, canvas.height / vh);
+    const offX = (canvas.width - vw * scale) / 2;
+    const offY = (canvas.height - vh * scale) / 2;
+    const px = (p) => [p[0] * vw * scale + offX, p[1] * vh * scale + offY];
+
+    hands.forEach((hand, idx) => {
+        const lm = hand.landmarks;
+        if (!lm || lm.length < 21) return;
+        // Two hands get two colours, so a two-handed sign is readable.
+        const stroke = idx === 0 ? 'rgba(160, 255, 255, 0.95)' : 'rgba(255, 204, 0, 0.95)';
+
+        ctx.lineWidth = Math.max(1.5, canvas.width / 150);
+        ctx.strokeStyle = stroke;
+        ctx.beginPath();
+        HAND_CONNECTIONS.forEach(([a, b]) => {
+            const [ax, ay] = px(lm[a]);
+            const [bx, by] = px(lm[b]);
+            ctx.moveTo(ax, ay);
+            ctx.lineTo(bx, by);
+        });
+        ctx.stroke();
+
+        lm.forEach((p, i) => {
+            const [x, y] = px(p);
+            // The wrist and the fingertips are the points you actually read.
+            const key = i === 0 || i === 4 || i === 8 || i === 12 || i === 16 || i === 20;
+            ctx.beginPath();
+            ctx.arc(x, y, Math.max(1.6, canvas.width / (key ? 60 : 110)), 0, Math.PI * 2);
+            ctx.fillStyle = key ? '#ffffff' : stroke;
+            ctx.fill();
+        });
+    });
+}
+
 /** Detect once on the current video frame. Returns hands in the shape
  *  azsl_features.js expects, or null when detection could not run. */
 function detectLocal(video) {
@@ -2559,7 +2656,7 @@ function detectLocal(video) {
    nonsense while someone is just moving their hand. */
 function classifyAlphabetLocally(hands) {
     const st = local.stab;
-    if (!hands || !hands.length || !local.alphabetModel) {
+    if (!hands || !hands.length || !local.alphabetModel || !window.AzslAlphabet) {
         st.candidate = null; st.count = 0; st.committed = null; st.prevWrist = null;
         return null;
     }
@@ -2577,14 +2674,45 @@ function classifyAlphabetLocally(hands) {
     let label = null;
     let confidence = 0;
     try {
-        // The server mirrors the hand based on handedness; do the same so the
-        // model sees what it was trained on.
-        const handed = hands[0].label === 'Right' ? 'Left' : 'Right';
-        const coords = window.AzslAlphabet.normalizeLandmarks(lm, handed === 'Left');
-        const out = window.AzslAlphabet.predictGesture(coords);
-        if (out) { label = out.label; confidence = out.confidence || 0; }
+        const A = window.AzslAlphabet;
+        // azsl_alphabet.js works in {x, y, z} objects; MediaPipe and
+        // azsl_features.js give [x, y, z] arrays. Passing arrays through
+        // produced NaN for every coordinate.
+        const points = lm.map(function (p) { return { x: p[0], y: p[1], z: p[2] }; });
+
+        // MediaPipe labels handedness as if the image were mirrored (selfie
+        // view) while the frame is raw, so the label is inverted relative to
+        // reality. Same flip as ALPHA_HANDEDNESS_IS_MIRRORED in backend.py.
+        const actual = hands[0].label === 'Right' ? 'Left' : 'Right';
+        const coords = A.normalizeLandmarks(points, actual === 'Left');
+
+        // Deliberately not predictGesture(): it takes
+        // (landmarks, mirrorX, velocity, ...) and dereferences velocity.x, so
+        // calling it with one argument threw on every single frame — the
+        // reason this mode produced nothing at all. It also normalises
+        // internally, and checks letters before control gestures, which
+        // predict_frame() in alphabet_classifier.py documents as making SPACE
+        // and DEL unreachable because the letter MLP's softmax saturates.
+        const control = A.detectControlGesture(coords);
+        if (control) {
+            label = control.label;
+            confidence = control.confidence;
+        } else {
+            // Zero velocity, matching the Python: a per-frame classifier has
+            // none to offer, and the model was fitted with zeros here.
+            const r = A.classifyHierarchical(coords, { x: 0, y: 0 });
+            label = r.label;
+            confidence = r.confidence || 0;
+        }
     } catch (err) {
-        callLog('alphabet classify failed', err && err.message);
+        // Previously swallowed into a debug-only log, so a mode that
+        // classified nothing looked like a bad model rather than a broken call.
+        callLog('alphabet classify FAILED', err && err.name, err && err.message);
+        if (!local.classifyErrorShown) {
+            local.classifyErrorShown = true;
+            console.error('alphabet classification error', err);
+            toast('İşarə tanıma işləmir (brauzer xətası).', 'error');
+        }
         return null;
     }
 
@@ -2710,6 +2838,7 @@ function startFramePump() {
         if (local.ready) {
             const hands = detectLocal(video);
             if (hands === null) { conv.frameInFlight = false; return; }
+            drawHandOverlay(hands);
 
             if (conv.signMode === 'alphabet') {
                 // Never leaves the browser.

@@ -270,3 +270,120 @@ def test_wrong_script_results_are_detected(text, lang, expected):
 def test_wrong_script_words_are_stripped_not_the_whole_phrase(text, expected):
     """The engine often gets part of an utterance right; keep that part."""
     assert _run_guard("stripWrongScript", text, "az-AZ") == expected
+
+
+# --------------------------------------------------------------------------- #
+# Alphabet: the browser classifier must agree with the server's
+# --------------------------------------------------------------------------- #
+ALPHABET_JS = PROJECT_ROOT / "src" / "web_demo" / "frontend" / "js" / "azsl_alphabet.js"
+ALPHABET_MODEL = (
+    PROJECT_ROOT / "src" / "web_demo" / "frontend" / "models" / "azsl_hierarchical_model.json"
+)
+
+
+def run_js_alphabet(landmarks, handedness):
+    """Classify one hand in the browser implementation, under node.
+
+    Deliberately mirrors what friends.html does, including the control-gesture
+    ordering, so this fails if the page and the Python ever diverge.
+    """
+    harness = f"""
+global.window = global;
+require({json.dumps(str(ALPHABET_JS))});
+const A = global.AzslAlphabet;
+A.setAzslModel(require({json.dumps(str(ALPHABET_MODEL))}));
+const a = JSON.parse(process.argv[2]);
+const points = a.landmarks.map(p => ({{ x: p[0], y: p[1], z: p[2] }}));
+const mirrorX = a.handedness === 'Left';
+const coords = A.normalizeLandmarks(points, mirrorX);
+let out;
+const control = A.detectControlGesture(coords);
+if (control) out = {{ label: control.label, confidence: control.confidence }};
+else {{
+  const r = A.classifyHierarchical(coords, {{ x: 0, y: 0 }});
+  out = {{ label: r.label, confidence: r.confidence || 0 }};
+}}
+process.stdout.write(JSON.stringify(out));
+"""
+    with tempfile.TemporaryDirectory() as tmp:
+        script = Path(tmp) / "alpha.cjs"
+        script.write_text(harness, encoding="utf-8")
+        payload = json.dumps(
+            {"landmarks": landmarks, "handedness": handedness}, ensure_ascii=True
+        )
+        out = subprocess.run(
+            ["node", str(script), payload], capture_output=True, encoding="utf-8", timeout=60
+        )
+    if out.returncode != 0:
+        raise AssertionError(f"node failed: {out.stderr}")
+    return json.loads(out.stdout)
+
+
+def run_python_alphabet(landmarks, handedness):
+    from src.inference.alphabet_classifier import AlphabetClassifier
+
+    clf = AlphabetClassifier()
+    label, conf = clf.predict_frame(
+        np.array(landmarks, dtype=np.float32), handedness=handedness, min_confidence=0.0
+    )
+    return {"label": label, "confidence": float(conf)}
+
+
+def plausible_hand(rng):
+    """A hand-shaped set of landmarks, not uniform noise.
+
+    Random points give a degenerate pose both implementations reject the same
+    way, which would let a real divergence pass unnoticed.
+    """
+    lm = np.zeros((21, 3), dtype=np.float32)
+    lm[0] = [0.5, 0.8, 0.0]                                   # wrist
+    lm[9] = lm[0] + [0.0, -0.18, 0.0]                         # middle MCP
+    for finger, base in enumerate([1, 5, 9, 13, 17]):
+        spread = (finger - 2) * 0.045
+        for j in range(4):
+            idx = base + j
+            if idx > 20:
+                break
+            lm[idx] = lm[0] + [spread, -0.05 - 0.045 * j, 0.0]
+    lm += rng.normal(0, 0.012, size=(21, 3)).astype(np.float32)
+    return lm.tolist()
+
+
+@pytest.mark.parametrize("handedness", ["Left", "Right"])
+@pytest.mark.parametrize("seed", [1, 2, 3, 4, 5, 6])
+def test_browser_alphabet_agrees_with_the_server(seed, handedness):
+    """The page classifies fingerspelling locally; it must not drift from Python.
+
+    The two run the same algorithm from the same weights, so they should agree
+    exactly. They previously did not: the page called predictGesture() with a
+    missing velocity argument, which threw on every frame, and passed arrays
+    where the module expects {x, y, z} objects.
+    """
+    rng = np.random.default_rng(seed)
+    landmarks = plausible_hand(rng)
+
+    js = run_js_alphabet(landmarks, handedness)
+    py = run_python_alphabet(landmarks, handedness)
+
+    assert js["label"] == py["label"], (
+        f"browser said {js['label']!r}, server said {py['label']!r} "
+        f"for the same hand ({handedness})"
+    )
+    assert abs(js["confidence"] - py["confidence"]) < 1e-4, (
+        f"confidence differs: browser {js['confidence']:.6f} vs "
+        f"server {py['confidence']:.6f}"
+    )
+
+
+def test_browser_alphabet_returns_a_real_prediction_not_an_exception():
+    """Guards the actual regression: a call that threw on every frame.
+
+    The failure was silent — swallowed into a debug-only log — so alphabet mode
+    simply never produced a letter, which reads as a bad model rather than a
+    broken call.
+    """
+    rng = np.random.default_rng(99)
+    out = run_js_alphabet(plausible_hand(rng), "Right")
+    assert "label" in out and "confidence" in out
+    assert isinstance(out["confidence"], (int, float))
+    assert out["confidence"] > 0, "a valid hand must yield a non-zero confidence"

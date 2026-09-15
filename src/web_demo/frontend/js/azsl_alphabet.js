@@ -160,11 +160,19 @@
   // ==========================================================================
   // SCALER + MLP FORWARD (sklearn-exported coefficients)
   // ==========================================================================
+  // Matches SCALER_MIN_STD in src/inference/alphabet_classifier.py. A feature
+  // that was constant during training carries no information, but dividing by
+  // its ~1e-7 standard deviation amplifies any difference in it a millionfold.
+  // One joint angle in this model is exactly that, and it made the browser and
+  // the server disagree on confidence by 0.23 for an identical hand.
+  var SCALER_MIN_STD = 1e-6;
+
   function applyScaler(inputVec, scaler) {
     var mean = scaler.mean, std = scaler.std;
     var out = new Array(inputVec.length);
     for (var i = 0; i < inputVec.length; i++) {
-      out[i] = (inputVec[i] - mean[i]) / (std[i] || 1);
+      var s = std[i];
+      out[i] = (inputVec[i] - mean[i]) / (s > SCALER_MIN_STD ? s : 1);
     }
     return out;
   }

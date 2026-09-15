@@ -146,10 +146,22 @@ def build_feature_vector_84(
     return features.astype(out_dtype)
 
 
+# A feature whose training standard deviation is this small was effectively
+# constant, so it carries no information — but dividing by it amplifies any
+# difference in that feature by a factor of ~1e6. One joint angle in this model
+# has std ~4.4e-07, and it turned a sub-microscopic float discrepancy between
+# the Python and JavaScript implementations into a ~2 sigma swing in the model
+# input, and a 0.23 swing in the resulting confidence.
+#
+# Guarding it removes a noise amplifier rather than any signal. `== 0` was too
+# narrow: the value is near zero, not exactly zero.
+SCALER_MIN_STD = 1e-6
+
+
 def _apply_scaler(input_vec: np.ndarray, scaler: Dict[str, Any]) -> np.ndarray:
     mean = np.array(scaler["mean"], dtype=np.float32)
     std = np.array(scaler["std"], dtype=np.float32)
-    std = np.where(std == 0, 1.0, std)
+    std = np.where(std < SCALER_MIN_STD, 1.0, std)
     return (input_vec - mean) / std
 
 

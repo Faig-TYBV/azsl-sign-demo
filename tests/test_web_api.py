@@ -592,3 +592,65 @@ def test_typing_by_hand_is_not_overwritten_by_recognition():
         "a hand edit must become the confirmed text, or the next render "
         "discards it"
     )
+
+
+def test_hand_landmarks_are_drawn_over_the_local_preview():
+    """Seeing the skeleton separates "read the hand wrongly" from "never saw it".
+
+    Those need opposite responses — move into frame, versus the gesture was
+    ambiguous — and without the overlay they are indistinguishable.
+    """
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+
+    assert 'id="hand-overlay"' in html
+    assert "HAND_CONNECTIONS" in html
+    assert "function drawHandOverlay" in html
+    # Drawn from the same detection that feeds recognition, so what is shown is
+    # what the model is actually being given.
+    pump = html.split("if (local.ready) {", 1)[1][:400]
+    assert "drawHandOverlay(hands)" in pump
+
+    # It must mirror with the preview, or a landmark at the fingertip lands on
+    # the wrong side of the screen.
+    overlay_css = html.split("#hand-overlay {", 1)[1].split("}", 1)[0]
+    assert "transform: scaleX(-1)" in overlay_css
+    assert "pointer-events: none" in overlay_css
+
+
+def test_alphabet_uses_the_real_classifier_api():
+    """Guards the call that threw on every frame.
+
+    predictGesture(landmarks, mirrorX, velocity, ...) dereferences velocity.x,
+    so a one-argument call raised TypeError for every frame and the mode
+    produced nothing at all.
+    """
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+    # Anchor on a top-level declaration: splitting on "function " alone cuts at
+    # the inline `lm.map(function (p) ...)` inside the block being examined.
+    block = html.split("function classifyAlphabetLocally", 1)[1].split("\nfunction ", 1)[0]
+
+    assert "A.predictGesture(" not in block, (
+        "predictGesture needs a velocity argument and reorders control "
+        "gestures; call the pieces directly as predict_frame() does"
+    )
+    assert "A.detectControlGesture(coords)" in block, "control gestures come first"
+    assert "A.classifyHierarchical(coords, { x: 0, y: 0 })" in block
+    # The module wants {x, y, z} objects, not the [x, y, z] arrays it is given.
+    assert "{ x: p[0], y: p[1], z: p[2] }" in block
+
+
+def test_degenerate_scaler_variance_is_guarded_in_both_implementations():
+    """One feature was constant in training; dividing by its ~4e-7 std
+    amplified a sub-microscopic float difference into a 0.23 confidence gap
+    between the browser and the server."""
+    py_src = (PROJECT_ROOT / "src" / "inference" / "alphabet_classifier.py").read_text(
+        encoding="utf-8"
+    )
+    js_src = (FRONTEND / "js" / "azsl_alphabet.js").read_text(encoding="utf-8")
+
+    assert "SCALER_MIN_STD" in py_src and "SCALER_MIN_STD" in js_src
+    assert "std < SCALER_MIN_STD" in py_src
+    assert "s > SCALER_MIN_STD ? s : 1" in js_src
+    assert "np.where(std == 0, 1.0, std)" not in py_src, (
+        "an exact-zero test misses a std of 4.4e-07, which is the case that bit"
+    )
