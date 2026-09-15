@@ -23,7 +23,7 @@ from pathlib import Path
 
 import edge_tts
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr, field_validator
 from starlette.middleware.sessions import SessionMiddleware
@@ -245,6 +245,30 @@ async def api_tts(payload: TTSIn, user=Depends(require_user)):
 
 
 page_router = APIRouter(tags=["pages"])
+
+
+# The MediaPipe hand-landmarker bundle, so the browser can run detection
+# locally instead of shipping JPEGs to the server. It lives under src/models/
+# rather than the frontend directory, so it needs its own route.
+#
+# Not bundled into the Vercel function (.vercelignore excludes *.task), so this
+# 404s there — the page falls back to server-side recognition, which on that
+# deployment means a separate backend anyway.
+HAND_LANDMARKER_TASK = (
+    Path(__file__).resolve().parents[2] / "src" / "models" / "hand_landmarker.task"
+)
+
+
+@page_router.get("/models/hand_landmarker.task")
+async def hand_landmarker_task():
+    if not HAND_LANDMARKER_TASK.is_file():
+        raise HTTPException(status_code=404, detail="landmarker bundle not available")
+    return FileResponse(
+        HAND_LANDMARKER_TASK,
+        media_type="application/octet-stream",
+        # 7.46 MB and it never changes, so let the browser keep it.
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+    )
 
 
 @page_router.get("/health")

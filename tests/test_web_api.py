@@ -447,3 +447,60 @@ def test_rtc_config_is_served_to_signed_in_users(app):
     data = client.get("/api/rtc-config").json()
     assert data["iceServers"]
     assert isinstance(data["turn"], bool)
+
+
+def test_landmarker_bundle_is_served_for_browser_detection():
+    """The browser cannot run MediaPipe without this file.
+
+    It lives under src/models/ rather than the frontend directory, so it needs
+    its own route; without it the page silently falls back to shipping JPEGs,
+    which is the bandwidth problem this replaced.
+    """
+    from src.web_demo import webapp
+
+    assert webapp.HAND_LANDMARKER_TASK.is_file(), "the .task bundle is missing"
+    assert webapp.HAND_LANDMARKER_TASK.stat().st_size > 1_000_000
+
+
+def test_browser_feature_extraction_is_wired_into_the_page():
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+
+    # Both pure-compute modules must load before the page script uses them.
+    assert '<script src="/static/js/azsl_alphabet.js"></script>' in html
+    assert '<script src="/static/js/azsl_features.js"></script>' in html
+
+    # Detection happens locally, and alphabet never reaches the network.
+    assert "initLocalRecognition" in html
+    assert "detectForVideo" in html
+    assert "classifyAlphabetLocally" in html
+
+    # Word mode sends vectors, not images.
+    assert "frameFeatures126(hands)" in html
+    assert "features: feats.map" in html
+
+    # ...but the JPEG path survives for browsers that cannot do the above.
+    assert "toDataURL('image/jpeg'" in html, "the server-side fallback was removed"
+    assert "if (local.ready) {" in html
+
+
+def test_server_validates_browser_supplied_features():
+    """Vectors from the page are untrusted input reaching a model directly."""
+    backend = (PROJECT_ROOT / "src" / "web_demo" / "backend.py").read_text(encoding="utf-8")
+
+    assert 'message.get("features")' in backend
+    assert ".reshape(126)" in backend, "length must be enforced"
+    assert "np.all(np.isfinite(feat_126))" in backend, (
+        "a NaN would poison the normalizer and yield a confident-looking "
+        "prediction from nonsense"
+    )
+    # Alphabet is client-side; the server should not accept features for it.
+    assert 'state.active_mode != "word"' in backend
+
+
+def test_word_recording_has_a_single_implementation():
+    """Both input paths must share the trial state machine, or they drift."""
+    backend = (PROJECT_ROOT / "src" / "web_demo" / "backend.py").read_text(encoding="utf-8")
+    assert backend.count("async def _record_word_frame") == 1
+    assert backend.count("await _record_word_frame(") == 2, (
+        "expected exactly the JPEG path and the landmark path to call it"
+    )

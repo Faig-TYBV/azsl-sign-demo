@@ -1015,6 +1015,8 @@ header {
     </div>
 </div>
 
+<script src="/static/js/azsl_alphabet.js"></script>
+<script src="/static/js/azsl_features.js"></script>
 <script>
 'use strict';
 
@@ -2364,6 +2366,144 @@ const CONV_FRAME_MS = 100;
 const CONV_CAPTURE_W = 480;
 const CONV_CAPTURE_H = 360;
 
+/* -------------------------------------------------------------------------
+   Browser-side MediaPipe
+
+   Detection runs here rather than on the server. Shipping JPEGs cost ~1.2-2.4
+   Mbps per signer upstream — more than the video call itself — and put a
+   MediaPipe instance per stream on a 0.1-CPU box.
+
+   With the landmarker local:
+     * alphabet is classified entirely in the browser (azsl_alphabet.js), so
+       nothing touches the network at all
+     * word mode sends 126 floats per frame instead of an image, and the
+       server is left with just the GRU
+
+   If any of this fails to load — an old browser, the .task file missing on a
+   deployment that excludes it — `local.ready` stays false and the original
+   JPEG path is used unchanged.
+   ------------------------------------------------------------------------- */
+const local = {
+    ready: false,
+    landmarker: null,
+    alphabetModel: null,
+    lastVideoTime: -1,
+    // Mirrors AlphabetStabilizer in src/inference/alphabet_classifier.py.
+    stab: {
+        candidate: null, count: 0, committed: null, prevWrist: null,
+    },
+};
+
+// Same numbers as the server constants in backend.py; the gates are what stop
+// a hand in transit between poses from committing letters.
+const ALPHA_MIN_CONF = 0.82;
+const ALPHA_STABILITY_FRAMES = 10;
+const ALPHA_MOTION_THRESH = 0.030;
+
+async function initLocalRecognition() {
+    if (local.ready) return true;
+    if (!window.AzslFeatures || !window.AzslAlphabet) return false;
+    try {
+        const vision = await import(
+            'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs'
+        );
+        const fileset = await vision.FilesetResolver.forVisionTasks(
+            'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
+        );
+        local.landmarker = await vision.HandLandmarker.createFromOptions(fileset, {
+            baseOptions: { modelAssetPath: '/models/hand_landmarker.task' },
+            runningMode: 'VIDEO',
+            numHands: 2,
+        });
+
+        const res = await fetch('/static/models/azsl_hierarchical_model.json');
+        if (res.ok) {
+            local.alphabetModel = await res.json();
+            window.AzslAlphabet.setAzslModel(local.alphabetModel);
+        }
+
+        local.ready = true;
+        callLog('local MediaPipe ready',
+                'alphabet=' + (local.alphabetModel ? 'yes' : 'no'));
+        return true;
+    } catch (err) {
+        callLog('local MediaPipe unavailable', err && err.message);
+        local.ready = false;
+        return false;
+    }
+}
+
+/** Detect once on the current video frame. Returns hands in the shape
+ *  azsl_features.js expects, or null when detection could not run. */
+function detectLocal(video) {
+    if (!local.ready || !video || !video.videoWidth) return null;
+    const now = performance.now();
+    // MediaPipe requires strictly increasing timestamps in VIDEO mode.
+    if (video.currentTime === local.lastVideoTime) return null;
+    local.lastVideoTime = video.currentTime;
+    try {
+        const result = local.landmarker.detectForVideo(video, now);
+        return window.AzslFeatures.handsFromMediaPipe(result);
+    } catch (err) {
+        callLog('local detect failed', err && err.message);
+        return null;
+    }
+}
+
+/* Alphabet, entirely client side. Mirrors the server's stabilizer: a
+   confidence floor, a stable-hold requirement, and a motion gate — the
+   classifier has no "not a letter" class, so without these it happily spells
+   nonsense while someone is just moving their hand. */
+function classifyAlphabetLocally(hands) {
+    const st = local.stab;
+    if (!hands || !hands.length || !local.alphabetModel) {
+        st.candidate = null; st.count = 0; st.committed = null; st.prevWrist = null;
+        return null;
+    }
+    const lm = hands[0].landmarks;
+
+    const wrist = [lm[0][0], lm[0][1]];
+    let moving = false;
+    if (st.prevWrist) {
+        const dx = wrist[0] - st.prevWrist[0];
+        const dy = wrist[1] - st.prevWrist[1];
+        moving = Math.sqrt(dx * dx + dy * dy) > ALPHA_MOTION_THRESH;
+    }
+    st.prevWrist = wrist;
+
+    let label = null;
+    let confidence = 0;
+    try {
+        // The server mirrors the hand based on handedness; do the same so the
+        // model sees what it was trained on.
+        const handed = hands[0].label === 'Right' ? 'Left' : 'Right';
+        const coords = window.AzslAlphabet.normalizeLandmarks(lm, handed === 'Left');
+        const out = window.AzslAlphabet.predictGesture(coords);
+        if (out) { label = out.label; confidence = out.confidence || 0; }
+    } catch (err) {
+        callLog('alphabet classify failed', err && err.message);
+        return null;
+    }
+
+    if (moving || !label || confidence < ALPHA_MIN_CONF) {
+        st.candidate = null; st.count = 0;
+        return { raw: label, confidence: confidence, accepted: null, moving: moving };
+    }
+
+    if (label === st.candidate) st.count += 1;
+    else { st.candidate = label; st.count = 1; }
+
+    let accepted = null;
+    if (st.count >= ALPHA_STABILITY_FRAMES && st.candidate !== st.committed) {
+        accepted = st.candidate;
+        st.committed = st.candidate;
+    }
+    return {
+        raw: label, confidence: confidence, accepted: accepted, moving: false,
+        progress: Math.min(st.count, ALPHA_STABILITY_FRAMES) + '/' + ALPHA_STABILITY_FRAMES,
+    };
+}
+
 function convStatus(text) {
     const el = $('conv-status');
     if (el) el.textContent = text || '';
@@ -2463,6 +2603,33 @@ function startFramePump() {
         if (conv.frameInFlight) return;
         conv.frameInFlight = true;
 
+        // --- preferred path: detect here, send almost nothing -------------
+        if (local.ready) {
+            const hands = detectLocal(video);
+            if (hands === null) { conv.frameInFlight = false; return; }
+
+            if (conv.signMode === 'alphabet') {
+                // Never leaves the browser.
+                conv.frameInFlight = false;
+                const out = classifyAlphabetLocally(hands);
+                if (out) applyLocalAlphabet(out);
+                return;
+            }
+
+            // Word mode: 126 floats instead of a ~20 KB image. Rounded to 5
+            // decimals — far finer than the model can distinguish, and it
+            // roughly halves the payload.
+            const feats = window.AzslFeatures.frameFeatures126(hands);
+            recogSend({
+                type: 'frame',
+                mode: 'word',
+                features: feats.map((v) => Math.round(v * 1e5) / 1e5),
+                valid: hands.length > 0 ? 1 : 0,
+            });
+            return;
+        }
+
+        // --- fallback: the original server-side path ----------------------
         conv.ctx.drawImage(video, 0, 0, CONV_CAPTURE_W, CONV_CAPTURE_H);
         const b64 = conv.canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
         recogSend({ type: 'frame', mode: conv.signMode, data: b64 });
@@ -2480,6 +2647,27 @@ function appendToCompose(text) {
     const input = $('conv-input');
     const joined = (input.value + ' ' + text).replace(/\s+/g, ' ').trim();
     input.value = joined;
+}
+
+/** Locally classified letters, applied exactly as the server's would be. */
+function applyLocalAlphabet(out) {
+    if (out.moving) { convStatus('Hərəkət…'); return; }
+    if (out.accepted) {
+        const input = $('conv-input');
+        if (out.accepted === 'SPACE') {
+            input.value = (input.value + ' ').replace(/\s+/g, ' ');
+        } else if (out.accepted === 'DEL') {
+            input.value = input.value.slice(0, -1);
+        } else {
+            input.value += out.accepted;
+        }
+        callLog('sign letter accepted (local)', out.accepted);
+        convStatus('Qəbul edildi: ' + out.accepted);
+        return;
+    }
+    if (out.raw) {
+        convStatus('Hərf: ' + out.raw + (out.progress ? ' (' + out.progress + ')' : ''));
+    }
 }
 
 function onRecognitionMessage(data) {
@@ -2661,6 +2849,19 @@ async function setConvMode(mode) {
             renderConvModes();
             return;
         }
+
+        convStatus('Tanıma hazırlanır…');
+        await initLocalRecognition();
+
+        // With local detection, fingerspelling needs no server at all. Word
+        // mode still does — the GRU is PyTorch — but it only sends landmarks.
+        if (local.ready && conv.signMode === 'alphabet') {
+            local.stab = { candidate: null, count: 0, committed: null, prevWrist: null };
+            startFramePump();
+            convStatus('Hərf-hərf işarə edin (cihazda tanınır)');
+            return;
+        }
+
         convStatus('Tanıma bağlantısı qurulur…');
         const ok = await openRecognition();
         if (!ok) {

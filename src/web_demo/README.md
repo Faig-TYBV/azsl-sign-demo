@@ -126,7 +126,7 @@ Each participant independently chooses how they *speak*:
 
 | Mode | How it works |
 | :--- | :--- |
-| **İşarə** (sign) | Frames from the call's own camera stream are pushed to `/ws` -- the same server-side MediaPipe + GRU pipeline the workspace page uses. No second camera is opened. Sub-modes: **Hərf** (continuous fingerspelling, any word) and **Söz** (trial-based, the 24-word vocabulary). |
+| **İşarə** (sign) | The call's own camera stream is read directly — no second camera is opened — and MediaPipe runs in the browser (see *Where detection runs* below). Sub-modes: **Hərf** (continuous fingerspelling, any word, fully client-side) and **Söz** (trial-based, the 24-word vocabulary, landmarks sent to the GRU). |
 | **Səs** (speech) | The browser's Web Speech API with `az-AZ`. Free, client-side, no API key. Chrome/Edge only. |
 
 Recognised text lands in an **editable compose line** and is sent on Göndər.
@@ -140,14 +140,49 @@ is a party to the call before relaying -- the same rule as SDP. They are also
 history after hanging up; someone who depends on captions can scroll back
 through what was said.
 
+#### Where detection runs
+
+MediaPipe runs **in the browser** (`@mediapipe/tasks-vision` from CDN, with
+`/models/hand_landmarker.task` served by this app). That changes the economics
+completely:
+
+| | Before (JPEGs to the server) | Now (browser detection) |
+| :--- | :--- | :--- |
+| Upstream per signer | ~1.2–2.4 Mbps | **~0** (alphabet) / a few KB per trial (word) |
+| Per hour | ~700 MB – 1 GB | negligible |
+| Server work | MediaPipe per stream | none (alphabet) / just the GRU (word) |
+| Latency | a network round trip per frame | none (alphabet) |
+
+* **Alphabet** is classified entirely client-side by `js/azsl_alphabet.js`
+  against `models/azsl_hierarchical_model.json`. Nothing touches the network.
+* **Word** still needs the server — the GRU is PyTorch — but the browser
+  extracts the 126-dim vectors with `js/azsl_features.js` and sends those
+  instead of images. 26 frames ≈ a few KB rather than ~520 KB.
+
+**Parity is enforced, not assumed.** `azsl_features.js` must produce exactly
+what `extract_landmarks.normalize_frame()` produces, or the GRU silently
+receives features it was never trained on — no error, just worse accuracy.
+`tests/test_js_feature_parity.py` runs the JS under node against the Python on
+shared inputs (including two-hand slot ordering, degenerate hands, and scale
+and translation invariance) and requires agreement to 1e-5. Do not change
+either implementation without it passing.
+
+Vectors arriving from a browser are untrusted: the server enforces length 126
+and rejects non-finite values, because a NaN would poison the normalizer and
+yield a confident-looking prediction from nonsense.
+
+If MediaPipe cannot load — an old browser, or a deployment that excludes the
+`.task` bundle — `local.ready` stays false and the original JPEG path is used
+unchanged.
+
 Resource notes:
 
-* Frames go out at ~10 fps, below the workspace page's 15, because the same
-  CPU is already encoding WebRTC video.
+* Frames are processed at ~10 fps, below the workspace page's 15, because the
+  same CPU is already encoding WebRTC video.
 * In **Söz** mode frames are only sent during a trial. The backend ignores them
   otherwise, and the free instance is 0.1 CPU.
 * Hanging up stops recognition and releases the microphone. A mode left on
-  would otherwise keep streaming camera frames for the rest of the session.
+  would otherwise keep the camera pipeline running for the rest of the session.
 * Sign mode needs a video call; speech mode works on audio-only too.
 
 ### TURN

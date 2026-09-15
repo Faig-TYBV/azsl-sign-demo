@@ -173,6 +173,113 @@ def _dbg(msg: str) -> None:
 MIN_VALID_FRAMES_FOR_INFERENCE = 5
 
 
+async def _record_word_frame(state, websocket, feat_126, valid: float) -> None:
+    """Add one frame to the current trial, and classify once it is full.
+
+    Shared by both input paths: frames the server extracted itself from a JPEG,
+    and 126-dim vectors the browser extracted with its own MediaPipe. Keeping
+    one implementation matters because the trial state machine and the
+    hand-presence gate must behave identically whichever way the features
+    arrived — a second copy would drift.
+    """
+    state.recorded_features.append(feat_126)
+    state.recorded_validity.append(valid)
+    rec_len = len(state.recorded_features)
+
+    if rec_len < TARGET_SEQ_LEN:
+        vf_so_far = int(sum(state.recorded_validity))
+        await websocket.send_text(json.dumps({
+            "mode": "word",
+            "word_state": "RECORDING",
+            "frame_index": rec_len,
+            "total_frames": TARGET_SEQ_LEN,
+            "valid_frames": vf_so_far,
+            "buffer_progress": f"{rec_len}/{TARGET_SEQ_LEN}",
+            "buffer_full": False,
+            "hand_present": bool(valid),
+            "prediction": "-",
+            "confidence": 0.0,
+            "raw_prediction": "-",
+            "raw_confidence": 0.0,
+            "smoothed_prediction": "-",
+            "smoothed_confidence": 0.0,
+        }))
+        return
+
+    # Exactly TARGET_SEQ_LEN frames: announce, then run ONE inference.
+    trial_feats = np.array(state.recorded_features, dtype=np.float32)
+    trial_val = np.array(state.recorded_validity, dtype=np.float32)
+    vf_count = int(trial_val.sum())
+
+    state.word_state = "ANALYZING"
+    await websocket.send_text(json.dumps({
+        "mode": "word",
+        "word_state": "ANALYZING",
+        "frame_index": TARGET_SEQ_LEN,
+        "total_frames": TARGET_SEQ_LEN,
+        "valid_frames": vf_count,
+        "buffer_progress": f"{TARGET_SEQ_LEN}/{TARGET_SEQ_LEN}",
+        "buffer_full": True,
+        "hand_present": vf_count >= MIN_VALID_FRAMES_FOR_INFERENCE,
+        "prediction": "-",
+        "confidence": 0.0,
+        "raw_prediction": "-",
+        "raw_confidence": 0.0,
+        "smoothed_prediction": "-",
+        "smoothed_confidence": 0.0,
+    }))
+
+    if vf_count < MIN_VALID_FRAMES_FOR_INFERENCE:
+        pred_class = "ƏL AŞKARLANMADI"
+        confidence = 0.0
+        print(
+            f"[WORD TRIAL COMPLETE] Result: ƏL AŞKARLANMADI "
+            f"(valid_frames: {vf_count}/{TARGET_SEQ_LEN})",
+            flush=True,
+        )
+    else:
+        norm_feats = normalizer(trial_feats, trial_val)
+        inp = torch.from_numpy(norm_feats).unsqueeze(0).to(device)
+        with torch.no_grad():
+            logits = model(inp)
+            probs = torch.softmax(logits, dim=1)[0]
+        top_prob, top_idx = torch.topk(probs, k=1)
+        pred_class = idx_to_class[int(top_idx[0].item())]
+        confidence = float(top_prob[0].item())
+        print(
+            f"[WORD TRIAL COMPLETE] Prediction: {pred_class} "
+            f"({confidence * 100:.2f}%) | valid_frames: {vf_count}/{TARGET_SEQ_LEN}",
+            flush=True,
+        )
+
+    state.word_state = "RESULT"
+    state.last_word_result = {
+        "prediction": pred_class,
+        "confidence": float(confidence),
+        "valid_frames": vf_count,
+    }
+    await websocket.send_text(json.dumps({
+        "mode": "word",
+        "word_state": "RESULT",
+        "frame_index": TARGET_SEQ_LEN,
+        "total_frames": TARGET_SEQ_LEN,
+        "valid_frames": vf_count,
+        "buffer_progress": f"{TARGET_SEQ_LEN}/{TARGET_SEQ_LEN}",
+        "buffer_full": True,
+        "hand_present": pred_class != "ƏL AŞKARLANMADI",
+        "prediction": pred_class,
+        "confidence": float(confidence),
+        "raw_prediction": pred_class,
+        "raw_confidence": float(confidence),
+        "smoothed_prediction": pred_class,
+        "smoothed_confidence": float(confidence),
+        "segment_event": {
+            "label": pred_class,
+            "confidence": float(confidence),
+        } if pred_class != "ƏL AŞKARLANMADI" else None,
+    }))
+
+
 class ConnectionState:
     """State per WebSocket connection."""
 
@@ -601,6 +708,46 @@ async def websocket_endpoint(websocket: WebSocket):
                         }))
                         continue
 
+                # --- Browser-side MediaPipe path -----------------------------
+                # The page can run the landmarker itself and send the 126-dim
+                # vector instead of a JPEG. That removes the two expensive
+                # parts of this endpoint — base64 decode and MediaPipe — and
+                # cuts the upload from ~1.2-2.4 Mbps of images to a few KB per
+                # trial. What is left is the GRU, which is 203k parameters.
+                #
+                # The vectors must come from src/web_demo/frontend/js/
+                # azsl_features.js, whose equivalence to normalize_frame() is
+                # enforced by tests/test_js_feature_parity.py. Anything else
+                # would feed the model features it was not trained on.
+                client_features = message.get("features")
+                if client_features is not None:
+                    if state.active_mode != "word":
+                        # Alphabet runs entirely in the browser; there is
+                        # nothing for the server to do with these.
+                        await websocket.send_text(json.dumps(
+                            {"error": "features are only accepted in word mode"}
+                        ))
+                        continue
+                    try:
+                        feat_126 = np.asarray(client_features, dtype=np.float32).reshape(126)
+                    except Exception:
+                        await websocket.send_text(json.dumps(
+                            {"error": "features must be 126 floats"}
+                        ))
+                        continue
+                    if not np.all(np.isfinite(feat_126)):
+                        # A NaN here would poison the normalizer and produce a
+                        # confident-looking prediction from nonsense.
+                        await websocket.send_text(json.dumps(
+                            {"error": "features contain non-finite values"}
+                        ))
+                        continue
+
+                    valid = 1.0 if message.get("valid") else 0.0
+                    state.frame_count += 1
+                    await _record_word_frame(state, websocket, feat_126, valid)
+                    continue
+
                 # Frame decoding for RECORDING (Word) or ALPHABET mode
                 base64_data = message.get("data", "")
                 if "," in base64_data:
@@ -696,97 +843,8 @@ async def websocket_endpoint(websocket: WebSocket):
                     feat_126 = np.zeros(126, dtype=np.float32)
                     valid = 0.0
 
-                state.recorded_features.append(feat_126)
-                state.recorded_validity.append(valid)
-                rec_len = len(state.recorded_features)
-
-                if rec_len < TARGET_SEQ_LEN:
-                    vf_so_far = int(sum(state.recorded_validity))
-                    response = {
-                        "mode": "word",
-                        "word_state": "RECORDING",
-                        "frame_index": rec_len,
-                        "total_frames": TARGET_SEQ_LEN,
-                        "valid_frames": vf_so_far,
-                        "buffer_progress": f"{rec_len}/{TARGET_SEQ_LEN}",
-                        "buffer_full": False,
-                        "hand_present": bool(valid),
-                        "prediction": "-",
-                        "confidence": 0.0,
-                        "raw_prediction": "-",
-                        "raw_confidence": 0.0,
-                        "smoothed_prediction": "-",
-                        "smoothed_confidence": 0.0,
-                    }
-                    await websocket.send_text(json.dumps(response))
-                    continue
-                else:
-                    # Exactly 26 frames collected! Send ANALYZING first, then run ONE inference
-                    trial_feats = np.array(state.recorded_features, dtype=np.float32)
-                    trial_val = np.array(state.recorded_validity, dtype=np.float32)
-                    vf_count = int(trial_val.sum())
-
-                    state.word_state = "ANALYZING"
-                    await websocket.send_text(json.dumps({
-                        "mode": "word",
-                        "word_state": "ANALYZING",
-                        "frame_index": TARGET_SEQ_LEN,
-                        "total_frames": TARGET_SEQ_LEN,
-                        "valid_frames": vf_count,
-                        "buffer_progress": f"{TARGET_SEQ_LEN}/{TARGET_SEQ_LEN}",
-                        "buffer_full": True,
-                        "hand_present": vf_count >= MIN_VALID_FRAMES_FOR_INFERENCE,
-                        "prediction": "-",
-                        "confidence": 0.0,
-                        "raw_prediction": "-",
-                        "raw_confidence": 0.0,
-                        "smoothed_prediction": "-",
-                        "smoothed_confidence": 0.0,
-                    }))
-
-                    if vf_count < MIN_VALID_FRAMES_FOR_INFERENCE:
-                        pred_class = "ƏL AŞKARLANMADI"
-                        confidence = 0.0
-                        print(f"[WORD TRIAL COMPLETE] Result: ƏL AŞKARLANMADI (valid_frames: {vf_count}/26)", flush=True)
-                    else:
-                        norm_feats = normalizer(trial_feats, trial_val)
-                        inp = torch.from_numpy(norm_feats).unsqueeze(0).to(device)
-                        with torch.no_grad():
-                            logits = model(inp)
-                            probs = torch.softmax(logits, dim=1)[0]
-                        top_prob, top_idx = torch.topk(probs, k=1)
-                        pred_class = idx_to_class[int(top_idx[0].item())]
-                        confidence = float(top_prob[0].item())
-                        print(f"[WORD TRIAL COMPLETE] Prediction: {pred_class} ({confidence*100:.2f}%) | valid_frames: {vf_count}/26", flush=True)
-
-                    state.word_state = "RESULT"
-                    state.last_word_result = {
-                        "prediction": pred_class,
-                        "confidence": float(confidence),
-                        "valid_frames": vf_count,
-                    }
-                    response = {
-                        "mode": "word",
-                        "word_state": "RESULT",
-                        "frame_index": TARGET_SEQ_LEN,
-                        "total_frames": TARGET_SEQ_LEN,
-                        "valid_frames": vf_count,
-                        "buffer_progress": f"{TARGET_SEQ_LEN}/{TARGET_SEQ_LEN}",
-                        "buffer_full": True,
-                        "hand_present": pred_class != "ƏL AŞKARLANMADI",
-                        "prediction": pred_class,
-                        "confidence": float(confidence),
-                        "raw_prediction": pred_class,
-                        "raw_confidence": float(confidence),
-                        "smoothed_prediction": pred_class,
-                        "smoothed_confidence": float(confidence),
-                        "segment_event": {
-                            "label": pred_class,
-                            "confidence": float(confidence),
-                        } if pred_class != "ƏL AŞKARLANMADI" else None,
-                    }
-                    await websocket.send_text(json.dumps(response))
-                    continue
+                await _record_word_frame(state, websocket, feat_126, valid)
+                continue
 
             else:
                 await websocket.send_text(json.dumps({"error": "Unknown message type"}))
