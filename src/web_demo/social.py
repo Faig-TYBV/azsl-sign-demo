@@ -809,11 +809,24 @@ async def social_websocket(websocket: WebSocket) -> None:
     except Exception as exc:  # noqa: BLE001 - never take the process down
         print(f"[social ws] {type(exc).__name__}: {exc}", flush=True)
     finally:
-        # A dropped tab must not leave the other side ringing forever.
-        for call in calls.calls_for_user(user.id):
-            if call.socket_for(user.id) is websocket or call.state == "ringing":
-                await _end_call(call, user.id, "disconnected")
+        # Deregister first, so the decisions below see accurate presence.
         went_offline = await hub.remove(user.id, websocket)
+
+        # A dropped tab must not leave the other side ringing forever -- but it
+        # must not cancel a call it was never part of either. This previously
+        # ended ANY ringing call involving this user whenever ANY of their
+        # sockets closed, so a stale background tab on a phone would kill an
+        # incoming call the moment it arrived, while another tab was showing
+        # the modal. The caller saw call:ringing and call:ended in the same
+        # second.
+        for call in calls.calls_for_user(user.id):
+            if call.socket_for(user.id) is websocket:
+                # This socket was actually on the call.
+                await _end_call(call, user.id, "disconnected")
+            elif call.state == "ringing" and went_offline:
+                # Still ringing and this was the user's last device, so nobody
+                # is left who could answer.
+                await _end_call(call, user.id, "disconnected")
         print(
             f"[social] disconnect uid={user.id} sockets=({hub.describe(user.id)}) "
             f"now_offline={went_offline}",

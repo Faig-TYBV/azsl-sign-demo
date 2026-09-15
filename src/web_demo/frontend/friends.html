@@ -1647,7 +1647,11 @@ async function connectSocket() {
         try { data = JSON.parse(ev.data); } catch (e) { return; }
         // Everything except the heartbeat, so the panel shows exactly what
         // arrived and when — including whether call:incoming ever did.
-        if (data.type !== 'pong') callLog('recv', data.type);
+        if (data.type !== 'pong') {
+            // The reason is the whole story for call:ended and call:rejected —
+            // "ended" alone cannot distinguish a hang-up from a stale tab.
+            callLog('recv', data.type, data.reason ? '(' + data.reason + ')' : '');
+        }
         try {
             handleSocketMessage(data);
         } catch (err) {
@@ -2324,8 +2328,12 @@ async function handleCallSignal(data) {
             // and the phone would just never ring.
             const busy = call.pc || !$('incoming-modal').hidden;
             if (busy) {
-                callLog('rejecting incoming call: already busy');
-                wsSend({ type: 'call:reject', call_id: data.call_id });
+                // Ignore, do NOT reject. call:incoming is fanned out to every
+                // socket this account holds, and a reject cancels the call for
+                // all of them. One busy tab must not hang up on behalf of the
+                // user's other devices, which may be perfectly free to answer.
+                // If they are all busy the caller's ring timeout handles it.
+                callLog('ignoring incoming call on this tab: already busy');
                 return;
             }
             call.id = data.call_id;

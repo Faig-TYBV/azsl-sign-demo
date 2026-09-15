@@ -776,3 +776,48 @@ def test_a_phone_throttled_to_one_ping_a_minute_stays_online(monkeypatch):
         assert hub.is_online(3) is False
 
     asyncio.run(scenario())
+
+
+def test_one_busy_tab_must_not_hang_up_for_the_users_other_devices():
+    """call:incoming is fanned out to every socket the account holds.
+
+    A reject cancels the call for all of them, so a tab that happens to be busy
+    must ignore the invite rather than answer on everyone's behalf — the user's
+    phone may be free while a forgotten laptop tab is not. If every device is
+    busy the caller's ring timeout covers it.
+    """
+    html = (PROJECT_ROOT / "src" / "web_demo" / "frontend" / "friends.html").read_text(
+        encoding="utf-8"
+    )
+    busy_block = html.split("const busy = call.pc", 1)[1].split("call.id = data.call_id", 1)[0]
+    assert "ignoring incoming call" in busy_block
+    assert "call:reject" not in busy_block, (
+        "a busy tab rejecting cancels the call for every device this user has"
+    )
+
+
+def test_disconnect_only_ends_calls_this_socket_was_part_of():
+    """A stale background tab closing must not kill an incoming call.
+
+    The cleanup previously ended ANY ringing call involving the user whenever
+    ANY of their sockets closed. On a phone with a forgotten second tab that
+    produced call:ringing and call:ended in the same second, with the real tab
+    still showing the modal.
+    """
+    src = (PROJECT_ROOT / "src" / "web_demo" / "social.py").read_text(encoding="utf-8")
+    cleanup = src.split("for call in calls.calls_for_user(user.id):", 1)[1][:600]
+
+    assert 'or call.state == "ringing"' not in cleanup, (
+        "any-socket-ends-a-ringing-call is the regression this guards against"
+    )
+    assert "call.socket_for(user.id) is websocket" in cleanup
+    # ...but the last device leaving must still release the caller.
+    assert "went_offline" in cleanup
+
+    # Presence has to be updated before those decisions are made. Anchor on the
+    # socket handler's own teardown -- the first `finally:` in the file belongs
+    # to the database helper.
+    tail = src.split("[social ws]", 1)[1]
+    assert tail.index("hub.remove") < tail.index("calls_for_user"), (
+        "hub.remove must run first, or went_offline still counts this socket"
+    )
