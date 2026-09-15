@@ -283,16 +283,49 @@ and `/api/rtc-config` reports `"turn": false`.
 
 ## With TURN
 
-Set three environment variables on the host that serves `/ws/social`:
+Set three environment variables on the host that **serves the page**:
 
 ```bash
-TURN_URL=turn:turn.example.com:3478       # or turns:...:5349 for TLS
+TURN_URL=turn:HOST:80,turn:HOST:443,turns:HOST:443?transport=tcp
 TURN_USERNAME=<username>
 TURN_CREDENTIAL=<password>
 ```
 
-All three must be set; a URL without credentials is ignored (a half-configured
-relay would fail every call at ICE time, which is worse than no relay).
+`TURN_URL` takes a **comma-separated list** sharing one credential. Providers
+issue several on purpose and you want them all:
+
+| URL | When it is the one that works |
+| --- | --- |
+| `turn:HOST:80` (UDP) | Normal networks. Lowest latency, so it is tried first. |
+| `turn:HOST:443` (UDP) | UDP allowed but odd ports blocked. |
+| `turns:HOST:443?transport=tcp` | UDP blocked entirely. Looks like ordinary HTTPS, so it survives strict corporate firewalls — the exact case that needed a relay. |
+
+Listing only the UDP entry leaves the hardest networks broken, which defeats
+the point of paying for a relay.
+
+All three variables must be set; a URL without credentials is ignored, because
+a half-configured relay fails every call at ICE time — worse than no relay.
+
+### Getting credentials from Metered (free tier, fastest)
+
+1. Sign up at https://dashboard.metered.ca — free tier is ~50 GB/month, which
+   is a lot of testing (video runs roughly 0.5–1.5 GB per hour).
+2. Create an app; open its **TURN credentials** page. You get one username,
+   one password, and a list of URLs.
+3. Join the URLs with commas into `TURN_URL`, and set the other two.
+4. Restart the host and verify:
+
+```bash
+py scripts/verify_turn.py --url https://<your-host> --email you@example.com --password ...
+```
+
+That signs in, reads the ICE config the server is actually serving browsers,
+and sends a real Allocate request to each relay. It reports one of three
+things: the relay allocated a port (works), the server rejected the
+credentials (fix the password), or inconclusive — UDP is often blocked on the
+machine you run it from, and some providers refuse raw allocations by policy,
+neither of which means the relay is broken. The definitive test is still a
+real call between two networks.
 
 Where to get them:
 

@@ -27,6 +27,8 @@ services:
       # Optional WebRTC relay for friend calls. Empty = STUN only, which
       # connects most users; set all three in the Render dashboard to also
       # reach people behind symmetric NAT (mobile data, corporate firewalls).
+      # TURN_URL accepts a comma-separated list sharing one credential —
+      # include the provider's TLS/443 URL, not just the UDP one.
       # See the TURN section of DEPLOY_RECOGNITION.md.
       - key: TURN_URL
         value: ""

@@ -62,12 +62,16 @@ def rtc_ice_servers() -> list[dict]:
     stun_urls = [u.strip() for u in stun_env.split(",") if u.strip()] or DEFAULT_STUN
     servers: list[dict] = [{"urls": stun_urls}]
 
-    turn_url = os.getenv("TURN_URL", "").strip()
+    # TURN_URL may hold several comma-separated URLs sharing one credential.
+    # Providers hand out a set on purpose — typically UDP :80, TCP :443 and
+    # TLS :443 — because networks that block UDP outright are exactly the ones
+    # that need a relay. Offering only the UDP entry fails on those.
+    turn_urls = [u.strip() for u in os.getenv("TURN_URL", "").split(",") if u.strip()]
     turn_user = os.getenv("TURN_USERNAME", "").strip()
     turn_cred = os.getenv("TURN_CREDENTIAL", "").strip()
-    if turn_url and turn_user and turn_cred:
+    if turn_urls and turn_user and turn_cred:
         servers.append(
-            {"urls": turn_url, "username": turn_user, "credential": turn_cred}
+            {"urls": turn_urls, "username": turn_user, "credential": turn_cred}
         )
     return servers
 

@@ -256,6 +256,44 @@ def test_ice_config_includes_turn_when_fully_configured(monkeypatch):
     turn = [s for s in servers if s.get("username") == "demo"]
     assert len(turn) == 1
     assert turn[0]["credential"] == "secret"
+    assert turn[0]["urls"] == ["turn:turn.example.com:3478"]
+
+
+def test_turn_accepts_several_urls_sharing_one_credential(monkeypatch):
+    """Providers issue a set — UDP :80, TCP :443, TLS :443 — for one account.
+
+    The TLS/443 entry is the one that survives a network blocking UDP, which is
+    precisely the network that needed a relay in the first place. Dropping it
+    would leave the hardest cases still broken.
+    """
+    monkeypatch.setenv(
+        "TURN_URL",
+        "turn:global.relay.metered.ca:80,"
+        "turn:global.relay.metered.ca:443,"
+        "turns:global.relay.metered.ca:443?transport=tcp",
+    )
+    monkeypatch.setenv("TURN_USERNAME", "abc123")
+    monkeypatch.setenv("TURN_CREDENTIAL", "s3cr3t")
+
+    servers = social.rtc_ice_servers()
+    turn = [s for s in servers if s.get("username") == "abc123"]
+    assert len(turn) == 1, "one entry carrying every URL, not one entry each"
+    assert turn[0]["urls"] == [
+        "turn:global.relay.metered.ca:80",
+        "turn:global.relay.metered.ca:443",
+        "turns:global.relay.metered.ca:443?transport=tcp",
+    ]
+    assert any(u.startswith("turns:") for u in turn[0]["urls"])
+
+
+def test_turn_url_list_tolerates_whitespace_and_trailing_commas(monkeypatch):
+    """Pasted out of a dashboard, the value is rarely tidy."""
+    monkeypatch.setenv("TURN_URL", " turn:a.example:80 , ,turn:b.example:443,")
+    monkeypatch.setenv("TURN_USERNAME", "u")
+    monkeypatch.setenv("TURN_CREDENTIAL", "p")
+
+    turn = [s for s in social.rtc_ice_servers() if s.get("username") == "u"]
+    assert turn[0]["urls"] == ["turn:a.example:80", "turn:b.example:443"]
 
 
 def test_partial_turn_config_is_ignored(monkeypatch):
@@ -292,6 +330,121 @@ def test_production_refuses_the_default_session_secret(monkeypatch):
     # A real secret is accepted.
     monkeypatch.setenv("SESSION_SECRET", "a" * 64)
     deps.check_session_secret()
+
+
+def _check_turn():
+    import importlib.util
+
+    path = PROJECT_ROOT / "scripts" / "verify_turn.py"
+    spec = importlib.util.spec_from_file_location("verify_turn", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class FakeTurnServer:
+    """A UDP server that speaks just enough STUN to exercise probe().
+
+    Real TURN servers need an account, and the one public test relay answers
+    400 to everything, so neither confident verdict ("works" / "wrong
+    password") could otherwise be tested -- and those two verdicts are the
+    entire value of the tool.
+    """
+
+    def __init__(self, ct, second_response="success"):
+        import socket
+        import threading
+
+        self.ct = ct
+        self.second_response = second_response
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.bind(("127.0.0.1", 0))
+        self.sock.settimeout(5)
+        self.port = self.sock.getsockname()[1]
+        self.seen = 0
+        self.thread = threading.Thread(target=self._serve, daemon=True)
+        self.thread.start()
+
+    def _serve(self):
+        import struct
+
+        while True:
+            try:
+                data, addr = self.sock.recvfrom(2048)
+            except Exception:
+                return
+            txid = data[8:20]
+            self.seen += 1
+
+            if self.seen == 1 or self.second_response == "reject":
+                # 401 + the realm/nonce challenge.
+                err = b"\x00\x00" + bytes([4, 1]) + b"Unauthorized"
+                attrs = (
+                    self.ct._attr(self.ct.ATTR_ERROR_CODE, err)
+                    + self.ct._attr(self.ct.ATTR_REALM, b"test.realm")
+                    + self.ct._attr(self.ct.ATTR_NONCE, b"n" * 16)
+                )
+                body = struct.pack("!HHI", 0x0113, len(attrs), self.ct.MAGIC_COOKIE) + txid + attrs
+            else:
+                # Allocate success with a relayed address.
+                import socket as s
+
+                xor_ip = struct.unpack("!I", s.inet_aton("203.0.113.7"))[0] ^ self.ct.MAGIC_COOKIE
+                xor_port = 50000 ^ (self.ct.MAGIC_COOKIE >> 16)
+                relayed = b"\x00\x01" + struct.pack("!H", xor_port) + struct.pack("!I", xor_ip)
+                attrs = self.ct._attr(self.ct.ATTR_XOR_RELAYED_ADDRESS, relayed)
+                body = struct.pack("!HHI", 0x0103, len(attrs), self.ct.MAGIC_COOKIE) + txid + attrs
+
+            self.sock.sendto(body, addr)
+
+    def close(self):
+        try:
+            self.sock.close()
+        except Exception:
+            pass
+
+
+def test_turn_probe_confirms_working_credentials():
+    ct = _check_turn()
+    server = FakeTurnServer(ct, second_response="success")
+    try:
+        status, detail = ct.probe(f"turn:127.0.0.1:{server.port}", "user", "pass", timeout=5)
+    finally:
+        server.close()
+    assert status == "ok", detail
+    assert "203.0.113.7" in detail
+
+
+def test_turn_probe_reports_rejected_credentials():
+    """A wrong password must be called out, not folded into 'inconclusive'."""
+    ct = _check_turn()
+    server = FakeTurnServer(ct, second_response="reject")
+    try:
+        status, detail = ct.probe(f"turn:127.0.0.1:{server.port}", "user", "wrong", timeout=5)
+    finally:
+        server.close()
+    assert status == "bad_creds", detail
+    assert "401" in detail
+
+
+def test_turn_probe_never_guesses_about_tls_urls():
+    """turns:/tcp cannot be probed over UDP -- it must not be reported as OK."""
+    ct = _check_turn()
+    status, detail = ct.probe("turns:example.com:443?transport=tcp", "u", "p", timeout=1)
+    assert status == "unknown"
+    assert "not probed" in detail
+
+
+def test_turn_url_parsing_handles_provider_formats():
+    ct = _check_turn()
+    assert ct.parse_turn_url("turn:global.relay.metered.ca:80") == (
+        "turn", "global.relay.metered.ca", 80, "udp",
+    )
+    assert ct.parse_turn_url("turns:global.relay.metered.ca:443?transport=tcp") == (
+        "turns", "global.relay.metered.ca", 443, "tcp",
+    )
+    # No explicit port -> the STUN/TURN default.
+    assert ct.parse_turn_url("turn:turn.example.com")[2] == 3478
 
 
 def _preflight():
