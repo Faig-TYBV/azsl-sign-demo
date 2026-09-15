@@ -1587,11 +1587,38 @@ async function loadRtcConfig() {
         const cfg = await api('/api/rtc-config');
         if (cfg.iceServers && cfg.iceServers.length) call.iceServers = cfg.iceServers;
         call.turnAvailable = !!cfg.turn;
+
+        // Prove the browser accepts it now, at page load, instead of finding
+        // out mid-call. Constructing and closing a peer connection is cheap.
+        try {
+            new RTCPeerConnection({ iceServers: call.iceServers }).close();
+            callLog('ice config ok', 'turn=' + call.turnAvailable,
+                    JSON.stringify(call.iceServers).slice(0, 160));
+        } catch (err) {
+            callLog('ICE CONFIG REJECTED AT LOAD', err && err.message);
+            console.error('Server ICE config is invalid:', call.iceServers, err);
+            toast('Zəng serveri konfiqurasiyası yanlışdır.', 'error');
+        }
     } catch (e) { /* the STUN default stays in place */ }
 }
 
 function createPeerConnection() {
-    const pc = new RTCPeerConnection({ iceServers: call.iceServers });
+    // RTCPeerConnection THROWS on a malformed iceServers entry -- a stun: URL
+    // carrying credentials, a missing scheme, a typo in a pasted dashboard
+    // value. That happens at construction, before any signalling, so one bad
+    // environment variable silently kills every call with the overlay already
+    // on screen. Fall back to plain STUN rather than losing the call entirely:
+    // a direct-only call beats no call at all.
+    let pc;
+    try {
+        pc = new RTCPeerConnection({ iceServers: call.iceServers });
+    } catch (err) {
+        callLog('BAD ICE CONFIG', err && err.name, err && err.message);
+        console.error('iceServers rejected by the browser:', call.iceServers, err);
+        toast('Zəng serveri konfiqurasiyası yanlışdır — yalnız birbaşa bağlantı sınanır.', 'error');
+        pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+        call.turnAvailable = false;
+    }
 
     pc.onicecandidate = (ev) => {
         if (ev.candidate && call.id) {
@@ -2093,6 +2120,15 @@ async function handleCallSignal(data) {
     }
 }
 
+// startCall is async and the click handler does not await it, so any throw
+// became an unhandled rejection: no toast, no log, nothing in the server log
+// either. That is exactly how this bug hid.
+window.addEventListener('unhandledrejection', (ev) => {
+    const reason = ev.reason;
+    callLog('UNHANDLED ERROR', (reason && (reason.name + ': ' + reason.message)) || String(reason));
+    console.error('unhandled rejection', reason);
+});
+
 function onCallButton(media) {
     const blocked = $(media === 'audio' ? 'btn-audio-call' : 'btn-video-call').dataset.blocked;
     callLog('call button pressed', media, blocked ? '(blocked: ' + blocked + ')' : '');
@@ -2103,7 +2139,12 @@ function onCallButton(media) {
         loadFriends().catch(() => {});
         return;
     }
-    startCall(media);
+    startCall(media).catch((err) => {
+        callLog('startCall FAILED', err && err.name, err && err.message);
+        console.error(err);
+        toast('Zəng başladıla bilmədi: ' + ((err && err.message) || 'naməlum xəta'), 'error');
+        resetCall();
+    });
 }
 
 $('btn-audio-call').addEventListener('click', () => onCallButton('audio'));

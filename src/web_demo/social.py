@@ -67,12 +67,40 @@ def rtc_ice_servers() -> list[dict]:
     # Providers hand out a set on purpose — typically UDP :80, TCP :443 and
     # TLS :443 — because networks that block UDP outright are exactly the ones
     # that need a relay. Offering only the UDP entry fails on those.
-    turn_urls = [u.strip() for u in os.getenv("TURN_URL", "").split(",") if u.strip()]
+    raw_turn = [u.strip() for u in os.getenv("TURN_URL", "").split(",") if u.strip()]
     turn_user = os.getenv("TURN_USERNAME", "").strip()
     turn_cred = os.getenv("TURN_CREDENTIAL", "").strip()
+
+    # Provider dashboards list their STUN URL alongside the TURN ones, so it is
+    # natural to paste the whole block into TURN_URL. That would put a stun:
+    # URL in an entry carrying credentials, and RTCPeerConnection REJECTS that
+    # outright — the constructor throws, so every call dies in the browser
+    # before a single packet is sent, with no clue as to why. Sort them.
+    turn_urls = [u for u in raw_turn if u.startswith(("turn:", "turns:"))]
+    stray_stun = [u for u in raw_turn if u.startswith("stun:")]
+    unusable = [u for u in raw_turn if u not in turn_urls and u not in stray_stun]
+
+    if stray_stun:
+        # Perfectly good servers, just in the wrong variable: use them, without
+        # attaching credentials.
+        servers[0]["urls"] = list(dict.fromkeys(stun_urls + stray_stun))
+    if unusable:
+        print(
+            f"[rtc] ignoring {len(unusable)} TURN_URL entr(ies) with no turn:/turns:/stun: "
+            f"scheme: {unusable}. A malformed entry would make RTCPeerConnection "
+            "throw and break every call.",
+            flush=True,
+        )
+
     if turn_urls and turn_user and turn_cred:
         servers.append(
             {"urls": turn_urls, "username": turn_user, "credential": turn_cred}
+        )
+    elif raw_turn and not turn_urls:
+        print(
+            "[rtc] TURN_URL is set but contains no turn:/turns: URL — no relay "
+            "will be offered.",
+            flush=True,
         )
     return servers
 

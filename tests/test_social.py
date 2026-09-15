@@ -296,6 +296,62 @@ def test_turn_url_list_tolerates_whitespace_and_trailing_commas(monkeypatch):
     assert turn[0]["urls"] == ["turn:a.example:80", "turn:b.example:443"]
 
 
+def test_a_stun_url_pasted_into_turn_url_does_not_poison_the_config(monkeypatch):
+    """Dashboards list their STUN URL next to the TURN ones, so it gets pasted in.
+
+    A stun: URL inside an entry carrying credentials makes RTCPeerConnection
+    throw at construction -- before any signalling -- so every call dies in the
+    browser with the overlay already on screen and nothing in the server log.
+    The STUN server itself is fine; it just must not carry credentials.
+    """
+    monkeypatch.setenv(
+        "TURN_URL",
+        "stun:stun.relay.example.com:80,"
+        "turn:relay.example.com:80,"
+        "turns:relay.example.com:443?transport=tcp",
+    )
+    monkeypatch.setenv("TURN_USERNAME", "u")
+    monkeypatch.setenv("TURN_CREDENTIAL", "p")
+
+    servers = social.rtc_ice_servers()
+    credentialled = [s for s in servers if s.get("username")]
+    assert len(credentialled) == 1
+    # No stun: URL may appear in the entry that carries credentials.
+    assert all(not u.startswith("stun:") for u in credentialled[0]["urls"])
+    assert credentialled[0]["urls"] == [
+        "turn:relay.example.com:80",
+        "turns:relay.example.com:443?transport=tcp",
+    ]
+    # ...and it is still used, just in the credential-free STUN entry.
+    stun_entry = servers[0]
+    assert "stun:stun.relay.example.com:80" in stun_entry["urls"]
+    assert "username" not in stun_entry
+
+
+def test_garbage_turn_url_entries_are_dropped(monkeypatch):
+    """A typo must not take the whole configuration down with it."""
+    monkeypatch.setenv("TURN_URL", "relay.example.com:3478,https://nope,turn:good.example:3478")
+    monkeypatch.setenv("TURN_USERNAME", "u")
+    monkeypatch.setenv("TURN_CREDENTIAL", "p")
+
+    credentialled = [s for s in social.rtc_ice_servers() if s.get("username")]
+    assert credentialled[0]["urls"] == ["turn:good.example:3478"], (
+        "entries without a turn:/turns: scheme must be dropped, not passed to "
+        "the browser where they would throw"
+    )
+
+
+def test_turn_url_with_no_valid_scheme_yields_no_relay(monkeypatch):
+    monkeypatch.setenv("TURN_URL", "relay.example.com:3478")
+    monkeypatch.setenv("TURN_USERNAME", "u")
+    monkeypatch.setenv("TURN_CREDENTIAL", "p")
+
+    servers = social.rtc_ice_servers()
+    assert all("username" not in s for s in servers)
+    # The STUN entry survives, so calls still work directly.
+    assert servers[0]["urls"]
+
+
 def test_partial_turn_config_is_ignored(monkeypatch):
     """A URL with no credentials would make every call fail at ICE time."""
     monkeypatch.setenv("TURN_URL", "turn:turn.example.com:3478")
