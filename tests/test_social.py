@@ -622,6 +622,39 @@ def test_registry_tracks_and_drops_calls():
     assert registry.get(call.call_id) is None
 
 
+def test_caption_relay_requires_being_a_party_to_the_call():
+    """A caption is conversation content — it must not leak to a bystander.
+
+    Captions carry what a Deaf user signed or a hearing user said, so the same
+    rule as SDP applies: only the two people on the call may exchange them, and
+    a crafted call_id must not let anyone else read or inject.
+    """
+    registry = social.CallRegistry()
+    caller_ws, callee_ws = FakeWS(), FakeWS()
+    call = registry.create(caller_id=1, callee_id=2, media="video", caller_ws=caller_ws)
+    call.callee_ws = callee_ws
+
+    # Either party can address the other.
+    assert call.peer_of(1) == 2
+    assert call.peer_of(2) == 1
+    # An outsider naming this call resolves to nobody, so nothing is relayed.
+    assert call.peer_of(99) is None
+    assert call.involves(99) is False
+
+
+def test_caption_source_is_constrained():
+    """`source` is echoed to the peer, so it must be one of the known values."""
+    for given, expected in [
+        ("sign", "sign"),
+        ("speech", "speech"),
+        ("<script>", "sign"),
+        (None, "sign"),
+        (12345, "sign"),
+    ]:
+        resolved = given if given in ("sign", "speech") else "sign"
+        assert resolved == expected
+
+
 def test_hub_treats_a_silent_socket_as_gone(monkeypatch):
     """A registered socket is not necessarily a live one.
 

@@ -49,9 +49,14 @@ py -m uvicorn api.index:app --host 0.0.0.0 --port 8000
 ```js
 {
   "recognitionWsUrl": "" | "wss://host" | null,  // null => recognition offline
-  "socialWs": true | false                       // false => no live chat/calls
+  "socialWsUrl":      "" | "wss://host" | null   // null => no live chat/calls
 }
 ```
+
+`""` means same origin. A URL means a separate host, which the page
+authenticates to with a signed token because cookies do not cross origins.
+`null` means there is nowhere to connect, so the friends page polls REST and
+hides calling.
 
 That is how one set of HTML files serves both the container deploy (everything
 on) and the Vercel deploy (pages + auth + REST chat, no sockets).
@@ -111,6 +116,39 @@ A/B: call:end  ──> the other side: call:ended
 load balancer, two users on different instances would not see each other.
 Scaling past one instance means putting Redis pub/sub behind `Hub.send_to_user`;
 nothing else would change.
+
+### In-call conversation (sign -> text, speech -> text)
+
+The accessibility feature the product exists for: a Deaf signer and a hearing
+speaker hold a conversation, each in their own language, neither typing.
+
+Each participant independently chooses how they *speak*:
+
+| Mode | How it works |
+| :--- | :--- |
+| **İşarə** (sign) | Frames from the call's own camera stream are pushed to `/ws` -- the same server-side MediaPipe + GRU pipeline the workspace page uses. No second camera is opened. Sub-modes: **Hərf** (continuous fingerspelling, any word) and **Söz** (trial-based, the 24-word vocabulary). |
+| **Səs** (speech) | The browser's Web Speech API with `az-AZ`. Free, client-side, no API key. Chrome/Edge only. |
+
+Recognised text lands in an **editable compose line** and is sent on Göndər.
+Word recognition is ~85% accurate, so roughly one word in seven would
+otherwise arrive wrong with no way to retract it. An **Avtomatik göndər**
+switch is there for anyone who prefers speed over review.
+
+Captions travel over `/ws/social` as `call:caption`, which verifies the sender
+is a party to the call before relaying -- the same rule as SDP. They are also
+**saved as ordinary messages**, so the conversation is still in the chat
+history after hanging up; someone who depends on captions can scroll back
+through what was said.
+
+Resource notes:
+
+* Frames go out at ~10 fps, below the workspace page's 15, because the same
+  CPU is already encoding WebRTC video.
+* In **Söz** mode frames are only sent during a trial. The backend ignores them
+  otherwise, and the free instance is 0.1 CPU.
+* Hanging up stops recognition and releases the microphone. A mode left on
+  would otherwise keep streaming camera frames for the rest of the session.
+* Sign mode needs a video call; speech mode works on audio-only too.
 
 ### TURN
 

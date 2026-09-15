@@ -627,6 +627,108 @@ header {
     color: #fff;
 }
 .call-controls .hangup:hover { background: #cf6047; border-color: #cf6047; }
+.call-controls .icon-btn.on {
+    background: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    color: #1f1f1f;
+}
+
+/* ---------- In-call conversation panel ---------- */
+.conv-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.9rem clamp(0.75rem, 3vw, 1.5rem);
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.62));
+    backdrop-filter: blur(10px);
+    max-height: 62vh;
+}
+.conv-panel[hidden] { display: none !important; }
+
+/* Captions are the whole point for the person who cannot hear, so they get
+   the largest type on the screen rather than subtitle-sized text. */
+.conv-captions {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    max-height: 28vh;
+    padding-right: 0.25rem;
+}
+.caption-line {
+    font-size: clamp(1.05rem, 2.6vw, 1.5rem);
+    line-height: 1.35;
+    padding: 0.5rem 0.85rem;
+    border-radius: 12px;
+    max-width: 90%;
+    animation: msgIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.caption-line.them {
+    align-self: flex-start;
+    background: rgba(160, 255, 255, 0.16);
+    border-left: 3px solid var(--accent-cyan);
+}
+.caption-line.me {
+    align-self: flex-end;
+    background: rgba(255, 255, 255, 0.10);
+    border-right: 3px solid var(--state-trial);
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    opacity: 0.85;
+}
+.caption-who {
+    display: block;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.65;
+    margin-bottom: 0.15rem;
+}
+
+.conv-compose { display: flex; gap: 0.5rem; align-items: center; }
+.conv-compose .field { flex: 1; font-size: 1rem; }
+/* Interim speech results are not final text yet; show them as provisional. */
+.conv-compose .field.interim { color: var(--border-muted); font-style: italic; }
+
+.conv-modes {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+}
+.conv-label { color: var(--border-muted); }
+.conv-group { display: inline-flex; gap: 0.3rem; }
+.conv-chip {
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid rgba(194, 178, 128, 0.4);
+    background: transparent;
+    color: var(--text-light);
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background-color var(--transition), border-color var(--transition),
+                color var(--transition);
+}
+.conv-chip:hover { border-color: var(--accent-cyan); }
+.conv-chip.active {
+    background: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    color: #1f1f1f;
+    font-weight: 700;
+}
+.conv-auto { display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; opacity: 0.8; }
+.conv-status { font-size: 0.78rem; color: var(--state-trial); min-height: 1.1rem; }
+
+@media (max-width: 640px) {
+    .conv-panel { bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); padding: 0.7rem 0.75rem; }
+    .conv-captions { max-height: 22vh; }
+}
 
 /* Autoplay fallback. Centred over the video, so it reads as "the picture is
    here, press to start" rather than as an error. */
@@ -851,7 +953,42 @@ header {
         <div class="state" id="call-link" style="opacity:0.65;font-size:0.72rem;"></div>
     </div>
 
+    <!-- Conversation panel: sign->text and speech->text, so a Deaf and a
+         hearing person can talk without either of them typing. Overlays the
+         video rather than replacing it, because seeing the signer matters. -->
+    <section class="conv-panel" id="conv-panel" hidden aria-label="Danışıq rejimi">
+        <div class="conv-captions" id="conv-captions" role="log" aria-live="polite"></div>
+
+        <div class="conv-compose">
+            <input id="conv-input" class="field" type="text" autocomplete="off"
+                   placeholder="Tanınan mətn burada yığılır…" aria-label="Göndəriləcək mətn">
+            <button class="btn btn-primary" id="conv-send" type="button">Göndər</button>
+            <button class="btn btn-reset" id="conv-clear" type="button" title="Təmizlə">Sil</button>
+        </div>
+
+        <div class="conv-modes">
+            <span class="conv-label">Necə danışırsınız?</span>
+            <div class="conv-group" role="group" aria-label="Giriş rejimi">
+                <button class="conv-chip active" id="mode-off" type="button">Yoxdur</button>
+                <button class="conv-chip" id="mode-sign" type="button">İşarə</button>
+                <button class="conv-chip" id="mode-speech" type="button">Səs</button>
+            </div>
+            <div class="conv-group" id="sign-submodes" hidden role="group" aria-label="İşarə rejimi">
+                <button class="conv-chip active" id="sign-alphabet" type="button">Hərf</button>
+                <button class="conv-chip" id="sign-word" type="button">Söz</button>
+                <button class="btn btn-sm btn-ghost" id="sign-trial" type="button" hidden>SINAĞA BAŞLA</button>
+            </div>
+            <label class="conv-auto">
+                <input type="checkbox" id="conv-autosend"> Avtomatik göndər
+            </label>
+        </div>
+        <div class="conv-status" id="conv-status"></div>
+    </section>
+
     <div class="call-controls">
+        <button class="icon-btn" id="btn-captions" type="button" aria-label="Danışıq rejimi" title="İşarə / səs → mətn">
+            <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM7 15v-2H5v2H3V9h2v2h2V9h2v6H7zm12 0h-8V9h8v6zm-1-5h-2v4h2v-4z"/></svg>
+        </button>
         <button class="icon-btn" id="btn-toggle-mic" type="button" aria-label="Mikrofonu söndür" title="Mikrofon">
             <svg viewBox="0 0 24 24"><path d="M12 14c1.7 0 3-1.3 3-3V5c0-1.7-1.3-3-3-3S9 3.3 9 5v6c0 1.7 1.3 3 3 3zm5-3c0 2.8-2.2 5-5 5s-5-2.2-5-5H5c0 3.5 2.6 6.4 6 6.9V22h2v-4.1c3.4-.5 6-3.4 6-6.9h-2z"/></svg>
         </button>
@@ -1512,6 +1649,23 @@ function handleSocketMessage(data) {
             break;
         }
 
+        case 'call:caption': {
+            const mine = state.me && data.from === state.me.id;
+            if (!mine) addCaptionLine(data.text, false);
+            // Captions are stored as ordinary messages, so keep an open
+            // conversation in step rather than waiting for a reload.
+            if (data.message) {
+                const peerId = mine ? data.message.recipient_id : data.from;
+                if (state.activePeer && state.activePeer.id === peerId) {
+                    if (!state.messages.some((m) => m.id === data.message.id)) {
+                        state.messages.push(data.message);
+                        renderMessages();
+                    }
+                }
+            }
+            break;
+        }
+
         case 'chat:read':
             state.messages.forEach((m) => {
                 if (m.sender_id === state.me.id && !m.read_at) m.read_at = new Date().toISOString();
@@ -1877,6 +2031,8 @@ function showCallUI(peer, media) {
     $('remote-video').hidden = audioOnly;
     $('local-video').hidden = audioOnly;
     $('btn-toggle-cam').hidden = audioOnly;
+    // Speech->text still works on an audio call, so the panel stays available;
+    // setConvMode() refuses sign mode when there is no video.
     $('call-overlay').hidden = false;
     setCallState('Qoşulur…');
 }
@@ -2019,6 +2175,26 @@ function endCall(reason) {
 }
 
 function resetCall() {
+    // Stop recognition and the microphone first: leaving either running after
+    // a call would keep sending camera frames to the server and hold the mic.
+    if (typeof stopSpeech === 'function') stopSpeech();
+    if (typeof closeRecognition === 'function') closeRecognition();
+    if (typeof conv === 'object') {
+        conv.mode = 'off';
+        conv.open = false;
+        conv.wordState = 'READY';
+        conv.lines = [];
+        const panel = $('conv-panel');
+        if (panel) panel.hidden = true;
+        const captions = $('conv-captions');
+        if (captions) captions.innerHTML = '';
+        const input = $('conv-input');
+        if (input) input.value = '';
+        const btn = $('btn-captions');
+        if (btn) btn.classList.remove('on');
+        if (typeof renderConvModes === 'function') renderConvModes();
+        if (typeof convStatus === 'function') convStatus('');
+    }
     clearTimeout(call.ringTimer);
     call.ringTimer = null;
     clearTimeout(call.ackTimer);
@@ -2149,6 +2325,401 @@ async function handleCallSignal(data) {
             break;
     }
 }
+
+/* =========================================================================
+   In-call conversation: sign -> text and speech -> text
+
+   The point of the whole feature: a Deaf signer and a hearing speaker hold a
+   conversation, each using their own language, neither of them typing.
+
+   Sign recognition is NOT done in the browser. The models are server-side, so
+   frames from the call's own camera stream are pushed to the same /ws socket
+   the workspace page uses, and the recognised word or letter comes back as
+   text. No second camera is opened -- the WebRTC stream is re-used.
+
+   Recognised text lands in an editable compose line rather than going straight
+   out. Word recognition is ~85% accurate, so roughly one word in seven would
+   otherwise arrive wrong with no way to take it back.
+   ========================================================================= */
+const conv = {
+    open: false,
+    mode: 'off',          // 'off' | 'sign' | 'speech'
+    signMode: 'alphabet', // 'alphabet' | 'word'
+    autoSend: false,
+    recogWs: null,
+    frameTimer: null,
+    frameInFlight: false,
+    canvas: null,
+    ctx: null,
+    rec: null,            // SpeechRecognition
+    recRunning: false,
+    interim: '',
+    wordState: 'READY',
+    lines: [],            // caption history for this call
+};
+
+// ~10 fps rather than the workspace page's 15: the same CPU is already
+// encoding WebRTC video, and on a phone that budget is tight.
+const CONV_FRAME_MS = 100;
+const CONV_CAPTURE_W = 480;
+const CONV_CAPTURE_H = 360;
+
+function convStatus(text) {
+    const el = $('conv-status');
+    if (el) el.textContent = text || '';
+}
+
+/* ---- recognition socket (same endpoint the workspace page uses) ---- */
+async function recognitionEndpoint() {
+    const base = CFG.recognitionWsUrl;
+    if (base === null || base === undefined) return null;
+    if (base) {
+        let token = null;
+        try {
+            const r = await fetch('/api/ws-token', { credentials: 'same-origin' });
+            if (r.ok) token = (await r.json()).token;
+        } catch (e) { /* handled below */ }
+        if (!token) return null;
+        return base.replace(/\/+$/, '').replace(/^http/, 'ws') +
+               '/ws?token=' + encodeURIComponent(token);
+    }
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return proto + '//' + window.location.host + '/ws';
+}
+
+async function openRecognition() {
+    if (conv.recogWs) return true;
+    const url = await recognitionEndpoint();
+    if (!url) {
+        convStatus('İşarə tanıma bu yerləşdirmədə mövcud deyil.');
+        return false;
+    }
+    return new Promise((resolve) => {
+        let settled = false;
+        const ws = new WebSocket(url);
+        conv.recogWs = ws;
+        ws.onopen = () => { callLog('recognition socket open'); convStatus('Model hazırlanır…'); };
+        ws.onmessage = (ev) => {
+            let data;
+            try { data = JSON.parse(ev.data); } catch (e) { return; }
+            if (!settled && (data.status === 'READY' || data.word_state)) {
+                settled = true;
+                resolve(true);
+            }
+            onRecognitionMessage(data);
+        };
+        ws.onerror = () => { if (!settled) { settled = true; resolve(false); } };
+        ws.onclose = () => {
+            callLog('recognition socket closed');
+            conv.recogWs = null;
+            stopFramePump();
+            if (conv.mode === 'sign') convStatus('Tanıma bağlantısı kəsildi.');
+            if (!settled) { settled = true; resolve(false); }
+        };
+        // The backend builds a MediaPipe landmarker per connection (~300 ms of
+        // CPU, seconds on a throttled instance) before it says READY.
+        setTimeout(() => { if (!settled) { settled = true; resolve(true); } }, 12000);
+    });
+}
+
+function closeRecognition() {
+    stopFramePump();
+    if (conv.recogWs) {
+        try { conv.recogWs.close(); } catch (e) {}
+        conv.recogWs = null;
+    }
+}
+
+function recogSend(payload) {
+    if (conv.recogWs && conv.recogWs.readyState === WebSocket.OPEN) {
+        conv.recogWs.send(JSON.stringify(payload));
+        return true;
+    }
+    return false;
+}
+
+/* ---- pushing frames from the call's own video stream ---- */
+function startFramePump() {
+    if (conv.frameTimer) return;
+    if (!conv.canvas) {
+        conv.canvas = document.createElement('canvas');
+        conv.canvas.width = CONV_CAPTURE_W;
+        conv.canvas.height = CONV_CAPTURE_H;
+        conv.ctx = conv.canvas.getContext('2d');
+    }
+    conv.frameTimer = setInterval(() => {
+        const video = $('local-video');
+        if (!video || !video.videoWidth) return;
+        if (!conv.recogWs || conv.recogWs.readyState !== WebSocket.OPEN) return;
+
+        // In word mode the backend ignores frames until a trial is running, so
+        // sending them would burn the instance's CPU for nothing.
+        if (conv.signMode === 'word' &&
+            conv.wordState !== 'COUNTDOWN' && conv.wordState !== 'RECORDING') return;
+
+        // One frame in flight at a time: on a slow instance a fixed rate would
+        // queue frames faster than they are processed and latency would grow
+        // without bound.
+        if (conv.frameInFlight) return;
+        conv.frameInFlight = true;
+
+        conv.ctx.drawImage(video, 0, 0, CONV_CAPTURE_W, CONV_CAPTURE_H);
+        const b64 = conv.canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+        recogSend({ type: 'frame', mode: conv.signMode, data: b64 });
+    }, CONV_FRAME_MS);
+}
+
+function stopFramePump() {
+    clearInterval(conv.frameTimer);
+    conv.frameTimer = null;
+    conv.frameInFlight = false;
+}
+
+/* ---- what the recogniser sends back ---- */
+function appendToCompose(text) {
+    const input = $('conv-input');
+    const joined = (input.value + ' ' + text).replace(/\s+/g, ' ').trim();
+    input.value = joined;
+}
+
+function onRecognitionMessage(data) {
+    conv.frameInFlight = false;
+
+    if (data.error) { convStatus(data.error); return; }
+
+    if (data.word_state) {
+        conv.wordState = data.word_state;
+        const labels = {
+            READY: 'Hazırdır — SINAĞA BAŞLA',
+            COUNTDOWN: (data.countdown_title || 'HAZIRLAŞIN…') + ' ' + (data.countdown_text || ''),
+            RECORDING: 'Yazılır ' + (data.buffer_progress || ''),
+            ANALYZING: 'Təhlil edilir…',
+            RESULT: 'Nəticə: ' + (data.prediction || '-'),
+        };
+        convStatus(labels[data.word_state] || data.word_state);
+    }
+
+    // Word mode: one confident word per trial.
+    if (data.segment_event && data.segment_event.label) {
+        const word = data.segment_event.label;
+        callLog('sign word recognised', word);
+        appendToCompose(word);
+        if (conv.autoSend) sendCaption();
+    }
+
+    // Alphabet mode: append only on the transition, not the running buffer,
+    // so the compose line stays editable instead of being overwritten.
+    if (data.just_accepted && data.accepted_letter && data.accepted_letter !== '-') {
+        const letter = data.accepted_letter;
+        const input = $('conv-input');
+        if (letter === 'SPACE') {
+            input.value = (input.value + ' ').replace(/\s+/g, ' ');
+        } else if (letter === 'DEL') {
+            input.value = input.value.slice(0, -1);
+        } else {
+            input.value += letter;
+        }
+        callLog('sign letter accepted', letter);
+    }
+    if (data.mode === 'alphabet' && data.raw_prediction && data.raw_prediction !== '-') {
+        convStatus('Hərf: ' + data.raw_prediction +
+                   (data.candidate_progress ? ' (' + data.candidate_progress + ')' : ''));
+    }
+}
+
+/* ---- speech -> text (browser engine: free, no API key) ---- */
+function startSpeech() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+        convStatus('Bu brauzer səs tanımanı dəstəkləmir (Chrome/Edge tələb olunur).');
+        return false;
+    }
+    if (conv.recRunning) return true;
+
+    const rec = new SR();
+    conv.rec = rec;
+    rec.lang = 'az-AZ';
+    rec.continuous = true;
+    rec.interimResults = true;
+
+    rec.onstart = () => { conv.recRunning = true; convStatus('Dinlənilir…'); };
+    rec.onresult = (ev) => {
+        let interim = '';
+        let final = '';
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+            const r = ev.results[i];
+            if (r.isFinal) final += r[0].transcript;
+            else interim += r[0].transcript;
+        }
+        if (final.trim()) {
+            appendToCompose(final.trim());
+            callLog('speech final', final.trim().slice(0, 40));
+            if (conv.autoSend) sendCaption();
+        }
+        conv.interim = interim.trim();
+        convStatus(conv.interim ? '… ' + conv.interim : 'Dinlənilir…');
+    };
+    rec.onerror = (ev) => {
+        callLog('speech error', ev.error);
+        if (ev.error === 'language-not-supported') {
+            convStatus('az-AZ bu brauzerdə dəstəklənmir — türk dilinə keçilir.');
+            rec.lang = 'tr-AZ' in window ? 'tr-AZ' : 'tr-TR';
+        } else if (ev.error === 'not-allowed') {
+            convStatus('Mikrofon icazəsi verilmədi.');
+            conv.mode = 'off';
+            renderConvModes();
+        } else if (ev.error !== 'no-speech') {
+            convStatus('Səs tanıma xətası: ' + ev.error);
+        }
+    };
+    // continuous still stops on silence in some builds; keep it alive.
+    rec.onend = () => {
+        conv.recRunning = false;
+        if (conv.mode === 'speech' && conv.open) {
+            try { rec.start(); } catch (e) { /* already starting */ }
+        }
+    };
+
+    try { rec.start(); } catch (e) { callLog('speech start failed', e && e.message); }
+    return true;
+}
+
+function stopSpeech() {
+    conv.mode === 'speech' && convStatus('');
+    if (conv.rec) {
+        try { conv.rec.onend = null; conv.rec.stop(); } catch (e) {}
+        conv.rec = null;
+    }
+    conv.recRunning = false;
+    conv.interim = '';
+}
+
+/* ---- sending and receiving captions ---- */
+function sendCaption() {
+    const input = $('conv-input');
+    const text = input.value.trim();
+    if (!text) return;
+    if (!call.id) { convStatus('Zəng aktiv deyil.'); return; }
+
+    const ok = wsSend({
+        type: 'call:caption',
+        call_id: call.id,
+        text: text,
+        source: conv.mode === 'speech' ? 'speech' : 'sign',
+    });
+    if (!ok) { convStatus('Göndərilə bilmədi — bağlantı kəsildi.'); return; }
+
+    addCaptionLine(text, true);
+    input.value = '';
+    conv.interim = '';
+    // Keep the server-side spelling buffer from carrying into the next phrase.
+    recogSend({ type: 'alphabet_action', action: 'clear' });
+}
+
+function addCaptionLine(text, mine) {
+    const box = $('conv-captions');
+    if (!box) return;
+    const el = document.createElement('div');
+    el.className = 'caption-line ' + (mine ? 'me' : 'them');
+    const who = mine ? 'Siz' : ((call.peer && call.peer.full_name) || 'Qarşı tərəf');
+    el.innerHTML = '<span class="caption-who">' + escapeHtml(who) + '</span>' + escapeHtml(text);
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+    conv.lines.push({ mine: mine, text: text });
+
+    // Open the panel automatically when the other side says something —
+    // a caption nobody sees is worse than useless.
+    if (!mine && !conv.open) toggleConvPanel(true);
+}
+
+/* ---- mode switching ---- */
+function renderConvModes() {
+    [['mode-off', 'off'], ['mode-sign', 'sign'], ['mode-speech', 'speech']].forEach(
+        ([id, value]) => $(id).classList.toggle('active', conv.mode === value)
+    );
+    $('sign-submodes').hidden = conv.mode !== 'sign';
+    $('sign-alphabet').classList.toggle('active', conv.signMode === 'alphabet');
+    $('sign-word').classList.toggle('active', conv.signMode === 'word');
+    $('sign-trial').hidden = !(conv.mode === 'sign' && conv.signMode === 'word');
+}
+
+async function setConvMode(mode) {
+    if (conv.mode === mode) return;
+    callLog('conversation mode ->', mode);
+
+    if (conv.mode === 'speech') stopSpeech();
+    if (conv.mode === 'sign') closeRecognition();
+
+    conv.mode = mode;
+    renderConvModes();
+    convStatus('');
+
+    if (mode === 'sign') {
+        if (call.media !== 'video') {
+            convStatus('İşarə tanıma üçün video zəng lazımdır.');
+            conv.mode = 'off';
+            renderConvModes();
+            return;
+        }
+        convStatus('Tanıma bağlantısı qurulur…');
+        const ok = await openRecognition();
+        if (!ok) {
+            convStatus('Tanıma bağlantısı qurula bilmədi.');
+            conv.mode = 'off';
+            renderConvModes();
+            return;
+        }
+        recogSend({ type: 'alphabet_action', action: 'clear' });
+        startFramePump();
+        convStatus(conv.signMode === 'word'
+            ? 'Hazırdır — SINAĞA BAŞLA düyməsini basın'
+            : 'Hərf-hərf işarə edin');
+    } else if (mode === 'speech') {
+        startSpeech();
+    }
+}
+
+function toggleConvPanel(force) {
+    conv.open = force === undefined ? !conv.open : !!force;
+    $('conv-panel').hidden = !conv.open;
+    $('btn-captions').classList.toggle('on', conv.open);
+    if (!conv.open) {
+        // Leaving the panel stops the work, so a forgotten mode cannot keep
+        // burning CPU and relay bandwidth for the rest of the call.
+        setConvMode('off');
+    }
+}
+
+$('btn-captions').addEventListener('click', () => toggleConvPanel());
+$('mode-off').addEventListener('click', () => setConvMode('off'));
+$('mode-sign').addEventListener('click', () => setConvMode('sign'));
+$('mode-speech').addEventListener('click', () => setConvMode('speech'));
+$('conv-autosend').addEventListener('change', (e) => { conv.autoSend = e.target.checked; });
+$('conv-send').addEventListener('click', sendCaption);
+$('conv-clear').addEventListener('click', () => {
+    $('conv-input').value = '';
+    recogSend({ type: 'alphabet_action', action: 'clear' });
+});
+$('conv-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); sendCaption(); }
+});
+$('sign-alphabet').addEventListener('click', () => {
+    conv.signMode = 'alphabet';
+    conv.wordState = 'READY';
+    renderConvModes();
+    if (conv.mode === 'sign') { startFramePump(); convStatus('Hərf-hərf işarə edin'); }
+});
+$('sign-word').addEventListener('click', () => {
+    conv.signMode = 'word';
+    renderConvModes();
+    if (conv.mode === 'sign') convStatus('SINAĞA BAŞLA düyməsini basın');
+});
+$('sign-trial').addEventListener('click', () => {
+    if (conv.mode !== 'sign') return;
+    conv.wordState = 'COUNTDOWN';
+    startFramePump();
+    recogSend({ type: 'start', mode: 'word' });
+});
 
 // startCall is async and the click handler does not await it, so any throw
 // became an unhandled rejection: no toast, no log, nothing in the server log

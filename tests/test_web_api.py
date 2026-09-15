@@ -209,6 +209,49 @@ def test_socket_state_is_visible_and_recovers_on_mobile():
     assert "visibilitychange" in html
 
 
+def test_conversation_panel_is_wired_for_both_input_modes():
+    """Sign->text and speech->text, the accessibility feature of the product."""
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+
+    # Both directions of the conversation exist.
+    assert 'id="mode-sign"' in html and 'id="mode-speech"' in html
+    assert 'id="sign-alphabet"' in html and 'id="sign-word"' in html
+
+    # Sign recognition re-uses the workspace's server-side models over /ws
+    # rather than opening a second camera.
+    assert "recognitionEndpoint" in html
+    assert "'/ws?token='" in html or "'/ws'" in html
+    assert "$('local-video')" in html, "frames must come from the existing call stream"
+
+    # Speech uses the browser engine: free, no API key, Azerbaijani.
+    assert "webkitSpeechRecognition" in html
+    assert "rec.lang = 'az-AZ'" in html
+
+    # Recognised text is composed before sending, not sent blind.
+    assert "function sendCaption()" in html
+    assert 'id="conv-input"' in html
+
+
+def test_conversation_resources_are_released_when_the_call_ends():
+    """A forgotten mode would keep streaming camera frames and hold the mic."""
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+    reset = html.split("function resetCall()", 1)[1].split("function ", 1)[0]
+
+    assert "stopSpeech()" in reset, "the microphone must be released on hang-up"
+    assert "closeRecognition()" in reset, "frame streaming must stop on hang-up"
+    assert "conv.mode = 'off'" in reset
+
+
+def test_word_mode_does_not_stream_frames_while_idle():
+    """The backend ignores frames outside a trial; sending them wastes CPU.
+
+    The free instance is 0.1 CPU and is already encoding WebRTC video, so
+    pushing ~10 JPEGs a second that the server will discard is not free.
+    """
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+    assert "conv.wordState !== 'COUNTDOWN' && conv.wordState !== 'RECORDING'" in html
+
+
 def test_remote_video_playback_is_requested_explicitly():
     """autoplay alone is not enough for a stream that carries audio.
 

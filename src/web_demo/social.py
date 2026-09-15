@@ -623,6 +623,50 @@ async def _handle_call_message(
         await _end_call(call, user.id, "ended")
         return
 
+    if msg_type == "call:caption":
+        # A line of text one participant produced by signing or speaking, for
+        # the other to read. This is the accessibility path: it lets a Deaf and
+        # a hearing person hold a conversation without either of them typing.
+        peer_id = call.peer_of(user.id)
+        if peer_id is None:
+            return
+        text = str(message.get("text", "")).strip()
+        if not text:
+            return
+        source = message.get("source")
+        source = source if source in ("sign", "speech") else "sign"
+
+        # Persisted as an ordinary message, so the conversation survives the
+        # call. Someone who relies on captions should be able to scroll back
+        # through what was said rather than having it disappear on hang-up.
+        stored = None
+        try:
+            stored = await _in_db(auth_db.save_message, user.id, peer_id, text)
+        except auth_db.FriendshipError:
+            # Too long or empty after trimming: still worth showing live.
+            pass
+
+        payload = {
+            "type": "call:caption",
+            "call_id": call.call_id,
+            "from": user.id,
+            "text": text,
+            "source": source,
+        }
+        if stored is not None:
+            payload["message"] = stored.public_dict()
+
+        # To the peer's call socket if they have one, otherwise every socket
+        # they hold — they may have the chat open on another device.
+        peer_ws = call.socket_for(peer_id)
+        if peer_ws is not None:
+            await hub.send_to_socket(peer_ws, payload)
+        else:
+            await hub.send_to_user(peer_id, payload)
+        # Echo to the sender's other tabs so the transcript stays consistent.
+        await hub.send_to_user(user.id, payload, exclude=ws)
+        return
+
     if msg_type in ("call:offer", "call:answer", "call:ice"):
         peer_id = call.peer_of(user.id)
         peer_ws = call.socket_for(peer_id) if peer_id is not None else None

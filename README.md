@@ -26,6 +26,10 @@ Live demo: https://azsl-sign-demo.onrender.com
 5. **Friends, Chat & Calls**:
    - Add people by name or e-mail, accept invites, and message them in real time with presence and typing indicators.
    - Peer-to-peer **audio and video calls** between friends over WebRTC — the backend relays only signalling, never media.
+6. **Live Conversation Accessibility (in-call sign→text and speech→text)**:
+   - During a call each side picks how they speak: **sign** (recognised by the same server-side models as the workspace) or **voice** (browser speech recognition, `az-AZ`, no API key).
+   - The other side reads it as large on-screen text, so a Deaf and a hearing person can converse without either of them typing.
+   - Recognised text is editable before sending, and the whole exchange is saved to the chat transcript.
 
 ---
 
