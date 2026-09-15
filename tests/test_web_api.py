@@ -127,6 +127,68 @@ def test_friends_page_renders_for_a_signed_in_user(app):
     assert '"socialWsUrl": null' in res.text
 
 
+FRONTEND = PROJECT_ROOT / "src" / "web_demo" / "frontend"
+
+
+@pytest.mark.parametrize("page", ["friends.html", "index.html"])
+def test_hidden_attribute_is_made_authoritative(page):
+    """Any page that toggles el.hidden must force the attribute to win.
+
+    `hidden` is only a UA-stylesheet rule, and author declarations beat the UA
+    origin, so a single `display: grid` anywhere silently turns el.hidden into
+    a no-op. That shipped once: `.call-audio-face` (absolute, inset 0, opaque,
+    display: grid) stayed painted over the remote video on every video call, so
+    both callers saw their own preview and neither saw the other.
+
+    Without the override the failure is invisible in review — the JS looks
+    correct — so assert the rule is present rather than trusting the next
+    author to remember.
+    """
+    css = (FRONTEND / page).read_text(encoding="utf-8")
+    if ".hidden = " not in css and "hidden>" not in css:
+        pytest.skip(f"{page} does not toggle the hidden attribute")
+
+    normalised = css.replace(" ", "").replace("\n", "")
+    assert "[hidden]{display:none!important;}" in normalised, (
+        f"{page} toggles the `hidden` attribute but never forces it to beat "
+        f"author `display` rules. Add: [hidden] {{ display: none !important; }}"
+    )
+
+
+def test_call_overlay_backdrop_cannot_cover_the_remote_video():
+    """The audio-only backdrop must be behind the remote video, or hideable.
+
+    It is absolutely positioned with an opaque background over the full
+    overlay, so if it ever renders during a video call the remote picture is
+    gone. Two independent things keep that from happening; require both.
+    """
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+
+    # 1. The backdrop is only revealed for audio calls.
+    assert "$('call-audio-face').hidden = !audioOnly;" in html
+
+    # 2. And the hidden attribute actually takes effect (see the test above).
+    assert "[hidden] { display: none !important; }" in html
+
+    # 3. The remote video is never itself hidden on a video call.
+    assert "$('remote-video').hidden = audioOnly;" in html
+
+
+def test_remote_video_playback_is_requested_explicitly():
+    """autoplay alone is not enough for a stream that carries audio.
+
+    Browsers block unmuted autoplay without fresh user activation, and by the
+    time the remote track arrives the click that started the call is several
+    awaits old. Without an explicit play() the stream attaches but never
+    starts — indistinguishable from a broken connection.
+    """
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+    assert "function playRemote()" in html
+    assert "remote.play()" in html
+    # And a visible fallback for when the browser still says no.
+    assert 'id="tap-to-play"' in html
+
+
 def test_socket_url_injection_per_deployment_shape(monkeypatch):
     """The three deploy shapes must each hand the page the right socket URL."""
     from src.web_demo import webapp

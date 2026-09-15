@@ -28,6 +28,15 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* The `hidden` attribute is only a UA-stylesheet rule, and author declarations
+   always beat the UA origin — so ANY rule of ours that sets `display` silently
+   defeats el.hidden = true. That is not theoretical: `.call-audio-face` is
+   `display: grid` with an opaque background and `inset: 0`, so on every video
+   call it stayed painted over the remote video while the local preview (later
+   in the DOM) drew on top. Both callers saw themselves and neither saw the
+   other. !important is what makes the attribute authoritative again. */
+[hidden] { display: none !important; }
+
 body {
     font-family: var(--font-sans);
     background:
@@ -553,6 +562,32 @@ header {
 }
 .call-controls .hangup:hover { background: #cf6047; border-color: #cf6047; }
 
+/* Autoplay fallback. Centred over the video, so it reads as "the picture is
+   here, press to start" rather than as an error. */
+.tap-to-play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.9rem 1.6rem;
+    border-radius: 999px;
+    border: 1.5px solid var(--accent-cyan);
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(8px);
+    color: var(--accent-cyan);
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 5;
+}
+.tap-to-play[hidden] { display: none; }
+.tap-to-play:hover { background: var(--accent-cyan); color: #1f1f1f; }
+.tap-to-play .tap-icon { font-size: 1.1rem; }
+
 /* ---------- Incoming call modal ---------- */
 .modal-backdrop {
     position: fixed;
@@ -724,6 +759,13 @@ header {
     </div>
     <video id="local-video" autoplay playsinline muted></video>
 
+    <!-- Shown only when the browser refuses to autoplay the remote stream.
+         One click is user activation, which always unblocks it. -->
+    <button type="button" id="tap-to-play" class="tap-to-play" hidden>
+        <span class="tap-icon" aria-hidden="true">▶</span>
+        Videonu göstər
+    </button>
+
     <div class="call-banner">
         <div class="peer" id="call-peer-name"></div>
         <div class="state" id="call-state">Qoşulur…</div>
@@ -795,6 +837,7 @@ const call = {
     localStream: null,
     pendingIce: [],    // candidates that arrived before setRemoteDescription
     remoteReady: false,
+    remoteStream: null,
     timer: null,
     startedAt: null,
     iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }],
@@ -1409,15 +1452,39 @@ function createPeerConnection() {
         }
     };
 
+    // Collect incoming tracks into one stream we own. Relying on ev.streams[0]
+    // alone is fragile: it is empty whenever the remote side negotiated without
+    // a stream id, and then nothing is ever attached.
     pc.ontrack = (ev) => {
+        if (!call.remoteStream) call.remoteStream = new MediaStream();
+        const incoming = (ev.streams && ev.streams[0]) ? ev.streams[0].getTracks() : [ev.track];
+        incoming.forEach((t) => {
+            if (!call.remoteStream.getTracks().some((x) => x.id === t.id)) {
+                call.remoteStream.addTrack(t);
+            }
+        });
+
         const remote = $('remote-video');
-        if (remote.srcObject !== ev.streams[0]) remote.srcObject = ev.streams[0];
+        if (remote.srcObject !== call.remoteStream) remote.srcObject = call.remoteStream;
+        callLog('ontrack', ev.track.kind, 'muted=' + ev.track.muted);
+
+        // A remote track arrives "muted" and unmutes when packets actually
+        // flow. If this never fires, the problem is the connection, not the UI.
+        ev.track.onunmute = () => {
+            callLog('track unmuted', ev.track.kind);
+            playRemote();
+        };
+        playRemote();
     };
 
+    pc.oniceconnectionstatechange = () => callLog('ice', pc.iceConnectionState);
+
     pc.onconnectionstatechange = () => {
+        callLog('connection', pc.connectionState);
         if (pc.connectionState === 'connected') {
             setCallState('Qoşuldu');
             startCallTimer();
+            playRemote();
         } else if (pc.connectionState === 'failed') {
             // Almost always symmetric NAT with no TURN relay configured.
             toast(call.turnAvailable
@@ -1431,6 +1498,72 @@ function createPeerConnection() {
 
     return pc;
 }
+
+/* Remote video carries audio, so browsers refuse to autoplay it without fresh
+   user activation — and by the time the track arrives we are several awaits
+   past the button click, so that activation has expired. The stream is
+   attached but the element never starts, which looks exactly like "the call
+   connected and I see nothing".
+
+   So: ask to play explicitly, and if the browser still refuses, show a button.
+   A click is unambiguous activation and always succeeds. */
+function playRemote() {
+    const remote = $('remote-video');
+    if (!remote.srcObject) return;
+    const attempt = remote.play();
+    if (attempt && typeof attempt.catch === 'function') {
+        attempt
+            .then(() => { $('tap-to-play').hidden = true; })
+            .catch((err) => {
+                callLog('autoplay blocked', err && err.name);
+                $('tap-to-play').hidden = false;
+            });
+    }
+}
+
+/* Call diagnostics. Always on: a call that fails in the wild is hard enough to
+   reproduce that a timeline in the console is worth the noise. */
+function callLog(...parts) {
+    console.log('[call]', ...parts);
+    callLog.history = (callLog.history || []).concat(
+        [new Date().toISOString().slice(11, 19) + ' ' + parts.join(' ')]
+    ).slice(-40);
+}
+
+/* Paste the output of this into a bug report. */
+window.azslCallReport = function () {
+    const pc = call.pc;
+    const report = {
+        state: pc ? {
+            connection: pc.connectionState,
+            ice: pc.iceConnectionState,
+            iceGathering: pc.iceGatheringState,
+            signaling: pc.signalingState,
+        } : 'no active peer connection',
+        senders: pc ? pc.getSenders().map((s) => s.track && {
+            kind: s.track.kind, enabled: s.track.enabled, muted: s.track.muted,
+        }) : [],
+        receivers: pc ? pc.getReceivers().map((r) => r.track && {
+            kind: r.track.kind, enabled: r.track.enabled, muted: r.track.muted,
+            readyState: r.track.readyState,
+        }) : [],
+        remoteVideo: (() => {
+            const v = $('remote-video');
+            return {
+                hasStream: !!v.srcObject,
+                tracks: v.srcObject ? v.srcObject.getTracks().length : 0,
+                paused: v.paused,
+                width: v.videoWidth, height: v.videoHeight,
+                readyState: v.readyState,
+            };
+        })(),
+        turnAvailable: call.turnAvailable,
+        iceServers: call.iceServers.map((s) => (typeof s.urls === 'string' ? s.urls : s.urls.join(','))),
+        log: callLog.history || [],
+    };
+    console.log(JSON.stringify(report, null, 2));
+    return report;
+};
 
 function setCallState(text) { $('call-state').textContent = text; }
 
@@ -1468,6 +1601,7 @@ function hideCallUI() {
     $('call-overlay').hidden = true;
     $('remote-video').srcObject = null;
     $('local-video').srcObject = null;
+    $('tap-to-play').hidden = true;
     $('btn-toggle-mic').classList.remove('active-off');
     $('btn-toggle-cam').classList.remove('active-off');
     clearInterval(call.timer);
@@ -1493,6 +1627,7 @@ async function startCall(media) {
     call.peer = state.activePeer;
     call.pendingIce = [];
     call.remoteReady = false;
+    call.remoteStream = null;
 
     showCallUI(call.peer, media);
     setCallState('Zəng edilir…');
@@ -1515,6 +1650,7 @@ async function acceptCall() {
         return;
     }
 
+    call.remoteStream = null;
     showCallUI(call.peer, call.media);
     if (call.media === 'video') $('local-video').srcObject = call.localStream;
 
@@ -1540,6 +1676,7 @@ function resetCall() {
     if (call.localStream) call.localStream.getTracks().forEach((t) => t.stop());
     call.pc = null;
     call.localStream = null;
+    call.remoteStream = null;
     call.id = null;
     call.peer = null;
     call.role = null;
@@ -1636,6 +1773,10 @@ $('btn-video-call').addEventListener('click', () => startCall('video'));
 $('btn-accept').addEventListener('click', acceptCall);
 $('btn-reject').addEventListener('click', rejectCall);
 $('btn-hangup').addEventListener('click', () => endCall('local'));
+$('tap-to-play').addEventListener('click', () => {
+    $('tap-to-play').hidden = true;
+    playRemote();
+});
 
 $('btn-toggle-mic').addEventListener('click', () => {
     if (!call.localStream) return;

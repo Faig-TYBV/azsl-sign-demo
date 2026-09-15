@@ -952,6 +952,10 @@ main {
     padding-top: 0.75rem;
 }
 .hidden { display: none !important; }
+/* Same for the `hidden` ATTRIBUTE. It is only a UA-stylesheet rule, so any
+   author rule that sets `display` defeats it — `.nav-badge` is `display: grid`,
+   which would otherwise pin a permanent "0" next to the Dostlar link. */
+[hidden] { display: none !important; }
 
 @media (max-width: 768px) {
     .container {
