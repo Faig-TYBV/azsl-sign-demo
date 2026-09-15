@@ -549,17 +549,72 @@ header {
 .toast.success { border-left-color: var(--state-success); }
 
 /* ---------- Call overlay ---------- */
+/* The call screen is a grid of two regions plus the control bar.
+   With the conversation panel closed the video takes everything. With it open
+   the screen splits, and which way it splits depends on the shape of the
+   screen rather than a device guess:
+
+     wide / landscape  -> side by side, because vertical space is scarce and a
+                          stacked layout would leave both halves too short
+     tall / portrait   -> stacked, because two narrow columns would make the
+                          signer tiny and the captions unreadable
+
+   The video keeps the larger share either way: in a sign conversation you are
+   reading the person, not just the text. */
 .call-overlay {
     position: fixed;
     inset: 0;
     z-index: 100;
     background: #151515;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas:
+        "stage"
+        "controls";
+}
+.call-overlay[hidden] { display: none; }
+
+.call-stage {
+    grid-area: stage;
+    position: relative;      /* the PiP, banner and tap-to-play anchor here */
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
 }
-.call-overlay[hidden] { display: none; }
+
+/* ---- split, once the conversation panel is open ---- */
+.call-overlay.with-conv {
+    grid-template-rows: minmax(0, 1.15fr) minmax(0, 1fr) auto;
+    grid-template-areas:
+        "stage"
+        "conv"
+        "controls";
+}
+@media (min-width: 900px) and (orientation: landscape) {
+    .call-overlay.with-conv {
+        grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr);
+        grid-template-rows: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "stage conv"
+            "controls controls";
+    }
+}
+/* A short landscape window (a laptop with the panel open) would otherwise get
+   two very flat rows; force columns there too. */
+@media (max-height: 560px) and (orientation: landscape) {
+    .call-overlay.with-conv {
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 1fr);
+        grid-template-rows: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "stage conv"
+            "controls controls";
+    }
+}
+
 #remote-video {
     width: 100%;
     height: 100%;
@@ -579,7 +634,7 @@ header {
 #local-video {
     position: absolute;
     right: 1rem;
-    bottom: 6.5rem;
+    bottom: 1rem;
     width: clamp(110px, 24vw, 190px);
     aspect-ratio: 3 / 4;
     object-fit: cover;
@@ -591,7 +646,7 @@ header {
 }
 .call-banner {
     position: absolute;
-    top: calc(1rem + env(safe-area-inset-top, 0px));
+    top: calc(0.75rem + env(safe-area-inset-top, 0px));
     left: 50%;
     transform: translateX(-50%);
     text-align: center;
@@ -604,15 +659,14 @@ header {
 .call-banner .peer { font-weight: 700; }
 .call-banner .state { font-size: 0.82rem; color: var(--accent-cyan); }
 .call-controls {
-    position: absolute;
-    bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
-    left: 50%;
-    transform: translateX(-50%);
+    grid-area: controls;
+    justify-self: center;
     display: flex;
     gap: 0.85rem;
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(8px);
     padding: 0.7rem 1rem;
+    margin: 0.85rem 0 calc(0.85rem + env(safe-area-inset-bottom, 0px));
     border-radius: 999px;
 }
 .call-controls .icon-btn { width: 52px; height: 52px; border-radius: 50%; }
@@ -635,29 +689,35 @@ header {
 
 /* ---------- In-call conversation panel ---------- */
 .conv-panel {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
-    z-index: 6;
+    grid-area: conv;
+    min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
     padding: 0.9rem clamp(0.75rem, 3vw, 1.5rem);
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.62));
-    backdrop-filter: blur(10px);
-    max-height: 62vh;
+    background: rgba(24, 24, 24, 0.96);
+    border-top: 1px solid rgba(194, 178, 128, 0.22);
+    overflow: hidden;
+}
+@media (min-width: 900px) and (orientation: landscape) {
+    /* Side by side: the divider belongs on the left edge, not the top. */
+    .conv-panel {
+        border-top: none;
+        border-left: 1px solid rgba(194, 178, 128, 0.22);
+    }
 }
 .conv-panel[hidden] { display: none !important; }
 
 /* Captions are the whole point for the person who cannot hear, so they get
    the largest type on the screen rather than subtitle-sized text. */
 .conv-captions {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 0.45rem;
-    max-height: 28vh;
     padding-right: 0.25rem;
 }
 .caption-line {
@@ -726,8 +786,9 @@ header {
 .conv-status { font-size: 0.78rem; color: var(--state-trial); min-height: 1.1rem; }
 
 @media (max-width: 640px) {
-    .conv-panel { bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); padding: 0.7rem 0.75rem; }
-    .conv-captions { max-height: 22vh; }
+    .conv-panel { padding: 0.7rem 0.75rem; gap: 0.45rem; }
+    .call-controls { margin: 0.6rem 0 calc(0.6rem + env(safe-area-inset-bottom, 0px)); }
+    .call-controls .icon-btn { width: 46px; height: 46px; }
 }
 
 /* Autoplay fallback. Centred over the video, so it reads as "the picture is
@@ -934,28 +995,34 @@ header {
 
 <!-- ---------------- Active call ---------------- -->
 <div class="call-overlay" id="call-overlay" hidden role="dialog" aria-modal="true" aria-label="Zəng">
-    <video id="remote-video" autoplay playsinline></video>
-    <div class="call-audio-face" id="call-audio-face" hidden>
-        <div class="avatar lg" id="call-face-avatar"></div>
-    </div>
-    <video id="local-video" autoplay playsinline muted></video>
+    <!-- The video half. Wrapped so the picture-in-picture preview, the banner
+         and the tap-to-play button position against the video area rather than
+         the whole screen once the conversation panel takes half of it. -->
+    <div class="call-stage" id="call-stage">
+        <video id="remote-video" autoplay playsinline></video>
+        <div class="call-audio-face" id="call-audio-face" hidden>
+            <div class="avatar lg" id="call-face-avatar"></div>
+        </div>
+        <video id="local-video" autoplay playsinline muted></video>
 
-    <!-- Shown only when the browser refuses to autoplay the remote stream.
-         One click is user activation, which always unblocks it. -->
-    <button type="button" id="tap-to-play" class="tap-to-play" hidden>
-        <span class="tap-icon" aria-hidden="true">▶</span>
-        Videonu göstər
-    </button>
+        <!-- Shown only when the browser refuses to autoplay the remote stream.
+             One click is user activation, which always unblocks it. -->
+        <button type="button" id="tap-to-play" class="tap-to-play" hidden>
+            <span class="tap-icon" aria-hidden="true">▶</span>
+            Videonu göstər
+        </button>
 
-    <div class="call-banner">
-        <div class="peer" id="call-peer-name"></div>
-        <div class="state" id="call-state">Qoşulur…</div>
-        <div class="state" id="call-link" style="opacity:0.65;font-size:0.72rem;"></div>
+        <div class="call-banner">
+            <div class="peer" id="call-peer-name"></div>
+            <div class="state" id="call-state">Qoşulur…</div>
+            <div class="state" id="call-link" style="opacity:0.65;font-size:0.72rem;"></div>
+        </div>
     </div>
 
     <!-- Conversation panel: sign->text and speech->text, so a Deaf and a
-         hearing person can talk without either of them typing. Overlays the
-         video rather than replacing it, because seeing the signer matters. -->
+         hearing person can talk without either of them typing. It takes its own
+         half of the screen rather than covering the video, because in a sign
+         conversation you need to watch the signer AND read the text. -->
     <section class="conv-panel" id="conv-panel" hidden aria-label="Danışıq rejimi">
         <div class="conv-captions" id="conv-captions" role="log" aria-live="polite"></div>
 
@@ -2188,6 +2255,8 @@ function resetCall() {
         conv.lines = [];
         const panel = $('conv-panel');
         if (panel) panel.hidden = true;
+        const overlay = $('call-overlay');
+        if (overlay) overlay.classList.remove('with-conv');
         const captions = $('conv-captions');
         if (captions) captions.innerHTML = '';
         const input = $('conv-input');
@@ -2883,6 +2952,10 @@ async function setConvMode(mode) {
 function toggleConvPanel(force) {
     conv.open = force === undefined ? !conv.open : !!force;
     $('conv-panel').hidden = !conv.open;
+    // Splits the call screen into video + conversation. Which axis it splits
+    // on is left entirely to CSS, so it follows the actual window shape rather
+    // than anything JS guesses about the device.
+    $('call-overlay').classList.toggle('with-conv', conv.open);
     $('btn-captions').classList.toggle('on', conv.open);
     if (!conv.open) {
         // Leaving the panel stops the work, so a forgotten mode cannot keep

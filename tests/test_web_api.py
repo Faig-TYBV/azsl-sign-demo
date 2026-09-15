@@ -504,3 +504,44 @@ def test_word_recording_has_a_single_implementation():
     assert backend.count("await _record_word_frame(") == 2, (
         "expected exactly the JPEG path and the landmark path to call it"
     )
+
+
+def test_call_screen_splits_responsively_when_conversation_opens():
+    """Video and captions share the screen instead of one covering the other.
+
+    In a sign conversation you are reading the person as well as the text, so
+    the captions cannot sit on top of the video. Which axis it splits on is a
+    CSS decision driven by the window's shape, not a device guess in JS.
+    """
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+
+    # The video half is a real container, so the picture-in-picture preview and
+    # the banner anchor to it rather than to the whole screen.
+    assert 'id="call-stage"' in html
+    assert ".call-stage {" in html
+
+    # Three named regions, wired consistently.
+    for area in ("stage", "conv", "controls"):
+        assert f"grid-area: {area};" in html, f"no element claims the '{area}' region"
+
+    # Stacked by default (portrait/narrow)...
+    assert '"stage"\n        "conv"\n        "controls";' in html
+    # ...and side by side when the window is wide and landscape.
+    assert "(min-width: 900px) and (orientation: landscape)" in html
+    assert '"stage conv"' in html
+    # A short landscape window must not end up with two flat rows.
+    assert "(max-height: 560px) and (orientation: landscape)" in html
+
+    # The split is applied and removed with the panel.
+    assert "classList.toggle('with-conv', conv.open)" in html
+    assert "overlay.classList.remove('with-conv')" in html
+
+
+def test_captions_area_grows_instead_of_being_capped():
+    """Given half the screen, the transcript should use it."""
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+    captions = html.split(".conv-captions {", 1)[1].split("}", 1)[0]
+    assert "flex: 1" in captions and "min-height: 0" in captions
+    assert "max-height: 28vh" not in captions, (
+        "the old fixed cap would waste the space the split now provides"
+    )
