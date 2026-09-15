@@ -8,9 +8,8 @@ import json
 import base64
 import sys
 import time
-from collections import deque
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Deque, Dict
 
 import cv2
 import mediapipe as mp
@@ -44,23 +43,40 @@ from src.features.extract_landmarks import (
     normalize_frame,
     _mp_result_to_frame_result,
 )
-from src.features.preprocess_sequence import (
-    TARGET_SEQ_LEN,
-    preprocess_sequence,
-)
+from src.features.preprocess_sequence import TARGET_SEQ_LEN
 from src.models.gru_classifier import GRUClassifier
-from src.inference.ambiguity_gate import is_ambiguous_prediction
 from src.inference.alphabet_classifier import AlphabetClassifier, AlphabetStabilizer
 from src.data.normalization import FeatureNormalizer
 from src.inference.predict import get_device
 from src.web_demo import db as auth_db
 from src.web_demo.webapp import build_web_layer, verify_ws_token
 
-app = FastAPI(title="AzSLD Web Demo Backend")
 
-# Session cookie + /api/* auth routes + static pages. Same layer the Vercel
-# entrypoint (api/index.py) uses; this backend also serves /ws on the same
-# origin, so pass serves_ws=True.
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # Prepare the PostgreSQL auth store (creates the database + the users,
+    # friendships and messages tables on first run). A bad DATABASE_URL fails
+    # loudly here rather than at the first login.
+    try:
+        auth_db.init_db()
+        print("Auth database ready (PostgreSQL).", flush=True)
+    except auth_db.DatabaseUnavailable as exc:
+        print("\n" + "=" * 70, flush=True)
+        print(str(exc), flush=True)
+        print("=" * 70 + "\n", flush=True)
+        # Terse re-raise — the actionable message is the banner above, not a
+        # SQLAlchemy stack trace.
+        raise SystemExit("Startup aborted: auth database unavailable (see above).")
+    print("WebSocket backend started.", flush=True)
+    yield
+
+
+app = FastAPI(title="AzSLD Web Demo Backend", lifespan=lifespan)
+
+# Session cookie + /api/* auth routes + static pages + the social layer
+# (friends, chat, calls). Same layer the Vercel entrypoint (api/index.py) uses;
+# this backend also serves /ws and /ws/social on the same origin, so
+# serves_ws=True.
 build_web_layer(app, serves_ws=True)
 
 # Load the Experiment 8 (24-class Cap-50) word model and normalizer at startup
@@ -116,10 +132,6 @@ print("Loading alphabet classifier...", flush=True)
 alphabet_classifier = AlphabetClassifier()
 print("Alphabet classifier loaded successfully.", flush=True)
 
-# Constants for prediction smoothing
-WINDOW_SIZE = 5
-CONFIDENCE_THRESHOLD = 0.35
-
 # --- Alphabet (fingerspelling) mode tuning ------------------------------------
 # The alphabet MLP has no "not-a-letter" class, so its softmax saturates and the
 # confidence gate alone can't stop garbage from accumulating ("FFAX" while the
@@ -152,26 +164,14 @@ def _dbg(msg: str) -> None:
     if DEBUG_LOG:
         print(msg, flush=True)
 
-# Temporal segmentation thresholds (additive layer; does not change inference).
-PRESENCE_ON_FRAMES = 2      # consecutive hand-present frames to enter SIGNING
-PRESENCE_OFF_FRAMES = 6     # consecutive end-condition frames to exit SIGNING
-MOTION_DELTA_MIN = 0.02     # mean L2 feature delta required to start signing
-MOTION_WINDOW = 5           # number of frames to average the motion delta over
-MOTION_DELTA_FLOOR = 0.001  # below this motion we treat the hand as still
-IDLE_CONFIDENCE_MAX = 0.10  # minimum smoothed confidence to consider a segment valid
-STABLE_PRED_FRAMES = 2      # consecutive agreeing smoothed predictions required
-MIN_SEGMENT_FRAMES = 15     # minimum frames between consecutive emits
-COOLDOWN_FRAMES = 8         # minimum cooldown frames after an emit
-
 # === Hand-presence gate (post-prediction, no retraining required) ============
 # The GRU was trained without an explicit "idle/background" class, so softmax
-# ALWAYS returns a top-1 even on all-zero feature buffers (confidence ~1/N).
-# We compensate by NOT running inference when the buffer has no valid frames,
-# and by clamping the displayed fields when the most recent frame is not a
-# real hand detection. These thresholds are tuning knobs, not architecture.
-SEGMENT_CONFIDENCE_FLOOR = 0.35   # smoothed conf must be >= this to emit
-DISPLAY_CONFIDENCE_FLOOR = 0.35   # below this we display "-" instead of the label
-MIN_VALID_FRAMES_IN_BUFFER = 1    # skip inference if buffer has 0 valid frames
+# ALWAYS returns a top-1 even on an all-zero feature buffer (confidence ~1/N).
+# We compensate by refusing to run inference at all when the completed trial
+# holds too few real hand detections, and reporting "ƏL AŞKARLANMADI" instead.
+# This is a tuning knob, not architecture.
+MIN_VALID_FRAMES_FOR_INFERENCE = 5
+
 
 class ConnectionState:
     """State per WebSocket connection."""
@@ -200,41 +200,6 @@ class ConnectionState:
         self.landmarker = None
         self.last_timestamp_ms = 0
         self.frame_count = 0
-
-        # Legacy buffers for compatibility
-        self.feature_buffer = deque(maxlen=TARGET_SEQ_LEN)
-        self.validity_buffer = deque(maxlen=TARGET_SEQ_LEN)
-        self.pred_history = deque(maxlen=WINDOW_SIZE)
-        self.smoothed_prediction = None
-        self.smoothed_confidence = 0.0
-
-        # Temporal segmentation
-        self.seg_state = "IDLE"
-        self.presence_on_count = 0
-        self.presence_off_count = 0
-        self.motion_window = deque(maxlen=MOTION_WINDOW)
-        self.last_segment_label = None
-        self.frames_since_last_emit = 10**9
-        self.stable_pred_count = 0
-        self.prev_smoothed_prediction = None
-        self.last_is_ambiguous = False
-
-
-@app.on_event("startup")
-async def startup_event():
-    # Prepare the PostgreSQL auth store (creates the database + users table on
-    # first run). A bad DATABASE_URL fails loudly here rather than at first login.
-    try:
-        auth_db.init_db()
-        print("Auth database ready (PostgreSQL).", flush=True)
-    except auth_db.DatabaseUnavailable as exc:
-        print("\n" + "=" * 70, flush=True)
-        print(str(exc), flush=True)
-        print("=" * 70 + "\n", flush=True)
-        # Terse re-raise — the actionable message is the banner above, not a
-        # SQLAlchemy stack trace.
-        raise SystemExit("Startup aborted: auth database unavailable (see above).")
-    print("WebSocket backend started.", flush=True)
 
 
 @app.websocket("/ws")
@@ -770,7 +735,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         "valid_frames": vf_count,
                         "buffer_progress": f"{TARGET_SEQ_LEN}/{TARGET_SEQ_LEN}",
                         "buffer_full": True,
-                        "hand_present": vf_count >= 5,
+                        "hand_present": vf_count >= MIN_VALID_FRAMES_FOR_INFERENCE,
                         "prediction": "-",
                         "confidence": 0.0,
                         "raw_prediction": "-",
@@ -779,7 +744,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         "smoothed_confidence": 0.0,
                     }))
 
-                    if vf_count < 5:
+                    if vf_count < MIN_VALID_FRAMES_FOR_INFERENCE:
                         pred_class = "ƏL AŞKARLANMADI"
                         confidence = 0.0
                         print(f"[WORD TRIAL COMPLETE] Result: ƏL AŞKARLANMADI (valid_frames: {vf_count}/26)", flush=True)

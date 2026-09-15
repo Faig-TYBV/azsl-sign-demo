@@ -173,8 +173,18 @@ def test_top_k_count_via_predict_structure():     # 5. top-k returns k items
     assert "is_ambiguous" in result
 
 
-def test_segment_confidence_floor_is_raised_to_0_70():
-    from src.web_demo.backend import SEGMENT_CONFIDENCE_FLOOR
-    assert SEGMENT_CONFIDENCE_FLOOR in (0.35, 0.70)
+def test_hand_presence_gate_needs_several_valid_frames():
+    """A completed trial with almost no hand detections must not reach the GRU.
+
+    The model has no 'idle' class, so inference on a near-empty 26-frame buffer
+    would still return a confident-looking top-1. backend.py blocks that by
+    requiring this many real detections before it runs the model at all.
+    """
+    from src.web_demo.backend import MIN_VALID_FRAMES_FOR_INFERENCE
+
+    # Must be a real gate: >1 (so a single stray detection can't trigger
+    # inference) and well under the 26-frame trial length (so an ordinary sign
+    # with a few missed frames still classifies).
+    assert 1 < MIN_VALID_FRAMES_FOR_INFERENCE < 26
 
 
