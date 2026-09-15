@@ -2891,6 +2891,12 @@ function toggleConvPanel(force) {
     }
 }
 
+/* Wrapped, and deliberately so. This block sits above boot() at the top level
+   of the script, so anything throwing here would stop execution before the
+   call buttons are wired and before the socket is ever opened -- taking
+   calling down with it. Conversation mode is an enhancement; losing it must
+   never cost the call. */
+try {
 $('btn-captions').addEventListener('click', () => toggleConvPanel());
 $('mode-off').addEventListener('click', () => setConvMode('off'));
 $('mode-sign').addEventListener('click', () => setConvMode('sign'));
@@ -2921,6 +2927,12 @@ $('sign-trial').addEventListener('click', () => {
     startFramePump();
     recogSend({ type: 'start', mode: 'word' });
 });
+} catch (err) {
+    console.error('conversation panel failed to initialise', err);
+    try { callLog('CONV WIRING FAILED', err && err.message); } catch (e) {}
+    const btn = document.getElementById('btn-captions');
+    if (btn) btn.style.display = 'none';
+}
 
 // startCall is async and the click handler does not await it, so any throw
 // became an unhandled rejection: no toast, no log, nothing in the server log
