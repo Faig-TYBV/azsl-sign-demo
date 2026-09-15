@@ -173,6 +173,14 @@ class Hub:
     def is_online(self, user_id: int) -> bool:
         return bool(self._live_sockets(user_id))
 
+    def describe(self, user_id: int) -> str:
+        """'2 live / 3 registered' — for log lines that have to explain a
+        delivery failure after the fact, from a hosted log viewer."""
+        registered = len(self._sockets.get(user_id, ()))
+        live = len(self._live_sockets(user_id))
+        return f"{live} live / {registered} registered"
+
+
     def online_ids(self) -> Set[int]:
         return {uid for uid in self._sockets if self._live_sockets(uid)}
 
@@ -508,6 +516,7 @@ async def _handle_call_message(
         media = "audio" if message.get("media") == "audio" else "video"
 
         if not await _in_db(auth_db.are_friends, user.id, target_id):
+            print(f"[call] REFUSED uid={user.id} -> uid={target_id}: not friends", flush=True)
             await hub.send_to_socket(
                 ws, {"type": "error", "detail": "Yalnız dostlarınıza zəng edə bilərsiniz."}
             )
@@ -522,6 +531,13 @@ async def _handle_call_message(
                 ws, {"type": "call:rejected", "call_id": None, "reason": "busy"}
             )
             return
+
+        print(
+            f"[call] invite uid={user.id} -> uid={target_id} media={media} "
+            f"callee_sockets=({hub.describe(target_id)}) "
+            f"caller_sockets=({hub.describe(user.id)})",
+            flush=True,
+        )
 
         call = calls.create(user.id, target_id, media, ws)
         delivered = await hub.send_to_user(
@@ -538,6 +554,7 @@ async def _handle_call_message(
         # half-open connection that we keep for up to a ping timeout, so the
         # invite above can vanish into a dead pipe while the caller waits
         # forever. Trust the delivery count, not the registry.
+        print(f"[call] invite {call.call_id[:8]} delivered to {delivered} socket(s)", flush=True)
         if delivered == 0:
             calls.drop(call.call_id)
             await hub.send_to_socket(
@@ -607,6 +624,11 @@ async def social_websocket(websocket: WebSocket) -> None:
 
     await websocket.accept()
     became_online = await hub.add(user.id, websocket)
+    print(
+        f"[social] connect uid={user.id} ({user.full_name}) "
+        f"sockets=({hub.describe(user.id)}) first={became_online}",
+        flush=True,
+    )
 
     friends = await _in_db(auth_db.list_friends, user.id)
     await hub.send_to_socket(
@@ -709,6 +731,11 @@ async def social_websocket(websocket: WebSocket) -> None:
             if call.socket_for(user.id) is websocket or call.state == "ringing":
                 await _end_call(call, user.id, "disconnected")
         went_offline = await hub.remove(user.id, websocket)
+        print(
+            f"[social] disconnect uid={user.id} sockets=({hub.describe(user.id)}) "
+            f"now_offline={went_offline}",
+            flush=True,
+        )
         if went_offline:
             await _notify_friends_presence(user.id, False)
 

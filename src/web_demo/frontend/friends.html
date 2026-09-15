@@ -482,6 +482,46 @@ header {
 }
 
 /* ---------- Toast ---------- */
+.debug-panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 90;
+    max-height: 45vh;
+    display: flex;
+    flex-direction: column;
+    background: rgba(18, 18, 18, 0.97);
+    border-top: 2px solid var(--accent-cyan);
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+}
+.debug-panel[hidden] { display: none !important; }
+.debug-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.7rem;
+    border-bottom: 1px solid rgba(194, 178, 128, 0.25);
+}
+.debug-head strong { flex: 1; color: var(--accent-cyan); font-size: 0.8rem; }
+.debug-state {
+    padding: 0.4rem 0.7rem;
+    color: var(--state-trial);
+    border-bottom: 1px solid rgba(194, 178, 128, 0.15);
+    word-break: break-word;
+}
+.debug-log {
+    flex: 1;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0.5rem 0.7rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #cfcfcf;
+    line-height: 1.45;
+}
+
 .toast-stack {
     position: fixed;
     left: 50%;
@@ -774,6 +814,16 @@ header {
             </div>
         </section>
     </main>
+</div>
+
+<div class="debug-panel" id="debug-panel" hidden>
+    <div class="debug-head">
+        <strong>Diaqnostika</strong>
+        <button type="button" id="debug-copy" class="btn btn-sm btn-ghost">Kopyala</button>
+        <button type="button" id="debug-close" class="btn btn-sm btn-ghost">Bağla</button>
+    </div>
+    <div class="debug-state" id="debug-state"></div>
+    <pre class="debug-log" id="debug-log"></pre>
 </div>
 
 <div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="false"></div>
@@ -1335,6 +1385,7 @@ async function connectSocket() {
     state.ws = ws;
 
     ws.onopen = () => {
+        callLog('socket open');
         state.wsReady = true;
         state.reconnectDelay = 1000;
         setConnState('live', 'Canlı');
@@ -1346,10 +1397,20 @@ async function connectSocket() {
     ws.onmessage = (ev) => {
         let data;
         try { data = JSON.parse(ev.data); } catch (e) { return; }
-        handleSocketMessage(data);
+        // Everything except the heartbeat, so the panel shows exactly what
+        // arrived and when — including whether call:incoming ever did.
+        if (data.type !== 'pong') callLog('recv', data.type);
+        try {
+            handleSocketMessage(data);
+        } catch (err) {
+            // A throw here used to lose the message silently.
+            callLog('HANDLER ERROR on', data.type, '->', err && err.message);
+            console.error(err);
+        }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (ev) => {
+        callLog('socket closed', 'code=' + ev.code, ev.reason || '');
         state.wsReady = false;
         clearInterval(state.heartbeat);
         setConnState('down', 'Bağlantı kəsildi');
@@ -1649,12 +1710,40 @@ function playRemote() {
 }
 
 /* Call diagnostics. Always on: a call that fails in the wild is hard enough to
-   reproduce that a timeline in the console is worth the noise. */
+   reproduce that a timeline in the console is worth the noise.
+
+   Phones have no usable console, and a call cannot be reproduced while staring
+   at devtools on a laptop either — so the same log is mirrored into an
+   on-screen panel, opened with ?debug=1. */
+const DEBUG_PANEL = new URLSearchParams(window.location.search).has('debug');
+
 function callLog(...parts) {
     console.log('[call]', ...parts);
-    callLog.history = (callLog.history || []).concat(
-        [new Date().toISOString().slice(11, 19) + ' ' + parts.join(' ')]
-    ).slice(-40);
+    const line = new Date().toISOString().slice(11, 19) + '  ' + parts.join(' ');
+    callLog.history = (callLog.history || []).concat([line]).slice(-120);
+    if (DEBUG_PANEL) {
+        const el = $('debug-log');
+        if (el) {
+            el.textContent = callLog.history.join('\n');
+            el.scrollTop = el.scrollHeight;
+        }
+        refreshDebugState();
+    }
+}
+
+function refreshDebugState() {
+    const el = $('debug-state');
+    if (!el) return;
+    const ws = state.ws;
+    const wsState = !ws ? 'none'
+        : ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][ws.readyState];
+    const friends = state.friends
+        .map((f) => f.full_name.split(' ')[0] + (f.online ? '(on)' : '(off)'))
+        .join(', ') || 'none';
+    el.textContent =
+        'me=' + (state.me ? state.me.id + ' ' + state.me.full_name : '?') +
+        ' | socket=' + wsState +
+        ' | friends: ' + friends;
 }
 
 /* Paste the output of this into a bug report. */
@@ -1991,6 +2080,22 @@ document.addEventListener('visibilitychange', () => {
     setConnState('connecting', 'Bağlanır…');
     connectSocket();
 });
+
+if (DEBUG_PANEL) {
+    $('debug-panel').hidden = false;
+    $('debug-close').addEventListener('click', () => { $('debug-panel').hidden = true; });
+    $('debug-copy').addEventListener('click', async () => {
+        const text = ($('debug-state').textContent || '') + '\n' +
+                     (callLog.history || []).join('\n');
+        try {
+            await navigator.clipboard.writeText(text);
+            toast('Diaqnostika kopyalandı.', 'success');
+        } catch (e) {
+            toast('Kopyalana bilmədi — mətni seçib əl ilə kopyalayın.', 'error');
+        }
+    });
+    setInterval(refreshDebugState, 2000);
+}
 
 (async function boot() {
     try {
