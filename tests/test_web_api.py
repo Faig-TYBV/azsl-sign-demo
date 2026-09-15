@@ -338,6 +338,32 @@ def test_empty_message_is_rejected(app):
     assert alice.post("/api/messages", json={"to": bob_user["id"], "body": "   "}).status_code == 422
 
 
+def test_health_reports_turn_config_without_leaking_it(app, monkeypatch):
+    """The flag must be checkable without an account, but reveal nothing."""
+    from src.web_demo import webapp
+
+    anonymous = TestClient(app)
+
+    monkeypatch.setenv("TURN_URL", "turn:relay.example.com:3478")
+    monkeypatch.setenv("TURN_USERNAME", "secret-user")
+    monkeypatch.setenv("TURN_CREDENTIAL", "secret-pass")
+    body = anonymous.get("/health")
+    assert body.status_code == 200
+    data = body.json()
+    assert data["ok"] is True
+    assert data["turn"] is True
+    # The whole point: a boolean, never the credentials.
+    assert "secret-user" not in body.text
+    assert "secret-pass" not in body.text
+    assert "relay.example.com" not in body.text
+
+    monkeypatch.delenv("TURN_CREDENTIAL")
+    assert anonymous.get("/health").json()["turn"] is False, (
+        "a partial config must report false — it is ignored at runtime, so "
+        "reporting true would be actively misleading"
+    )
+
+
 def test_rtc_config_is_served_to_signed_in_users(app):
     client, _ = new_client(app, "Zəng Konfiqi")
     data = client.get("/api/rtc-config").json()

@@ -218,10 +218,38 @@ def main() -> int:
     parser.add_argument("--password")
     args = parser.parse_args()
 
+    if args.url and not (args.email and args.password):
+        # No account given: /health reports whether the relay is configured
+        # without exposing anything secret, which is enough to confirm an
+        # environment-variable change landed.
+        import httpx
+
+        base = args.url.rstrip("/")
+        print(f"Checking {base}/health ...")
+        print("(a sleeping free instance can take ~50s on the first request)\n")
+        try:
+            r = httpx.get(f"{base}/health", timeout=120)
+            data = r.json()
+        except Exception as exc:
+            print(f"  could not reach the host: {type(exc).__name__}: {exc}")
+            return 1
+
+        print(f"  ok={data.get('ok')}  turn={data.get('turn')}  ws={data.get('ws')}")
+        if data.get("turn") is None:
+            print("\n  This host predates the turn flag — redeploy, or pass")
+            print("  --email/--password to read /api/rtc-config instead.")
+            return 1
+        if data.get("turn"):
+            print("\n  TURN IS configured on this host.")
+            print("  For a live credential test, re-run with --email and --password.")
+            return 0
+        print("\n  TURN is NOT configured on this host.")
+        print("  All three of TURN_URL / TURN_USERNAME / TURN_CREDENTIAL must be")
+        print("  set and non-empty; a partial config is ignored on purpose.")
+        print("  Remember they go on the host that serves the PAGE.")
+        return 1
+
     if args.url:
-        if not (args.email and args.password):
-            print("--url needs --email and --password (any account on that deployment)")
-            return 2
         print(f"Reading ICE config from {args.url} ...")
         cfg = from_deployment(args.url, args.email, args.password)
         if cfg is None:

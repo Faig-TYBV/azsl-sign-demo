@@ -256,8 +256,22 @@ async def health():
     pinger should hit. Pinging a page route instead would open a DB session on
     every ping and keep the (also free, also auto-suspending) Postgres awake,
     burning its compute-hour allowance for nothing.
+
+    ``turn`` reports whether a relay is configured on this host. It is a plain
+    boolean — never the URL, username or credential — so it is safe to expose
+    unauthenticated, and it answers the one question you always have after
+    editing environment variables: did the host actually pick them up? The
+    alternative was signing in to read /api/rtc-config, which is a poor way to
+    debug a config change.
+
+    ``ws`` says whether this process serves the sockets, which distinguishes
+    the container deploy from the serverless one at a glance.
     """
-    return {"ok": True}
+    return {
+        "ok": True,
+        "turn": social.turn_configured(),
+        "ws": _social_ws_url == "",
+    }
 
 
 @page_router.get("/")
