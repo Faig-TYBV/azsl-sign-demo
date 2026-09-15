@@ -837,6 +837,9 @@ const SOCIAL_WS_BASE = CFG.socialWsUrl;
 const SOCIAL_WS_ENABLED = SOCIAL_WS_BASE !== null && SOCIAL_WS_BASE !== undefined;
 const POLL_INTERVAL_MS = 5000;   // REST fallback cadence when there is no socket
 const TYPING_IDLE_MS = 1800;
+// Long enough for someone to reach their phone, short enough that a dead
+// socket does not leave the caller staring at "ringing" indefinitely.
+const RING_TIMEOUT_MS = 40000;
 
 const state = {
     me: null,
@@ -866,6 +869,7 @@ const call = {
     remoteReady: false,
     remoteStream: null,
     relayed: false,
+    ringTimer: null,
     timer: null,
     startedAt: null,
     iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }],
@@ -1804,6 +1808,8 @@ function endCall(reason) {
 }
 
 function resetCall() {
+    clearTimeout(call.ringTimer);
+    call.ringTimer = null;
     if (call.pc) { try { call.pc.close(); } catch (e) {} }
     if (call.localStream) call.localStream.getTracks().forEach((t) => t.stop());
     call.pc = null;
@@ -1857,9 +1863,21 @@ async function handleCallSignal(data) {
         case 'call:ringing':
             call.id = data.call_id;
             setCallState('Zəng çalınır…');
+            // A ring that never ends is the worst failure mode: it looks like
+            // the app working. The callee's socket can be half-open (phone lost
+            // signal, tab frozen) and the invite lands in a dead pipe, so give
+            // up rather than ringing forever.
+            clearTimeout(call.ringTimer);
+            call.ringTimer = setTimeout(() => {
+                callLog('ring timeout — no answer');
+                toast('Cavab yoxdur. Qarşı tərəf əlçatan olmaya bilər.', 'error');
+                endCall('timeout');
+            }, RING_TIMEOUT_MS);
             break;
 
         case 'call:accepted': {
+            clearTimeout(call.ringTimer);
+            call.ringTimer = null;
             // We are the caller; the callee picked up, so make the offer.
             setCallState('Qoşulur…');
             const offer = await call.pc.createOffer();

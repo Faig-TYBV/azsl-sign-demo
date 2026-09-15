@@ -490,7 +490,7 @@ async def _handle_call_message(
             return
 
         call = calls.create(user.id, target_id, media, ws)
-        await hub.send_to_user(
+        delivered = await hub.send_to_user(
             target_id,
             {
                 "type": "call:incoming",
@@ -499,6 +499,17 @@ async def _handle_call_message(
                 "from": {"id": user.id, "full_name": user.full_name},
             },
         )
+        # is_online() only says a socket is registered, not that anything is
+        # listening. A phone that loses signal or gets its tab frozen leaves a
+        # half-open connection that we keep for up to a ping timeout, so the
+        # invite above can vanish into a dead pipe while the caller waits
+        # forever. Trust the delivery count, not the registry.
+        if delivered == 0:
+            calls.drop(call.call_id)
+            await hub.send_to_socket(
+                ws, {"type": "call:rejected", "call_id": None, "reason": "offline"}
+            )
+            return
         await hub.send_to_socket(
             ws, {"type": "call:ringing", "call_id": call.call_id, "to": target_id}
         )
