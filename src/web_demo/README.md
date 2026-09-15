@@ -1,91 +1,195 @@
-# AzSLD Web Demo
+# AzSL Web Demo — `src/web_demo/`
 
-This is a web-based real-time sign language recognition demo that uses the iPhone's camera via Safari (or any mobile browser) to recognize AzSL words in real time.
+The web product around the AzSL recognition models: sign-language recognition
+in the browser, plus accounts, friends, chat and calls.
 
-## Features
+Everything here is served by FastAPI. There is no build step and no npm — the
+frontend is hand-written HTML/CSS/JS served as static pages.
 
-- Uses the iPhone (or Android) camera through the browser.
-- Sends video frames via WebSocket to a Python backend.
-- Backend processes frames with MediaPipe HandLandmarker, normalizes, and feeds into the canonical Experiment 2 GRU model.
-- Displays real-time prediction, confidence, and buffer progress.
-- Works on local Wi-Fi network.
+---
 
-## Model Used
+## Modules
 
-- Canonical checkpoint: `outputs/checkpoints/gru_temporal_pool_best.pt`
-- GRUClassifier with input_size=126, hidden_size=128, num_layers=2, dropout=0.3, bidirectional=False, pooling="mean_max", 200 classes.
+| File | Role | Imports the ML stack? |
+| :--- | :--- | :---: |
+| `deps.py` | Session config, signed `/ws` token, `get_db` / `current_user` / `require_user` | no |
+| `db.py` | SQLAlchemy models + queries: users, friendships, messages | no |
+| `webapp.py` | Pages, auth API, Azerbaijani TTS, and the wiring in `build_web_layer()` | no |
+| `social.py` | Friends/chat REST, and the `/ws/social` socket (presence, live chat, call signalling) | no |
+| `backend.py` | Everything above **plus** the `/ws` recognition socket (MediaPipe + the GRU) | **yes** |
 
-## Prerequisites
+The split exists so the Vercel function can import `webapp.py` without pulling
+in torch, MediaPipe and OpenCV — which would blow past its 250 MB limit.
 
-- Python 3.8+ (tested with 3.12)
-- Required Python packages (install via `pip install -r requirements.txt` or see below)
-- The hand landmarker model: `models/hand_landmarker.task` (already present in the repository)
+### Two entrypoints
 
-## Installation
+```bash
+# Full app: pages, auth, friends/chat/calls, AND camera recognition.
+py -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port 8000
 
-1. Clone the repository (if you haven't already).
-2. Ensure you are in the repository root: `c:\Users\ASUS\Desktop\azsl-word-recognition`
-3. (Optional) Create a virtual environment: `python -m venv .venv`
-4. Activate the virtual environment:
-   - Windows: `.venv\Scripts\activate`
-5. Install required packages:
-   ```bash
-   pip install fastapi uvicorn opencv-python mediapipe torch numpy
-   ```
-   Note: The repository may already have these installed from the original setup.
+# Light: everything except recognition. Starts in ~2 s, needs only
+# requirements.txt (no torch/MediaPipe).
+py -m uvicorn api.index:app --host 0.0.0.0 --port 8000
+```
 
-## How to Run
+---
 
-1. Start the backend server:
-   ```bash
-   uvicorn src.web_demo.backend:app --host 0.0.0.0 --port 8000
-   ```
-   This will start the server listening on all network interfaces (important for other devices to connect).
+## Pages
 
-2. Find your computer's local IP address:
-   - Open Command Prompt and run `ipconfig`.
-   - Look for "IPv4 Address" under your Wi-Fi adapter (e.g., `192.168.1.100`).
+| Route | File | Notes |
+| :--- | :--- | :--- |
+| `/` | `frontend/landing.html` | Public marketing page |
+| `/login`, `/register` | `frontend/register.html` | Redirects to `/app` when already signed in |
+| `/app` | `frontend/index.html` | The recognition workspace — auth required |
+| `/friends` | `frontend/friends.html` | Friends, chat and calls — auth required |
 
-3. On your iPhone, ensure it is connected to the same Wi-Fi network as your computer.
+`/app` and `/friends` are served through `_serve_configured()`, which injects
+`window.__AZSL_CONFIG__` before `</head>`:
 
-4. Open Safari and navigate to:
-   ```
-   http://<YOUR_COMPUTER_IP>:8000
-   ```
-   Example: `http://192.168.1.100:8000`
+```js
+{
+  "recognitionWsUrl": "" | "wss://host" | null,  // null => recognition offline
+  "socialWs": true | false                       // false => no live chat/calls
+}
+```
 
-5. Grant camera permission when prompted.
+That is how one set of HTML files serves both the container deploy (everything
+on) and the Vercel deploy (pages + auth + REST chat, no sockets).
 
-6. Press "Start Camera" to begin the demo.
+---
 
-7. The video feed will appear, and predictions will be shown below.
-   - Buffer progress shows how many frames have been collected (0/26 to 26/26).
-   - Raw prediction shows the model's immediate output.
-   - Smoothed prediction shows a temporally smoothed result (majority voting over recent predictions).
-   - Confidence values are shown as percentages.
+## Recognition (`/ws`)
 
-8. Press "Stop Camera" to stop the video feed and disconnect the WebSocket.
-9. Press "Reset Buffer" to clear the frame buffer and prediction history.
+Loads the Experiment 8 checkpoint (24 classes) and the feature normalizer once
+at import, then runs a per-connection state machine.
 
-## Notes
+**Word mode** is trial-based, not continuous:
 
-- The demo uses the exact same preprocessing, normalization, and model logic as the original Experiment 2 implementation. No changes were made to the canonical pipeline.
-- The backend serves the frontend HTML file at the root (`/`), so opening the base URL loads the interface.
-- WebSocket is used for real-time frame transmission; fallback to HTTP polling is not implemented.
-- For best performance, use a modern iPhone with Safari and ensure good lighting.
-- If you encounter issues, check the backend console for logs.
+```
+READY ──START──> COUNTDOWN (3·2·1) ──> RECORDING (26 frames) ──> ANALYZING ──> RESULT
+```
 
-## Troubleshooting
+The 26 frames are normalized with the training statistics and classified in one
+shot. A trial holding fewer than `MIN_VALID_FRAMES_FOR_INFERENCE` real hand
+detections reports `ƏL AŞKARLANMADI` instead of running the model — the GRU has
+no "idle" class, so it would otherwise return a confident-looking label for an
+empty buffer.
 
-- **Cannot connect**: Ensure your iPhone and computer are on the same Wi-Fi network. Verify the IP address and port (default 8000). Check that the server is running and not blocked by a firewall.
-- **Camera not working**: Make sure you granted camera permission in Safari. Reload the page and try again. Some older iOS versions may have limitations.
-- **Model not loading**: Ensure the checkpoint file `outputs/checkpoints/gru_temporal_pool_best.pt` exists and matches the expected configuration.
-- **Performance issues**: The demo runs at the camera's frame rate; you may experience lower FPS on older devices. Consider closing other apps.
+**Alphabet mode** classifies one frame at a time through `AlphabetClassifier`,
+behind three gates in `AlphabetStabilizer`: a confidence floor, a stable-hold
+requirement (~0.7 s), and a motion gate so a hand travelling between poses
+cannot commit a letter.
 
-## Stopping the Server
+---
 
-Press `Ctrl+C` in the command prompt where the server is running.
+## Social (`/ws/social`)
 
-## Acknowledgments
+Registered only when `build_web_layer(serves_ws=True)`. Authenticates from the
+session cookie, or a signed `?token=` for a cross-origin page.
 
-This demo builds upon the original AzSLD codebase and leverages the Experiment 2 GRU model.
+- **Presence** — broadcast to your friends when your first socket opens and
+  your last one closes. A user may hold several sockets (phone + laptop + tabs).
+- **Chat** — messages are written to Postgres first, then fanned out. The REST
+  API is the source of truth; the socket only makes delivery instant.
+- **Calls** — WebRTC. The browsers exchange an SDP offer/answer and ICE
+  candidates *through* this server and then send audio/video **directly to each
+  other**. Only signalling text crosses the backend, so call quality does not
+  depend on the instance size.
+
+Every relay re-checks that the two parties are actually friends, and that the
+sender belongs to the call it names.
+
+```
+A: call:invite ──> server ──> B: call:incoming
+                              B: call:accept ──> A: call:accepted
+A: call:offer  ──> B          B: call:answer ──> A
+A/B: call:ice  <──>           (media now flows peer-to-peer)
+A/B: call:end  ──> the other side: call:ended
+```
+
+**State is per-process and in memory.** With more than one instance behind a
+load balancer, two users on different instances would not see each other.
+Scaling past one instance means putting Redis pub/sub behind `Hub.send_to_user`;
+nothing else would change.
+
+### TURN
+
+STUN alone (the default) connects most pairs of users. Symmetric NAT — common
+on mobile data and corporate networks — needs a TURN relay, which always costs
+bandwidth and therefore always needs credentials:
+
+```bash
+TURN_URL=turn:turn.example.com:3478
+TURN_USERNAME=...
+TURN_CREDENTIAL=...
+```
+
+Without them calls simply fail to connect for the affected users; the UI says
+so rather than hanging on a spinner. `/api/rtc-config` reports whether a relay
+is configured.
+
+> **Calls need HTTPS.** `getUserMedia` is only exposed on a secure origin, so
+> camera and microphone work on `localhost` and on any HTTPS deployment, but
+> never on plain HTTP over a LAN IP.
+
+---
+
+## API
+
+| Method | Path | Purpose |
+| :--- | :--- | :--- |
+| POST | `/api/register`, `/api/login`, `/api/logout` | Session auth (argon2) |
+| GET | `/api/me` | Current user |
+| GET | `/api/ws-token` | Short-lived signed token for a cross-origin socket |
+| POST | `/api/tts` | Azerbaijani speech (`edge-tts`, `az-AZ-BanuNeural`) |
+| GET | `/api/friends` | Friends, with online flag and unread counts |
+| GET | `/api/friends/requests` | Incoming + outgoing invites |
+| GET | `/api/users/search?q=` | Find people (min. 2 characters) |
+| POST | `/api/friends/request` \| `/respond` \| `/cancel` \| `/remove` | Manage relationships |
+| GET | `/api/messages/{friend_id}` | Conversation (also marks it read) |
+| POST | `/api/messages` | Send without a socket (REST fallback) |
+| GET | `/api/rtc-config` | ICE servers + whether TURN is available |
+| GET | `/health` | Liveness; deliberately touches no database |
+
+---
+
+## Data model
+
+```
+users ──┬─< friendships >─┬── users      one row per relationship, either
+        │                 │              direction; status pending|accepted
+        └─< messages    >─┘              sender/recipient, body, read_at
+```
+
+A declined invite deletes its row rather than storing a "declined" state, so
+the pair can try again. Blocking is deliberately not modelled.
+
+`init_db()` creates all three tables on first start, so adding friends and chat
+to an existing deployment needs no migration step.
+
+---
+
+## Tests
+
+```bash
+py -m pytest tests/ -q          # 126 tests
+```
+
+- `tests/test_web_api.py` — auth, friends and chat over real HTTP with real
+  session cookies (this is where a missing auth check would fail)
+- `tests/test_social.py` — friendship/message rules, ICE config, call routing
+- `tests/conftest.py` points `DATABASE_URL` at a temporary SQLite file, so the
+  suite runs with no Postgres up
+
+---
+
+## Configuration
+
+| Variable | Required | Purpose |
+| :--- | :---: | :--- |
+| `DATABASE_URL` | yes | `postgresql+psycopg://user:pass@host:5432/db` |
+| `SESSION_SECRET` | yes | Signs the session cookie **and** the `/ws` tokens — must match across hosts in a split deploy |
+| `SESSION_COOKIE_SECURE` | on HTTPS | `1` marks the cookie `Secure` |
+| `RECOGNITION_WS_URL` | optional | Point the page at a separate recognition backend |
+| `TURN_URL` / `TURN_USERNAME` / `TURN_CREDENTIAL` | optional | WebRTC relay for restrictive networks |
+| `STUN_URLS` | optional | Comma-separated override of the default STUN servers |

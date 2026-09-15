@@ -25,11 +25,22 @@ import edge_tts
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from pydantic import BaseModel, EmailStr, field_validator
 from starlette.middleware.sessions import SessionMiddleware
 
 from src.web_demo import db as auth_db
+from src.web_demo import social
+from src.web_demo.deps import (  # re-exported: backend.py imports verify_ws_token from here
+    WS_TOKEN_MAX_AGE,
+    WS_TOKEN_SALT,
+    check_session_secret,
+    current_user,
+    get_db,
+    issue_ws_token,
+    require_user,
+    session_middleware_kwargs,
+    verify_ws_token,
+)
 
 FRONTEND_DIR = Path(__file__).resolve().parent / "frontend"
 
@@ -44,85 +55,11 @@ RECOGNITION_WS_URL = os.getenv("RECOGNITION_WS_URL", "").strip()
 # window.__AZSL_CONFIG__.recognitionWsUrl  ("" | "<url>" | None).
 _injected_ws_url: str | None = None
 
-
-# --------------------------------------------------------------------------- #
-# Cross-origin WebSocket auth
-#
-# When the recognition backend lives on another host (Vercel pages + Render
-# /ws), the browser will NOT send the azsl_session cookie to that origin — the
-# two are different registrable domains, so no shared cookie is possible. The
-# page therefore asks its own origin for a short-lived signed token and passes
-# it on the socket URL; the recognition backend verifies it with the same
-# SESSION_SECRET. Same-origin deployments keep using the cookie and never touch
-# this path.
-# --------------------------------------------------------------------------- #
-WS_TOKEN_SALT = "azsl-ws-token"
-WS_TOKEN_MAX_AGE = 120  # seconds — only has to survive page-load -> connect
-
-
-def _ws_serializer() -> URLSafeTimedSerializer:
-    return URLSafeTimedSerializer(
-        os.getenv("SESSION_SECRET", "dev-insecure-secret-set-SESSION_SECRET"),
-        salt=WS_TOKEN_SALT,
-    )
-
-
-def issue_ws_token(user_id: int) -> str:
-    return _ws_serializer().dumps({"uid": int(user_id)})
-
-
-def verify_ws_token(token: str):
-    """Return the user id encoded in a valid, unexpired token, else None."""
-    if not token:
-        return None
-    try:
-        data = _ws_serializer().loads(token, max_age=WS_TOKEN_MAX_AGE)
-        return int(data["uid"])
-    except (BadSignature, SignatureExpired, KeyError, TypeError, ValueError):
-        return None
-
-
-# --------------------------------------------------------------------------- #
-# Session cookie config (identical in both entrypoints)
-# --------------------------------------------------------------------------- #
-def session_middleware_kwargs() -> dict:
-    return dict(
-        secret_key=os.getenv("SESSION_SECRET", "dev-insecure-secret-set-SESSION_SECRET"),
-        session_cookie="azsl_session",
-        https_only=os.getenv("SESSION_COOKIE_SECURE", "0") == "1",
-        same_site="lax",
-    )
-
-
-# --------------------------------------------------------------------------- #
-# Dependencies
-# --------------------------------------------------------------------------- #
-def get_db():
-    session = auth_db.SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-
-
-def current_user(request: Request, session=Depends(get_db)):
-    """The logged-in User, or None."""
-    uid = request.session.get("uid")
-    if uid is None:
-        return None
-    try:
-        return auth_db.get_user_by_id(session, int(uid))
-    except (TypeError, ValueError):
-        return None
-
-
-def require_user(user=Depends(current_user)):
-    """For JSON APIs: 401 when not signed in."""
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
-        )
-    return user
+# Where the friends page should open /ws/social (live chat, presence, calls):
+#   ""    -> same origin (this process serves it)
+#   <url> -> the recognition host serves it too, so a Vercel page can use it
+#   None  -> nowhere to connect; the page falls back to REST and hides calling
+_social_ws_url: str | None = None
 
 
 # --------------------------------------------------------------------------- #
@@ -187,21 +124,36 @@ def _serve_page(filename: str) -> HTMLResponse:
     )
 
 
-def _serve_workspace() -> HTMLResponse:
+def _serve_configured(filename: str) -> HTMLResponse:
     """
-    index.html with a small runtime-config script injected before </head> so
-    the frontend knows where (or whether) to open the recognition socket:
+    A page with a small runtime-config script injected before </head>.
+
+    ``recognitionWsUrl`` tells the workspace where (or whether) to open the
+    recognition socket:
       ""    -> same origin (this process also serves /ws)
       <url> -> a separate backend, e.g. "wss://azsl-api.fly.dev"
       null  -> recognition unavailable (Vercel with no backend); the page
                shows a notice instead of retrying a socket that can't exist
+
+    ``socialWsUrl`` is the same idea for /ws/social, which the friends page
+    uses for live chat, presence and calls:
+      ""    -> same origin (this process serves it)
+      <url> -> a separate host serves it; the page authenticates with a signed
+               token because cookies don't cross origins
+      null  -> no socket anywhere; the page polls REST and hides calling
     """
     import json
 
-    html = (FRONTEND_DIR / "index.html").read_text(encoding="utf-8")
+    html = (FRONTEND_DIR / filename).read_text(encoding="utf-8")
     cfg = (
         "<script>window.__AZSL_CONFIG__="
-        f'{{"recognitionWsUrl": {json.dumps(_injected_ws_url)}}};</script>'
+        + json.dumps(
+            {
+                "recognitionWsUrl": _injected_ws_url,
+                "socialWsUrl": _social_ws_url,
+            }
+        )
+        + ";</script>"
     )
     html = html.replace("</head>", cfg + "\n</head>", 1)
     return HTMLResponse(
@@ -331,7 +283,14 @@ async def register_page(user=Depends(current_user)):
 async def app_page(user=Depends(current_user)):
     if user is None:
         return RedirectResponse(url="/login", status_code=302)
-    return _serve_workspace()
+    return _serve_configured("index.html")
+
+
+@page_router.get("/friends")
+async def friends_page(user=Depends(current_user)):
+    if user is None:
+        return RedirectResponse(url="/login", status_code=302)
+    return _serve_configured("friends.html")
 
 
 @page_router.get("/workspace")
@@ -347,17 +306,38 @@ def build_web_layer(app: FastAPI, *, serves_ws: bool = False) -> None:
     Attach the session middleware, static mount, and auth + page routes.
 
     serves_ws=True  -> this same process also serves /ws, so the workspace page
-                       opens the socket on its own origin.
+                       opens the socket on its own origin. /ws/social (chat,
+                       presence, calls) is registered here too.
     serves_ws=False -> no local /ws (Vercel); use RECOGNITION_WS_URL if set,
-                       otherwise tell the page recognition is unavailable.
+                       otherwise tell the page recognition is unavailable. The
+                       friends page still works over REST, minus calling.
     """
-    global _injected_ws_url
+    global _injected_ws_url, _social_ws_url
     if RECOGNITION_WS_URL:
         _injected_ws_url = RECOGNITION_WS_URL
     else:
         _injected_ws_url = "" if serves_ws else None
 
+    # The social socket rides along with the recognition backend: any host that
+    # can hold /ws open can hold /ws/social open too. So a Vercel page with
+    # RECOGNITION_WS_URL set gets full live chat and calling against that host
+    # (authenticated by the same signed token as /ws), rather than silently
+    # degrading to REST polling.
+    if serves_ws:
+        _social_ws_url = ""
+    elif RECOGNITION_WS_URL:
+        _social_ws_url = RECOGNITION_WS_URL
+    else:
+        _social_ws_url = None
+
+    # Fails fast on a deployment still using the fallback dev secret, which
+    # would otherwise let anyone forge a session cookie.
+    check_session_secret()
+
     app.add_middleware(SessionMiddleware, **session_middleware_kwargs())
     app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
     app.include_router(api_router)
+    app.include_router(social.social_router)
     app.include_router(page_router)
+    if serves_ws:
+        social.register_social_ws(app)

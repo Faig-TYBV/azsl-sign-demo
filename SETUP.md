@@ -118,6 +118,17 @@ it's a poor edit-test loop. Run locally while developing.
 - **Camera needs a secure context.** `localhost` counts as secure, so local dev
   is fine. Over a LAN IP the browser will block `getUserMedia` — use a tunnel
   (see [DEPLOY_RECOGNITION.md](DEPLOY_RECOGNITION.md) option C2) if you need that.
+  The same applies to **friend calls**: the call buttons are disabled on a
+  non-secure origin.
+- **Friends, chat and calls need no extra setup.** The `friendships` and
+  `messages` tables are created on first start along with `users`. To try it
+  locally, register two accounts in two different browsers (or one normal and
+  one private window), send an invite from one and accept it in the other.
+- **Calls between users on mobile data or a corporate network** may fail to
+  connect until a TURN relay is configured (`TURN_URL`, `TURN_USERNAME`,
+  `TURN_CREDENTIAL` — see [.env.example](.env.example) and the TURN section of
+  [DEPLOY_RECOGNITION.md](DEPLOY_RECOGNITION.md)). Everything else about calling
+  works out of the box on the built-in free STUN servers.
 - **The live deployment** is https://azsl-sign-demo.onrender.com and redeploys
   automatically on every push to `main`.
 - Deployment guides: [DEPLOY_RECOGNITION.md](DEPLOY_RECOGNITION.md) (Render / Fly /
@@ -132,3 +143,6 @@ it's a poor edit-test loop. Run locally while developing.
 | `libEGL.so.1: cannot open shared object file` (Linux) | `sudo apt install libegl1 libgl1 libglib2.0-0` |
 | `ModuleNotFoundError: mediapipe` | you skipped `requirements-recognition.txt` |
 | Camera button does nothing | not on `localhost`/HTTPS, or permission denied in the browser |
+| Call buttons greyed out | the friend is offline, or you're not on `localhost`/HTTPS |
+| Call rings but never connects | no TURN relay configured and one side is behind symmetric NAT — see DEPLOY_RECOGNITION.md |
+| Chat sends but the other side sees nothing live | running `api.index:app` (no socket) — use `src.web_demo.backend:app` |

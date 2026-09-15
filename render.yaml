@@ -14,11 +14,23 @@ services:
     region: frankfurt
     healthCheckPath: /health
     envVars:
-      # Same Neon database as Vercel.
+      # Same Neon database as Vercel. Friends/chat live in the same database as
+      # the accounts, so both hosts must point at it.
       - key: DATABASE_URL
         sync: false
-      # MUST match the Vercel value — it verifies the /ws tokens Vercel issues.
+      # MUST match the Vercel value — it verifies the /ws and /ws/social tokens
+      # Vercel issues.
       - key: SESSION_SECRET
         sync: false
       - key: SESSION_COOKIE_SECURE
         value: "1"
+      # Optional WebRTC relay for friend calls. Empty = STUN only, which
+      # connects most users; set all three in the Render dashboard to also
+      # reach people behind symmetric NAT (mobile data, corporate firewalls).
+      # See the TURN section of DEPLOY_RECOGNITION.md.
+      - key: TURN_URL
+        value: ""
+      - key: TURN_USERNAME
+        value: ""
+      - key: TURN_CREDENTIAL
+        value: ""

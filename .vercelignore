@@ -1,6 +1,11 @@
 # Keep the Vercel upload small. The serverless function needs only:
-#   api/index.py, src/web_demo/{__init__,webapp,db}.py, src/web_demo/frontend/**
-# and the root requirements.txt (now the slim web-only set).
+#   api/index.py
+#   src/web_demo/{__init__,webapp,deps,db,social}.py
+#   src/web_demo/frontend/**
+# and the root requirements.txt (the slim web-only set).
+#
+# NOTE: every .py under src/web_demo/ except backend.py is required — webapp.py
+# imports deps.py and social.py. Do not add a blanket src/web_demo/*.py rule.
 
 node_modules/
 data/

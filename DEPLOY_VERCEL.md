@@ -1,5 +1,8 @@
 # Deploying to Vercel
 
+> Run `py scripts/preflight_deploy.py` first — it checks the build context, dependencies, routes and environment for this target before you spend a build on it.
+
+
 **What runs on Vercel:** the landing / register / login / workspace pages and the
 PostgreSQL-backed auth API (`/api/register`, `/api/login`, `/api/logout`,
 `/api/me`).
@@ -28,8 +31,10 @@ set `RECOGNITION_WS_URL` (below).
 
   (Neon gives `postgresql://…` — just insert `+psycopg` after `postgresql`.)
 
-The app creates the `users` **table** automatically on first request; it does
-**not** create the database itself.
+The app creates the `users`, `friendships` and `messages` **tables**
+automatically on first request; it does **not** create the database itself.
+Adding friends and chat to an existing deployment therefore needs no migration
+step — the new tables appear on the next cold start.
 
 ## 2. Import the repo into Vercel
 
@@ -47,7 +52,7 @@ deployed). Leave build/output settings empty — `vercel.json` handles routing
 | `DATABASE_URL` | `postgresql+psycopg://USER:PASS@HOST/DB?sslmode=require` | from step 1 |
 | `SESSION_SECRET` | 64 hex chars | `python -c "import secrets; print(secrets.token_hex(32))"` |
 | `SESSION_COOKIE_SECURE` | `1` | Vercel is HTTPS |
-| `RECOGNITION_WS_URL` | `wss://your-backend.fly.dev` | **optional** — only if you host the recognition backend elsewhere |
+| `RECOGNITION_WS_URL` | `wss://your-backend.fly.dev` | **optional** — the container host running `backend.py`. Enables camera recognition **and** live chat + friend calls (that host serves `/ws/social` too). Without it, friends and messaging still work over REST; only live delivery and calling are hidden. |
 
 ## 4. Deploy
 
@@ -57,6 +62,10 @@ Push to `main` (or click **Deploy**). Then check:
 - `/register` → create an account → redirected to `/app`
 - `/app` → loads, header shows your name, "recognition offline" notice unless
   `RECOGNITION_WS_URL` is set
+- `/friends` → search for a user, send an invite, accept it from a second
+  account, exchange messages. Without `RECOGNITION_WS_URL` the page shows a
+  "canlı rejim əlçatan deyil" banner and polls every 5 s instead of streaming;
+  with it set, presence dots, typing indicators and the call buttons all work.
 - `/login`, logout button, `/api/me` all work
 
 ---
@@ -78,6 +87,21 @@ Push to `main` (or click **Deploy**). Then check:
 
 To get camera recognition working too, run `src/web_demo/backend.py` on a
 container host and set `RECOGNITION_WS_URL` here.
+
+That one variable also turns on the live social features: the same backend
+serves `/ws/social`, and the page authenticates to it with the short-lived
+signed token from `/api/ws-token` (cookies can't cross origins). Both hosts
+must share the **same `SESSION_SECRET`** — that is what verifies the token —
+and the **same `DATABASE_URL`**, since accounts, friendships and messages all
+live in one database.
+
+Friend calls are peer-to-peer, so the media never touches either host.
+
+If your users are on mobile data or corporate networks, also set `TURN_URL`,
+`TURN_USERNAME` and `TURN_CREDENTIAL`. **In a split deploy these go on Vercel**,
+because the browser reads them from `/api/rtc-config` on the origin serving the
+page. Setting them on both hosts is harmless and saves you remembering which is
+which. See the TURN section of [DEPLOY_RECOGNITION.md](DEPLOY_RECOGNITION.md).
 
 **See [DEPLOY_RECOGNITION.md](DEPLOY_RECOGNITION.md)** for the full walkthrough (Fly.io or Render).
 

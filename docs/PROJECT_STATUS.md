@@ -1,6 +1,6 @@
 # Project Status — AzSL Word Recognition
 
-**Status: ACTIVE — live web demo built, in frontend/voice polish stage (2026-09-12).**
+**Status: ACTIVE — live web demo built; friends/chat/calls added (2026-09-15).**
 Do not delete, overwrite, reset or refactor existing files without checking first —
 the trained checkpoint, curated vocabulary, and extracted feature set are all
 production inputs to the running demo, not intermediate scratch.
@@ -15,7 +15,7 @@ MediaPipe hand-landmark extraction + a trained GRU classifier and streams back
 predictions live. The ML pipeline (extraction → vocabulary curation → training →
 evaluation) is complete for a 24-word vocabulary; current work is the web
 product around it (auth, sentence builder, text-to-speech, fingerspelling mode,
-deployment).
+friends/chat/calls, deployment).
 
 ## 2. Dataset Information
 
@@ -84,10 +84,15 @@ This checkpoint is what the live backend loads — see §6.
 - **`backend.py`** — full container backend: everything in `webapp.py` plus
   the `/ws` WebSocket. Loads the Experiment 8 checkpoint + normalizer at
   startup, runs a per-connection state machine for **word mode**
-  (READY → COUNTDOWN → RECORDING → RESULT, 26-frame buffer, ambiguity gate,
+  (READY → COUNTDOWN → RECORDING → ANALYZING → RESULT, 26-frame trial,
   hand-presence gate to suppress predictions on an empty/idle buffer) and a
   separate **alphabet (fingerspelling) mode** (`AlphabetClassifier` +
   `AlphabetStabilizer`: confidence floor, stable-frame hold, motion gate).
+  *Note:* `src/inference/ambiguity_gate.py` is **not** wired into the live
+  backend. It guards the MƏN/MƏNƏ/MƏNİM pronoun cluster, and MƏNƏ/MƏNİM were
+  dropped during the 24-word curation — so at most one cluster member can ever
+  be predicted and the gate can never fire. It is still used by
+  `src/inference/predict.py` for offline analysis.
 - **`api/index.py`** — Vercel serverless entrypoint; imports only
   `webapp.py`, so no ML deps ship to the function.
 - **Cross-origin auth for `/ws`:** when pages (Vercel) and recognition
@@ -98,7 +103,44 @@ This checkpoint is what the live backend loads — see §6.
   `index.html` (the workspace: webcam capture, word-mode trial UI, sentence
   builder, TTS playback, recognition-WS wiring driven by
   `window.__AZSL_CONFIG__.recognitionWsUrl`), `js/azsl_alphabet.js`
-  (client-side fingerspelling helper).
+  (client-side fingerspelling helper), and `friends.html` (the social page —
+  same design tokens and glassmorphism cards as `index.html`).
+
+## 5b. Social Layer — friends, chat, calls (added 2026-09-15)
+
+- **`deps.py`** (new) — session config, the signed `/ws` token, and the
+  `get_db` / `current_user` / `require_user` dependencies. Extracted from
+  `webapp.py` so `social.py` can share them without a circular import;
+  `webapp.py` re-exports the names, so `backend.py`'s existing
+  `from ...webapp import verify_ws_token` keeps working.
+- **`db.py`** — two new tables. `friendships` stores **one row per
+  relationship** (not per direction) with status `pending|accepted`; every
+  "are these friends?" query checks both column orders. `messages` stores
+  sender/recipient/body/`read_at`. Declining an invite deletes the row rather
+  than recording a "declined" state, so a pair can try again. `init_db()`
+  creates both, so an existing deployment needs no migration.
+- **`social.py`** (new) — the REST API (`/api/friends*`, `/api/messages*`,
+  `/api/users/search`, `/api/rtc-config`) plus the `/ws/social` socket:
+  presence, live chat, typing, and WebRTC call signalling. REST is the source
+  of truth; the socket only makes delivery instant, so the Vercel path still
+  works by polling.
+- **Calls are peer-to-peer (WebRTC).** The server relays SDP offer/answer and
+  ICE candidates only — a few KB per call — and the audio/video go browser to
+  browser. Call quality therefore does not depend on the instance size.
+- **Authorization**: every relay and every message re-checks friendship, and
+  call signalling re-checks that the sender is a party to the call it names.
+  A pending invite grants nothing.
+
+**Two constraints worth remembering:**
+
+1. **Single process only.** `Hub` and `CallRegistry` are in-memory, so two
+   users on different instances behind a load balancer would not see each
+   other. Scaling out means putting Redis pub/sub behind `Hub.send_to_user`.
+2. **TURN is unconfigured.** STUN alone connects most users; symmetric NAT
+   (mobile data, corporate firewalls) needs a TURN relay, which costs
+   bandwidth and needs credentials (`TURN_URL` / `TURN_USERNAME` /
+   `TURN_CREDENTIAL`). Until those are set, a minority of calls fail —
+   deliberately with a clear message rather than a hanging spinner.
 
 ## 6. Deployment — three documented paths, pick one as canonical
 
@@ -117,18 +159,35 @@ equally-live paths.
 
 ## 7. Known Gaps / Next Steps
 
-1. **No automated tests for `src/web_demo`** — `tests/` covers only the ML
-   modules (features, models, inference gates). Auth (register/login/session),
-   password hashing, and the TTS endpoint have no test coverage despite
-   handling user credentials.
-2. **`src/web_demo/README.md` is stale** — it still describes the old
-   Experiment 2 / 200-class checkpoint (`outputs/checkpoints/gru_temporal_pool_best.pt`)
-   and a no-auth local-Wi-Fi-only run flow. It should be rewritten to match
-   `backend.py` (Experiment 8 checkpoint, auth-gated `/app`, both word +
-   alphabet modes).
-3. **End-to-end deploy not yet verified** — recent commits are frontend/voice
-   iteration (`index.html`, TTS wiring); confirm the full webcam → `/ws` →
-   GRU → TTS round trip on an actual deployment, not just locally.
+**Closed on 2026-09-15:**
+
+- ~~No automated tests for `src/web_demo`~~ — `tests/test_web_api.py` drives
+  auth, friends and chat over real HTTP with real session cookies, and
+  `tests/test_social.py` covers the friendship/message rules, ICE config and
+  call routing. Suite is now **126 tests** (was 91) and needs no Postgres:
+  `tests/conftest.py` points `DATABASE_URL` at a temporary SQLite file.
+  *Still untested:* the TTS endpoint (it calls out to Microsoft's service).
+- ~~`src/web_demo/README.md` is stale~~ — rewritten to match the current
+  backend, and extended to document the social layer.
+- ~~Dead streaming-era code in `backend.py`~~ — the per-connection buffers and
+  ~12 segmentation constants left over from the pre-trial design were never
+  read; removed, and the live hand-presence threshold is now the named
+  `MIN_VALID_FRAMES_FOR_INFERENCE` instead of a bare `5`.
+
+**Open:**
+
+1. **TURN server not configured** — calls between users on restrictive
+   networks will fail until `TURN_URL` / `TURN_USERNAME` / `TURN_CREDENTIAL`
+   are set. This is the one part of the feature that needs a paid or
+   self-hosted service; everything else is self-contained. See §5b.
+2. **Social state is single-process** — see §5b. Fine for the current demo
+   scale; a blocker before running two instances.
+3. **End-to-end deploy not yet verified in a browser** — the full stack was
+   verified locally (126 unit/integration tests, plus a live two-client socket
+   run covering presence, chat delivery and the complete call handshake), but
+   the webcam → `/ws` → GRU → TTS round trip and a real camera-to-camera call
+   still need confirming on an actual HTTPS deployment. **Calls cannot be
+   tested over plain HTTP** — `getUserMedia` needs a secure origin.
 4. **Vocabulary is 24 words** — expanding it (more classes, more per-class
    cap) is the natural next ML step if the demo needs a larger sentence
    vocabulary; re-run the same curation methodology
@@ -152,6 +211,12 @@ equally-live paths.
 | Signed short-lived `/api/ws-token` for cross-origin `/ws` | Session cookies don't cross registrable domains (Vercel pages vs. Fly/Render recognition host) |
 | Hand-presence + ambiguity gates on top of the GRU | The model has no trained "idle/no-hand" class, so raw softmax always emits a confident-looking top-1 even on an empty buffer |
 | `edge-tts` (`az-AZ-BanuNeural`) instead of Web Speech API | Most browsers/OSes ship no `az-AZ` voice locally; edge-tts is free and needs no API key |
+| One `friendships` row per relationship, not per direction | Halves the rows and makes "are they friends?" a single query; the requester/addressee split is kept only so the UI can say who asked |
+| Declined invite deletes the row | Lets a pair try again later without a "declined" state to reason about or expire |
+| WebRTC (peer-to-peer) for calls, server relays signalling only | Media never touches the backend, so call quality is independent of the free-tier instance's 0.1 CPU and bandwidth |
+| REST is the source of truth, `/ws/social` is an accelerator | The Vercel deploy can't hold a socket open; chat still works there by polling, with only calling hidden |
+| `deps.py` split out of `webapp.py` | `social.py` needs the same auth dependencies; without the split the two modules would import each other |
+| Social state in-memory rather than Redis | No extra service for a demo at this scale; the seam is `Hub.send_to_user` when it needs to scale |
 
 ---
 
@@ -170,6 +235,6 @@ python scripts/verify_vocabulary_24_cap50.py   # audits the checkpoint before it
 python -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port 8000
 # then open http://localhost:8000 , register/login, and go to /app
 
-# Run the test suite (ML modules only today — see §7.1)
+# Run the test suite (126 tests: ML modules + the web/social layer)
 pytest
 ```

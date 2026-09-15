@@ -23,6 +23,9 @@ Live demo: https://azsl-sign-demo.onrender.com
    - Sticky Trial HUD positioned at the top of the viewport with safe-area support, thumb-friendly START/SKIP buttons, visual/ASCII progress bars, and zero required scrolling.
 4. **Offline & Real-time Parity**:
    - Verified exact feature calculation and preprocessing parity between offline PyTorch models, MediaPipe pipelines, and browser runtime.
+5. **Friends, Chat & Calls**:
+   - Add people by name or e-mail, accept invites, and message them in real time with presence and typing indicators.
+   - Peer-to-peer **audio and video calls** between friends over WebRTC — the backend relays only signalling, never media.
 
 ---
 
@@ -173,18 +176,70 @@ Open `http://localhost:8000` in your web browser (Chrome, Edge, or Safari).
 
 ---
 
+## Friends, Chat & Calls
+
+Open **Dostlar** in the header, or go to `/friends`.
+
+1. **Add someone**: search by name or e-mail (minimum 2 characters) and send an
+   invite. They accept it from their own Dostlar page — a pending invite grants
+   no access to messaging.
+2. **Chat**: pick a friend and type. With the backend socket up, messages arrive
+   instantly, with presence dots, typing indicators and read receipts. Messages
+   are stored in Postgres, so history survives a reload.
+3. **Call**: the 📞 and 🎥 buttons start an audio or video call with a friend who
+   is online. Calls are **peer-to-peer (WebRTC)** — audio and video travel
+   directly between the two browsers, and the server relays only the handshake.
+
+> **Calls require HTTPS.** Browsers only expose the camera and microphone on a
+> secure origin, so calling works on `localhost` and on any HTTPS deployment,
+> but not over plain HTTP on a LAN IP.
+
+Most users connect with the built-in STUN servers and no configuration. Users
+behind symmetric NAT (typically mobile data and corporate networks) need a TURN
+relay — set `TURN_URL`, `TURN_USERNAME` and `TURN_CREDENTIAL` in `.env`. Without
+them those calls fail with a clear message instead of hanging. See
+[.env.example](.env.example).
+
+On a deployment that cannot hold a socket open (the Vercel-only path), the page
+still lists friends and sends messages over REST; live delivery and calling are
+hidden with a notice.
+
+---
+
 ## Running the Test Suite
 
-Run the full automated test suite (all 91 tests must pass):
+Run the full automated test suite (all 126 tests must pass):
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests/ -q
+py -m pytest tests/ -q
 ```
 
 Expected output:
 ```text
-91 passed, 3 warnings in ~8-10s
+126 passed, 1 warning in ~35s
 ```
+
+The suite needs no database or network: `tests/conftest.py` points
+`DATABASE_URL` at a temporary SQLite file for the duration of the run.
+
+---
+
+## Before Deploying
+
+```bash
+py scripts/preflight_deploy.py                 # all targets
+py scripts/preflight_deploy.py --target vercel # just one
+```
+
+Catches the failures that only show up after a deploy: an ignore rule that
+would drop the model checkpoint from the build context, a missing dependency in
+the serverless function's requirements, routes that failed to register, the ML
+stack leaking into the Vercel import path, `--max-instances` above 1 (which
+would split friend presence across instances), and environment variables that
+are unset or inconsistent.
+
+Exit code 0 means nothing is blocking. Warnings list things to confirm on the
+host — they are not build failures.
 
 ---
 

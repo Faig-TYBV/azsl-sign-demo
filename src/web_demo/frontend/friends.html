@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Dostlar — Azİşarə</title>
+<link rel="icon" type="image/png" href="/static/assets/logo_1.png">
+<style>
+/* Design tokens are copied from index.html so the two pages stay visually
+   identical. If you change a colour there, change it here too. */
+:root {
+    --bg-dark: #333333;
+    --bg-darker: #262626;
+    --bg-card: #3d3d3d;
+    --bg-card-hover: #474747;
+    --text-light: #EBEBEB;
+    --border-muted: #C2B280;
+    --accent-cyan: #A0FFFF;
+    --state-trial: #FFCC00;
+    --state-success: #6B8E23;
+    --state-danger: #B5533C;
+    --border-radius: 12px;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    --font-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --font-mono: 'Courier New', Courier, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: var(--font-sans);
+    background:
+        radial-gradient(circle at 15% 50%, rgba(160, 255, 255, 0.04), transparent 30%),
+        radial-gradient(circle at 85% 30%, rgba(128, 0, 128, 0.06), transparent 30%),
+        #222222;
+    background-attachment: fixed;
+    color: var(--text-light);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    max-width: 1500px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    min-height: 0;
+}
+
+/* ---------- Header ---------- */
+header {
+    text-align: center;
+    padding: 1.25rem 0 1rem;
+    border-bottom: 1px solid rgba(194, 178, 128, 0.2);
+}
+.title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+    background: linear-gradient(to right, var(--accent-cyan), var(--state-trial));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+.subtitle {
+    font-size: 0.9rem;
+    color: var(--border-muted);
+    font-style: italic;
+}
+.top-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.9rem;
+    font-size: 0.9rem;
+}
+.nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(194, 178, 128, 0.3);
+    color: var(--text-light);
+    text-decoration: none;
+    transition: border-color var(--transition), background-color var(--transition),
+                color var(--transition);
+}
+.nav-link:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+.nav-link[aria-current="page"] {
+    background: rgba(160, 255, 255, 0.12);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    font-weight: 600;
+}
+.auth-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 0.6rem;
+    font-size: 0.9rem;
+}
+#auth-user { opacity: 0.8; }
+#btn-logout {
+    background: transparent;
+    border: 1px solid currentColor;
+    color: inherit;
+    border-radius: 8px;
+    padding: 4px 12px;
+    cursor: pointer;
+    opacity: 0.85;
+    font-family: inherit;
+}
+#btn-logout:hover { opacity: 1; color: var(--state-trial); }
+
+/* ---------- Layout ---------- */
+.social-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    flex: 1;
+    min-height: 0;
+}
+@media (min-width: 900px) {
+    .social-grid { grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); }
+}
+
+.panel {
+    background: rgba(61, 61, 61, 0.55);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgba(194, 178, 128, 0.22);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    transition: border-color var(--transition), box-shadow var(--transition);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+.panel:hover, .panel:focus-within {
+    border-color: rgba(160, 255, 255, 0.4);
+    box-shadow: var(--shadow), 0 0 24px rgba(160, 255, 255, 0.12);
+}
+.panel-head {
+    padding: 1.1rem 1.25rem 0.85rem;
+    border-bottom: 1px solid rgba(194, 178, 128, 0.16);
+}
+.panel-head h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+.panel-body { padding: 1rem 1.25rem 1.25rem; overflow-y: auto; flex: 1; min-height: 0; }
+
+/* ---------- Search ---------- */
+.search-wrap { position: relative; margin-top: 0.85rem; }
+.field {
+    width: 100%;
+    background: rgba(38, 38, 38, 0.75);
+    border: 1.5px solid rgba(194, 178, 128, 0.28);
+    border-radius: 10px;
+    color: var(--text-light);
+    padding: 0.62rem 0.9rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+.field::placeholder { color: rgba(235, 235, 235, 0.42); }
+.field:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 3px rgba(160, 255, 255, 0.16);
+}
+
+/* ---------- Section headings inside the sidebar ---------- */
+.section-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.76rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--border-muted);
+    margin: 1.15rem 0 0.55rem;
+}
+.section-label:first-child { margin-top: 0; }
+.count-pill {
+    background: var(--state-trial);
+    color: #262626;
+    border-radius: 999px;
+    padding: 0 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+/* ---------- Person rows ---------- */
+.person {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.6rem 0.65rem;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+    font-size: 0.95rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--transition), border-color var(--transition);
+}
+.person:hover { background: rgba(71, 71, 71, 0.6); }
+.person:focus-visible {
+    outline: none;
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 3px rgba(160, 255, 255, 0.18);
+}
+.person[aria-selected="true"] {
+    background: rgba(160, 255, 255, 0.1);
+    border-color: rgba(160, 255, 255, 0.45);
+}
+.avatar {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #262626;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--state-trial));
+    position: relative;
+}
+.avatar.lg { width: 52px; height: 52px; font-size: 1.15rem; }
+.avatar[data-online="true"]::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--state-success);
+    border: 2px solid #2b2b2b;
+}
+.person-meta { flex: 1; min-width: 0; }
+.person-name {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.person-sub {
+    font-size: 0.8rem;
+    color: rgba(235, 235, 235, 0.55);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.unread-badge {
+    flex-shrink: 0;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--accent-cyan);
+    color: #262626;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+}
+.row-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+
+/* ---------- Buttons ---------- */
+.btn {
+    background-color: var(--bg-dark);
+    color: var(--text-light);
+    border: 1.5px solid transparent;
+    padding: 0.62rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: inherit;
+    font-size: 0.92rem;
+    transition: background-color var(--transition), color var(--transition),
+                border-color var(--transition), box-shadow var(--transition),
+                transform var(--transition);
+}
+.btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(160, 255, 255, 0.28);
+}
+.btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(160, 255, 255, 0.35); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.btn-primary { background-color: var(--state-success); }
+.btn-danger { background-color: var(--state-danger); }
+.btn-ghost { background-color: transparent; color: var(--accent-cyan); border-color: var(--accent-cyan); }
+.btn-sm { padding: 0.32rem 0.75rem; font-size: 0.82rem; border-radius: 7px; }
+.icon-btn {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border-radius: 10px;
+    background: rgba(38, 38, 38, 0.8);
+    border: 1.5px solid rgba(194, 178, 128, 0.28);
+    color: var(--text-light);
+    cursor: pointer;
+    transition: border-color var(--transition), color var(--transition),
+                background-color var(--transition);
+}
+.icon-btn:hover:not(:disabled) { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+.icon-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(160, 255, 255, 0.3); }
+.icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.icon-btn svg { width: 20px; height: 20px; fill: currentColor; }
+
+/* ---------- Chat panel ---------- */
+.chat-panel { min-height: 460px; }
+.chat-head {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.9rem 1.15rem;
+    border-bottom: 1px solid rgba(194, 178, 128, 0.16);
+}
+.chat-head .person-meta { flex: 1; }
+.chat-actions { display: flex; gap: 0.5rem; }
+.back-btn { display: none; }
+@media (max-width: 899px) {
+    .back-btn { display: grid; }
+    /* On a phone the two panes share the screen: the list until you pick
+       someone, then the conversation. */
+    body.chat-open .sidebar-panel { display: none; }
+    body:not(.chat-open) .chat-panel { display: none; }
+}
+
+.messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.1rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 0;
+    scroll-behavior: smooth;
+}
+.msg {
+    max-width: min(78%, 520px);
+    padding: 0.55rem 0.85rem;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+    animation: msgIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes msgIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+}
+.msg.from-them {
+    align-self: flex-start;
+    background: rgba(71, 71, 71, 0.85);
+    border-bottom-left-radius: 4px;
+}
+.msg.from-me {
+    align-self: flex-end;
+    background: linear-gradient(135deg, rgba(160, 255, 255, 0.92), rgba(160, 255, 255, 0.72));
+    color: #1f1f1f;
+    border-bottom-right-radius: 4px;
+}
+.msg.pending { opacity: 0.6; }
+.msg-time {
+    display: block;
+    font-size: 0.7rem;
+    opacity: 0.65;
+    margin-top: 0.15rem;
+    text-align: right;
+}
+.day-sep {
+    align-self: center;
+    font-size: 0.72rem;
+    color: var(--border-muted);
+    background: rgba(38, 38, 38, 0.7);
+    padding: 0.15rem 0.75rem;
+    border-radius: 999px;
+    margin: 0.4rem 0;
+}
+.typing-hint {
+    font-size: 0.82rem;
+    color: var(--accent-cyan);
+    font-style: italic;
+    padding: 0 1.15rem 0.4rem;
+    min-height: 1.3rem;
+}
+
+.composer {
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.85rem 1.15rem 1.1rem;
+    border-top: 1px solid rgba(194, 178, 128, 0.16);
+}
+.composer .field { flex: 1; }
+
+/* ---------- Empty states ---------- */
+.empty-state {
+    flex: 1;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 0.5rem;
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    color: rgba(235, 235, 235, 0.6);
+}
+.empty-state .big { font-size: 2.6rem; line-height: 1; opacity: 0.55; }
+.empty-state h3 { font-size: 1.1rem; color: var(--text-light); font-weight: 600; }
+.empty-state p { font-size: 0.9rem; max-width: 42ch; }
+.muted-note { font-size: 0.85rem; color: rgba(235, 235, 235, 0.5); padding: 0.4rem 0; }
+
+/* ---------- Banner (recognition/social offline) ---------- */
+.notice-banner {
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    border: 1px solid #b8860b;
+    background: rgba(184, 134, 11, 0.12);
+    color: #e8c46a;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    text-align: center;
+}
+
+/* ---------- Toast ---------- */
+.toast-stack {
+    position: fixed;
+    left: 50%;
+    bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    z-index: 80;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: min(92vw, 420px);
+}
+.toast {
+    background: rgba(38, 38, 38, 0.96);
+    border: 1px solid rgba(194, 178, 128, 0.35);
+    border-left: 4px solid var(--accent-cyan);
+    border-radius: 10px;
+    padding: 0.7rem 1rem;
+    box-shadow: var(--shadow);
+    font-size: 0.92rem;
+    animation: msgIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.toast.error { border-left-color: var(--state-danger); }
+.toast.success { border-left-color: var(--state-success); }
+
+/* ---------- Call overlay ---------- */
+.call-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: #151515;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.call-overlay[hidden] { display: none; }
+#remote-video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #0d0d0d;
+}
+.call-audio-face {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 1rem;
+    background: radial-gradient(circle at 50% 40%, rgba(160, 255, 255, 0.08), transparent 55%), #151515;
+}
+.call-audio-face .avatar { width: 120px; height: 120px; font-size: 2.6rem; }
+#local-video {
+    position: absolute;
+    right: 1rem;
+    bottom: 6.5rem;
+    width: clamp(110px, 24vw, 190px);
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 2px solid rgba(160, 255, 255, 0.45);
+    box-shadow: var(--shadow);
+    background: #0d0d0d;
+    transform: scaleX(-1); /* selfie view: your own preview should mirror you */
+}
+.call-banner {
+    position: absolute;
+    top: calc(1rem + env(safe-area-inset-top, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(8px);
+    padding: 0.6rem 1.4rem;
+    border-radius: 999px;
+    font-size: 0.95rem;
+}
+.call-banner .peer { font-weight: 700; }
+.call-banner .state { font-size: 0.82rem; color: var(--accent-cyan); }
+.call-controls {
+    position: absolute;
+    bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.85rem;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    padding: 0.7rem 1rem;
+    border-radius: 999px;
+}
+.call-controls .icon-btn { width: 52px; height: 52px; border-radius: 50%; }
+.call-controls .icon-btn.active-off {
+    background: var(--state-danger);
+    border-color: var(--state-danger);
+    color: #fff;
+}
+.call-controls .hangup {
+    background: var(--state-danger);
+    border-color: var(--state-danger);
+    color: #fff;
+}
+.call-controls .hangup:hover { background: #cf6047; border-color: #cf6047; }
+
+/* ---------- Incoming call modal ---------- */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    background: rgba(10, 10, 10, 0.78);
+    backdrop-filter: blur(6px);
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+}
+.modal-backdrop[hidden] { display: none; }
+.modal-card {
+    background: rgba(45, 45, 45, 0.97);
+    border: 1px solid rgba(194, 178, 128, 0.3);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 2rem 1.75rem;
+    text-align: center;
+    width: min(94vw, 380px);
+    display: grid;
+    justify-items: center;
+    gap: 0.6rem;
+}
+.modal-card .avatar { animation: ringPulse 1.6s ease-in-out infinite; }
+@keyframes ringPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(160, 255, 255, 0.5); }
+    50% { box-shadow: 0 0 0 18px rgba(160, 255, 255, 0); }
+}
+.modal-card h3 { font-size: 1.3rem; font-weight: 700; }
+.modal-card .kind { color: var(--accent-cyan); font-size: 0.92rem; }
+.modal-actions { display: flex; gap: 1rem; margin-top: 0.9rem; }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    .btn:hover:not(:disabled) { transform: none; }
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1 class="title">Dostlar</h1>
+        <p class="subtitle">Yazışın, səsli və videolu zəng edin</p>
+        <nav class="top-nav" aria-label="Əsas naviqasiya">
+            <a class="nav-link" href="/app">İşarə Tanıma</a>
+            <a class="nav-link" href="/friends" aria-current="page">Dostlar</a>
+        </nav>
+        <div class="auth-bar">
+            <span id="auth-user"></span>
+            <button id="btn-logout" type="button">Çıxış</button>
+        </div>
+    </header>
+
+    <div id="offline-banner" class="notice-banner" hidden>
+        <strong>Canlı rejim əlçatan deyil.</strong>
+        Mesajlar göndərilir, lakin anlıq çatdırılma və zəng bu yerləşdirmədə işləmir.
+    </div>
+
+    <main class="social-grid">
+        <!-- ---------------- Sidebar ---------------- -->
+        <section class="panel sidebar-panel" aria-label="Dostlar siyahısı">
+            <div class="panel-head">
+                <h2>👥 Şəbəkəm</h2>
+                <div class="search-wrap">
+                    <label class="sr-only" for="user-search">İstifadəçi axtar</label>
+                    <input id="user-search" class="field" type="search" autocomplete="off"
+                           placeholder="Ad və ya e-poçt ilə axtarın…">
+                </div>
+            </div>
+            <div class="panel-body">
+                <div id="search-results" hidden>
+                    <div class="section-label">Axtarış nəticələri</div>
+                    <div id="search-list"></div>
+                </div>
+
+                <div id="requests-block" hidden>
+                    <div class="section-label">
+                        <span>Gələn sorğular</span>
+                        <span class="count-pill" id="requests-count">0</span>
+                    </div>
+                    <div id="requests-list"></div>
+                </div>
+
+                <div id="outgoing-block" hidden>
+                    <div class="section-label">Göndərilmiş sorğular</div>
+                    <div id="outgoing-list"></div>
+                </div>
+
+                <div id="friends-block">
+                    <div class="section-label">
+                        <span>Dostlar</span>
+                        <span class="count-pill" id="friends-count">0</span>
+                    </div>
+                    <div id="friends-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ---------------- Chat ---------------- -->
+        <section class="panel chat-panel" aria-label="Söhbət">
+            <div id="chat-empty" class="empty-state">
+                <div class="big">💬</div>
+                <h3>Söhbətə başlayın</h3>
+                <p>Soldan bir dost seçin və yazışmağa başlayın. Dostlarınıza səsli və ya
+                   videolu zəng də edə bilərsiniz.</p>
+            </div>
+
+            <div id="chat-view" hidden style="display:flex;flex-direction:column;flex:1;min-height:0;">
+                <div class="chat-head">
+                    <button class="icon-btn back-btn" id="chat-back" type="button" aria-label="Geri">
+                        <svg viewBox="0 0 24 24"><path d="M15.4 7.4 14 6l-6 6 6 6 1.4-1.4-4.6-4.6z"/></svg>
+                    </button>
+                    <div class="avatar" id="chat-avatar" aria-hidden="true"></div>
+                    <div class="person-meta">
+                        <div class="person-name" id="chat-name"></div>
+                        <div class="person-sub" id="chat-status"></div>
+                    </div>
+                    <div class="chat-actions">
+                        <button class="icon-btn" id="btn-audio-call" type="button" aria-label="Səsli zəng" title="Səsli zəng">
+                            <svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg>
+                        </button>
+                        <button class="icon-btn" id="btn-video-call" type="button" aria-label="Video zəng" title="Video zəng">
+                            <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.6-.4-1-1-1H4c-.6 0-1 .4-1 1v10c0 .6.4 1 1 1h12c.6 0 1-.4 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                        </button>
+                        <button class="icon-btn" id="btn-unfriend" type="button" aria-label="Dostluqdan çıxar" title="Dostluqdan çıxar">
+                            <svg viewBox="0 0 24 24"><path d="M15 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4zm0 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4zM6 9V7H0v2h6z"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="messages" id="messages" role="log" aria-live="polite" aria-label="Mesajlar"></div>
+                <div class="typing-hint" id="typing-hint" aria-live="polite"></div>
+
+                <form class="composer" id="composer">
+                    <label class="sr-only" for="msg-input">Mesaj yazın</label>
+                    <input id="msg-input" class="field" type="text" autocomplete="off"
+                           placeholder="Mesaj yazın…" maxlength="2000">
+                    <button class="btn btn-primary" type="submit" id="btn-send">Göndər</button>
+                </form>
+            </div>
+        </section>
+    </main>
+</div>
+
+<div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="false"></div>
+
+<!-- ---------------- Active call ---------------- -->
+<div class="call-overlay" id="call-overlay" hidden role="dialog" aria-modal="true" aria-label="Zəng">
+    <video id="remote-video" autoplay playsinline></video>
+    <div class="call-audio-face" id="call-audio-face" hidden>
+        <div class="avatar lg" id="call-face-avatar"></div>
+    </div>
+    <video id="local-video" autoplay playsinline muted></video>
+
+    <div class="call-banner">
+        <div class="peer" id="call-peer-name"></div>
+        <div class="state" id="call-state">Qoşulur…</div>
+    </div>
+
+    <div class="call-controls">
+        <button class="icon-btn" id="btn-toggle-mic" type="button" aria-label="Mikrofonu söndür" title="Mikrofon">
+            <svg viewBox="0 0 24 24"><path d="M12 14c1.7 0 3-1.3 3-3V5c0-1.7-1.3-3-3-3S9 3.3 9 5v6c0 1.7 1.3 3 3 3zm5-3c0 2.8-2.2 5-5 5s-5-2.2-5-5H5c0 3.5 2.6 6.4 6 6.9V22h2v-4.1c3.4-.5 6-3.4 6-6.9h-2z"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-toggle-cam" type="button" aria-label="Kameranı söndür" title="Kamera">
+            <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.6-.4-1-1-1H4c-.6 0-1 .4-1 1v10c0 .6.4 1 1 1h12c.6 0 1-.4 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+        </button>
+        <button class="icon-btn hangup" id="btn-hangup" type="button" aria-label="Zəngi bitir" title="Bitir">
+            <svg viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.1.3-4.5.7v3.1c0 .4-.2.7-.6.9-.9.5-1.8 1.1-2.5 1.8-.2.2-.4.3-.7.3s-.5-.1-.7-.3l-2.5-2.5c-.2-.2-.3-.4-.3-.7s.1-.5.3-.7C4 8.8 7.8 7.2 12 7.2s8 1.6 11.5 4.4c.2.2.3.4.3.7s-.1.5-.3.7l-2.5 2.5c-.2.2-.4.3-.7.3s-.5-.1-.7-.3c-.8-.7-1.6-1.3-2.5-1.8-.3-.2-.6-.5-.6-.9V9.7C15.1 9.3 13.6 9 12 9z"/></svg>
+        </button>
+    </div>
+</div>
+
+<!-- ---------------- Incoming call ---------------- -->
+<div class="modal-backdrop" id="incoming-modal" hidden role="dialog" aria-modal="true"
+     aria-labelledby="incoming-name">
+    <div class="modal-card">
+        <div class="avatar lg" id="incoming-avatar"></div>
+        <h3 id="incoming-name"></h3>
+        <div class="kind" id="incoming-kind"></div>
+        <div class="modal-actions">
+            <button class="btn btn-danger" id="btn-reject" type="button">İmtina</button>
+            <button class="btn btn-primary" id="btn-accept" type="button">Cavab ver</button>
+        </div>
+    </div>
+</div>
+
+<script>
+'use strict';
+
+/* =========================================================================
+   Config + state
+   ========================================================================= */
+const CFG = window.__AZSL_CONFIG__ || {};
+// "" -> same origin | "wss://host" -> separate backend | null/undefined -> none
+const SOCIAL_WS_BASE = CFG.socialWsUrl;
+const SOCIAL_WS_ENABLED = SOCIAL_WS_BASE !== null && SOCIAL_WS_BASE !== undefined;
+const POLL_INTERVAL_MS = 5000;   // REST fallback cadence when there is no socket
+const TYPING_IDLE_MS = 1800;
+
+const state = {
+    me: null,
+    friends: [],
+    incoming: [],
+    outgoing: [],
+    activePeer: null,
+    messages: [],
+    ws: null,
+    wsReady: false,
+    reconnectDelay: 1000,
+    typingTimer: null,
+    peerTypingTimer: null,
+    pollTimer: null,
+    heartbeat: null,
+};
+
+/* WebRTC state for the one call we allow at a time. */
+const call = {
+    id: null,
+    peer: null,        // { id, full_name }
+    media: 'video',
+    role: null,        // 'caller' | 'callee'
+    pc: null,
+    localStream: null,
+    pendingIce: [],    // candidates that arrived before setRemoteDescription
+    remoteReady: false,
+    timer: null,
+    startedAt: null,
+    iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }],
+    turnAvailable: false,
+};
+
+const $ = (id) => document.getElementById(id);
+
+/* =========================================================================
+   Small helpers
+   ========================================================================= */
+function escapeHtml(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function initials(name) {
+    const parts = String(name || '?').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+function toast(text, kind) {
+    const el = document.createElement('div');
+    el.className = 'toast' + (kind ? ' ' + kind : '');
+    el.textContent = text;
+    $('toast-stack').appendChild(el);
+    setTimeout(() => el.remove(), 4800);
+}
+
+async function api(path, options) {
+    const res = await fetch(path, Object.assign({
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+    }, options || {}));
+    if (res.status === 401) { window.location.href = '/login'; throw new Error('unauthenticated'); }
+    let data = null;
+    try { data = await res.json(); } catch (e) { data = null; }
+    if (!res.ok) throw new Error((data && data.detail) || 'Xəta baş verdi.');
+    return data;
+}
+
+function fmtTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' });
+}
+
+function fmtDay(iso) {
+    const d = new Date(iso);
+    const today = new Date();
+    const yest = new Date(); yest.setDate(today.getDate() - 1);
+    const same = (a, b) => a.toDateString() === b.toDateString();
+    if (same(d, today)) return 'Bu gün';
+    if (same(d, yest)) return 'Dünən';
+    return d.toLocaleDateString('az-AZ', { day: 'numeric', month: 'long' });
+}
+
+/* =========================================================================
+   Rendering
+   ========================================================================= */
+function personRow(user, opts) {
+    opts = opts || {};
+    const wrap = document.createElement(opts.actions ? 'div' : 'button');
+    wrap.className = 'person';
+    if (!opts.actions) {
+        wrap.type = 'button';
+        wrap.setAttribute('role', 'option');
+        wrap.setAttribute('aria-selected', String(!!opts.selected));
+    }
+
+    const av = document.createElement('div');
+    av.className = 'avatar';
+    av.dataset.online = String(!!user.online);
+    av.textContent = initials(user.full_name);
+    av.setAttribute('aria-hidden', 'true');
+
+    const meta = document.createElement('div');
+    meta.className = 'person-meta';
+    meta.innerHTML =
+        '<div class="person-name">' + escapeHtml(user.full_name) + '</div>' +
+        '<div class="person-sub">' + escapeHtml(opts.sub || user.email) + '</div>';
+
+    wrap.appendChild(av);
+    wrap.appendChild(meta);
+
+    if (opts.unread) {
+        const badge = document.createElement('span');
+        badge.className = 'unread-badge';
+        badge.textContent = opts.unread > 99 ? '99+' : String(opts.unread);
+        badge.setAttribute('aria-label', opts.unread + ' oxunmamış mesaj');
+        wrap.appendChild(badge);
+    }
+
+    if (opts.actions) {
+        const box = document.createElement('div');
+        box.className = 'row-actions';
+        opts.actions.forEach((a) => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'btn btn-sm ' + (a.variant || 'btn-ghost');
+            b.textContent = a.label;
+            b.addEventListener('click', a.onClick);
+            box.appendChild(b);
+        });
+        wrap.appendChild(box);
+    } else if (opts.onClick) {
+        wrap.addEventListener('click', opts.onClick);
+    }
+    return wrap;
+}
+
+function renderFriends() {
+    const list = $('friends-list');
+    list.innerHTML = '';
+    $('friends-count').textContent = String(state.friends.length);
+
+    if (!state.friends.length) {
+        const p = document.createElement('p');
+        p.className = 'muted-note';
+        p.textContent = 'Hələ dostunuz yoxdur. Yuxarıdakı axtarışla insan tapın.';
+        list.appendChild(p);
+        return;
+    }
+
+    state.friends.forEach((f) => {
+        list.appendChild(personRow(f, {
+            sub: f.online ? 'Onlayn' : 'Oflayn',
+            unread: f.unread,
+            selected: state.activePeer && state.activePeer.id === f.id,
+            onClick: () => openChat(f),
+        }));
+    });
+}
+
+function renderRequests() {
+    const block = $('requests-block');
+    const list = $('requests-list');
+    list.innerHTML = '';
+    $('requests-count').textContent = String(state.incoming.length);
+    block.hidden = state.incoming.length === 0;
+
+    state.incoming.forEach((req) => {
+        list.appendChild(personRow(req.user, {
+            actions: [
+                { label: 'Qəbul et', variant: 'btn-primary', onClick: () => respond(req.request_id, true) },
+                { label: 'İmtina', variant: 'btn-danger', onClick: () => respond(req.request_id, false) },
+            ],
+        }));
+    });
+
+    const oBlock = $('outgoing-block');
+    const oList = $('outgoing-list');
+    oList.innerHTML = '';
+    oBlock.hidden = state.outgoing.length === 0;
+    state.outgoing.forEach((req) => {
+        oList.appendChild(personRow(req.user, {
+            sub: 'Cavab gözlənilir',
+            actions: [
+                { label: 'Geri al', variant: 'btn-ghost', onClick: () => cancelRequest(req.request_id) },
+            ],
+        }));
+    });
+}
+
+function renderMessages() {
+    const box = $('messages');
+    box.innerHTML = '';
+    let lastDay = null;
+
+    state.messages.forEach((m) => {
+        const day = m.created_at ? fmtDay(m.created_at) : null;
+        if (day && day !== lastDay) {
+            const sep = document.createElement('div');
+            sep.className = 'day-sep';
+            sep.textContent = day;
+            box.appendChild(sep);
+            lastDay = day;
+        }
+        const el = document.createElement('div');
+        const mine = m.sender_id === state.me.id;
+        el.className = 'msg ' + (mine ? 'from-me' : 'from-them') + (m.pending ? ' pending' : '');
+        el.innerHTML = escapeHtml(m.body).replace(/\n/g, '<br>') +
+            '<span class="msg-time">' + escapeHtml(fmtTime(m.created_at)) +
+            (mine && m.read_at ? ' ✓✓' : (mine ? ' ✓' : '')) + '</span>';
+        box.appendChild(el);
+    });
+    box.scrollTop = box.scrollHeight;
+}
+
+/* =========================================================================
+   Friends data
+   ========================================================================= */
+async function loadFriends() {
+    const data = await api('/api/friends');
+    state.friends = data.friends || [];
+    renderFriends();
+    if (state.activePeer) {
+        const fresh = state.friends.find((f) => f.id === state.activePeer.id);
+        if (fresh) { state.activePeer = fresh; updateChatHeader(); }
+    }
+}
+
+async function loadRequests() {
+    const data = await api('/api/friends/requests');
+    state.incoming = data.incoming || [];
+    state.outgoing = data.outgoing || [];
+    renderRequests();
+}
+
+async function respond(requestId, accept) {
+    try {
+        await api('/api/friends/respond', {
+            method: 'POST',
+            body: JSON.stringify({ request_id: requestId, accept: accept }),
+        });
+        toast(accept ? 'Dostluq sorğusu qəbul edildi.' : 'Sorğu rədd edildi.', accept ? 'success' : null);
+        await Promise.all([loadFriends(), loadRequests()]);
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function cancelRequest(requestId) {
+    try {
+        await api('/api/friends/cancel', {
+            method: 'POST',
+            body: JSON.stringify({ request_id: requestId, accept: false }),
+        });
+        await loadRequests();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function sendRequest(userId) {
+    try {
+        const r = await api('/api/friends/request', {
+            method: 'POST',
+            body: JSON.stringify({ user_id: userId }),
+        });
+        toast(r.status === 'accepted' ? 'Artıq dostsunuz!' : 'Dostluq sorğusu göndərildi.', 'success');
+        $('user-search').value = '';
+        $('search-results').hidden = true;
+        await Promise.all([loadFriends(), loadRequests()]);
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function unfriend() {
+    if (!state.activePeer) return;
+    if (!window.confirm(state.activePeer.full_name + ' dostluqdan çıxarılsın?')) return;
+    try {
+        await api('/api/friends/remove', {
+            method: 'POST',
+            body: JSON.stringify({ user_id: state.activePeer.id }),
+        });
+        toast('Dostluqdan çıxarıldı.');
+        closeChat();
+        await loadFriends();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+/* ---- search (debounced) ---- */
+let searchTimer = null;
+$('user-search').addEventListener('input', (e) => {
+    const q = e.target.value.trim();
+    clearTimeout(searchTimer);
+    if (q.length < 2) { $('search-results').hidden = true; return; }
+    searchTimer = setTimeout(async () => {
+        try {
+            const data = await api('/api/users/search?q=' + encodeURIComponent(q));
+            const list = $('search-list');
+            list.innerHTML = '';
+            const results = data.results || [];
+            if (!results.length) {
+                const p = document.createElement('p');
+                p.className = 'muted-note';
+                p.textContent = 'Nəticə tapılmadı.';
+                list.appendChild(p);
+            }
+            results.forEach((u) => {
+                const labels = {
+                    none: 'Dost əlavə et',
+                    friends: 'Dostsunuz',
+                    request_sent: 'Göndərilib',
+                    request_received: 'Sizə sorğu göndərib',
+                };
+                list.appendChild(personRow(u, {
+                    actions: [{
+                        label: labels[u.state] || 'Əlavə et',
+                        variant: u.state === 'none' ? 'btn-primary' : 'btn-ghost',
+                        onClick: () => { if (u.state === 'none') sendRequest(u.id); },
+                    }],
+                }));
+            });
+            $('search-results').hidden = false;
+        } catch (e) { toast(e.message, 'error'); }
+    }, 280);
+});
+
+/* =========================================================================
+   Chat
+   ========================================================================= */
+function updateChatHeader() {
+    const p = state.activePeer;
+    if (!p) return;
+    $('chat-avatar').textContent = initials(p.full_name);
+    $('chat-avatar').dataset.online = String(!!p.online);
+    $('chat-name').textContent = p.full_name;
+    $('chat-status').textContent = p.online ? 'Onlayn' : 'Oflayn';
+    const canCall = SOCIAL_WS_ENABLED && p.online;
+    $('btn-audio-call').disabled = !canCall;
+    $('btn-video-call').disabled = !canCall;
+    const why = !SOCIAL_WS_ENABLED
+        ? 'Zəng bu yerləşdirmədə mövcud deyil.'
+        : (p.online ? '' : 'İstifadəçi oflayndır.');
+    $('btn-audio-call').title = why || 'Səsli zəng';
+    $('btn-video-call').title = why || 'Video zəng';
+}
+
+async function openChat(friend) {
+    state.activePeer = friend;
+    state.messages = [];
+    $('chat-empty').hidden = true;
+    $('chat-view').hidden = false;
+    document.body.classList.add('chat-open');
+    $('typing-hint').textContent = '';
+    updateChatHeader();
+    renderFriends();
+
+    try {
+        const data = await api('/api/messages/' + friend.id);
+        state.messages = data.messages || [];
+        renderMessages();
+        // The server marked these read; clear the local badge too.
+        const f = state.friends.find((x) => x.id === friend.id);
+        if (f) { f.unread = 0; renderFriends(); }
+        // Also announce it on the socket. In a split deploy the REST call lands
+        // on the pages host, whose hub is empty, so that receipt would never
+        // reach the sender otherwise.
+        wsSend({ type: 'chat:read', from: friend.id });
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+function closeChat() {
+    state.activePeer = null;
+    state.messages = [];
+    $('chat-view').hidden = true;
+    $('chat-empty').hidden = false;
+    document.body.classList.remove('chat-open');
+    renderFriends();
+}
+
+$('chat-back').addEventListener('click', () => {
+    document.body.classList.remove('chat-open');
+});
+$('btn-unfriend').addEventListener('click', unfriend);
+
+$('composer').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = $('msg-input');
+    const body = input.value.trim();
+    if (!body || !state.activePeer) return;
+    input.value = '';
+    const peerId = state.activePeer.id;
+
+    if (state.wsReady) {
+        const clientId = 'c' + Date.now() + Math.random().toString(16).slice(2);
+        // Optimistic bubble: replaced by the server's copy when chat:sent lands.
+        state.messages.push({
+            id: clientId, client_id: clientId, sender_id: state.me.id,
+            recipient_id: peerId, body: body,
+            created_at: new Date().toISOString(), pending: true,
+        });
+        renderMessages();
+        wsSend({ type: 'chat:send', to: peerId, body: body, client_id: clientId });
+    } else {
+        try {
+            const data = await api('/api/messages', {
+                method: 'POST', body: JSON.stringify({ to: peerId, body: body }),
+            });
+            state.messages.push(data.message);
+            renderMessages();
+        } catch (err) { toast(err.message, 'error'); }
+    }
+});
+
+$('msg-input').addEventListener('input', () => {
+    if (!state.wsReady || !state.activePeer) return;
+    if (!state.typingTimer) {
+        wsSend({ type: 'chat:typing', to: state.activePeer.id, state: true });
+    }
+    clearTimeout(state.typingTimer);
+    state.typingTimer = setTimeout(() => {
+        if (state.activePeer) {
+            wsSend({ type: 'chat:typing', to: state.activePeer.id, state: false });
+        }
+        state.typingTimer = null;
+    }, TYPING_IDLE_MS);
+});
+
+/* =========================================================================
+   WebSocket
+   ========================================================================= */
+function wsSend(payload) {
+    if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+        state.ws.send(JSON.stringify(payload));
+        return true;
+    }
+    return false;
+}
+
+/* Builds the socket URL. When the socket lives on another host (Vercel pages +
+   a Render/Fly backend) the session cookie cannot cross origins, so we first
+   ask our own origin for a short-lived signed token and pass it on the URL —
+   exactly what the recognition socket on /app does. A fresh token is fetched
+   on every reconnect, so expiry is never an issue. */
+async function socialWsEndpoint() {
+    if (!SOCIAL_WS_ENABLED) return null;
+
+    if (SOCIAL_WS_BASE) {
+        let token = null;
+        try {
+            const r = await fetch('/api/ws-token', { credentials: 'same-origin' });
+            if (r.ok) token = (await r.json()).token;
+        } catch (e) { /* fall through to the null check */ }
+        if (!token) return null;
+        return SOCIAL_WS_BASE.replace(/\/+$/, '').replace(/^http/, 'ws') +
+               '/ws/social?token=' + encodeURIComponent(token);
+    }
+
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return proto + '//' + window.location.host + '/ws/social';
+}
+
+async function connectSocket() {
+    if (!SOCIAL_WS_ENABLED) {
+        $('offline-banner').hidden = false;
+        startPolling();
+        return;
+    }
+
+    const url = await socialWsEndpoint();
+    if (!url) {
+        // Token fetch failed — most likely the session expired. Retry with the
+        // same backoff rather than dropping to polling permanently.
+        setTimeout(connectSocket, state.reconnectDelay);
+        state.reconnectDelay = Math.min(state.reconnectDelay * 2, 15000);
+        return;
+    }
+
+    const ws = new WebSocket(url);
+    state.ws = ws;
+
+    ws.onopen = () => {
+        state.wsReady = true;
+        state.reconnectDelay = 1000;
+        // Proxies in front of free-tier hosts close idle sockets after ~20 s.
+        clearInterval(state.heartbeat);
+        state.heartbeat = setInterval(() => wsSend({ type: 'ping' }), 10000);
+    };
+
+    ws.onmessage = (ev) => {
+        let data;
+        try { data = JSON.parse(ev.data); } catch (e) { return; }
+        handleSocketMessage(data);
+    };
+
+    ws.onclose = () => {
+        state.wsReady = false;
+        clearInterval(state.heartbeat);
+        // Exponential backoff, capped — a sleeping free instance can take ~50 s.
+        setTimeout(connectSocket, state.reconnectDelay);
+        state.reconnectDelay = Math.min(state.reconnectDelay * 2, 15000);
+    };
+
+    ws.onerror = () => { try { ws.close(); } catch (e) {} };
+}
+
+function handleSocketMessage(data) {
+    switch (data.type) {
+        case 'hello':
+            state.me = state.me || data.user;
+            (data.online || []).forEach((id) => {
+                const f = state.friends.find((x) => x.id === id);
+                if (f) f.online = true;
+            });
+            renderFriends();
+            updateChatHeader();
+            break;
+
+        case 'presence': {
+            const f = state.friends.find((x) => x.id === data.user_id);
+            if (f) {
+                f.online = data.online;
+                renderFriends();
+                if (state.activePeer && state.activePeer.id === data.user_id) {
+                    state.activePeer = f;
+                    updateChatHeader();
+                }
+            }
+            break;
+        }
+
+        case 'chat:sent': {
+            // Swap the optimistic bubble for the stored row.
+            const idx = state.messages.findIndex((m) => m.client_id === data.client_id);
+            if (idx >= 0) state.messages[idx] = data.message;
+            else state.messages.push(data.message);
+            renderMessages();
+            break;
+        }
+
+        case 'chat:message': {
+            const peerId = data.peer_id;
+            if (state.activePeer && state.activePeer.id === peerId) {
+                state.messages.push(data.message);
+                renderMessages();
+                // We are looking at it, so it is read.
+                wsSend({ type: 'chat:read', from: peerId });
+            } else {
+                const f = state.friends.find((x) => x.id === peerId);
+                if (f) { f.unread = (f.unread || 0) + 1; renderFriends(); }
+                const who = f ? f.full_name : 'Yeni mesaj';
+                toast(who + ': ' + data.message.body.slice(0, 60));
+            }
+            break;
+        }
+
+        case 'chat:read':
+            state.messages.forEach((m) => {
+                if (m.sender_id === state.me.id && !m.read_at) m.read_at = new Date().toISOString();
+            });
+            renderMessages();
+            break;
+
+        case 'chat:typing':
+            if (state.activePeer && state.activePeer.id === data.from) {
+                clearTimeout(state.peerTypingTimer);
+                if (data.state) {
+                    $('typing-hint').textContent = state.activePeer.full_name + ' yazır…';
+                    state.peerTypingTimer = setTimeout(() => {
+                        $('typing-hint').textContent = '';
+                    }, TYPING_IDLE_MS + 1200);
+                } else {
+                    $('typing-hint').textContent = '';
+                }
+            }
+            break;
+
+        case 'friend:request':
+            toast(data.request.user.full_name + ' sizə dostluq sorğusu göndərdi.');
+            loadRequests();
+            break;
+
+        case 'friend:accepted':
+            toast(data.user.full_name + ' dostluq sorğunuzu qəbul etdi.', 'success');
+            loadFriends(); loadRequests();
+            break;
+
+        case 'friend:removed':
+            if (state.activePeer && state.activePeer.id === data.user_id) closeChat();
+            loadFriends();
+            break;
+
+        case 'error':
+            toast(data.detail || 'Xəta baş verdi.', 'error');
+            break;
+
+        default:
+            if (String(data.type || '').startsWith('call:')) handleCallSignal(data);
+    }
+}
+
+/* REST polling when there is no socket (e.g. the Vercel-only deploy). */
+function startPolling() {
+    clearInterval(state.pollTimer);
+    state.pollTimer = setInterval(async () => {
+        try {
+            await loadFriends();
+            await loadRequests();
+            if (state.activePeer) {
+                const data = await api('/api/messages/' + state.activePeer.id);
+                const incoming = data.messages || [];
+                if (incoming.length !== state.messages.length) {
+                    state.messages = incoming;
+                    renderMessages();
+                }
+            }
+        } catch (e) { /* transient — the next tick retries */ }
+    }, POLL_INTERVAL_MS);
+}
+
+/* =========================================================================
+   Calls (WebRTC)
+
+   Signalling goes through /ws/social; the audio and video themselves travel
+   browser-to-browser. See social.py for the message shapes.
+   ========================================================================= */
+async function loadRtcConfig() {
+    try {
+        const cfg = await api('/api/rtc-config');
+        if (cfg.iceServers && cfg.iceServers.length) call.iceServers = cfg.iceServers;
+        call.turnAvailable = !!cfg.turn;
+    } catch (e) { /* the STUN default stays in place */ }
+}
+
+function createPeerConnection() {
+    const pc = new RTCPeerConnection({ iceServers: call.iceServers });
+
+    pc.onicecandidate = (ev) => {
+        if (ev.candidate && call.id) {
+            wsSend({ type: 'call:ice', call_id: call.id, candidate: ev.candidate.toJSON() });
+        }
+    };
+
+    pc.ontrack = (ev) => {
+        const remote = $('remote-video');
+        if (remote.srcObject !== ev.streams[0]) remote.srcObject = ev.streams[0];
+    };
+
+    pc.onconnectionstatechange = () => {
+        if (pc.connectionState === 'connected') {
+            setCallState('Qoşuldu');
+            startCallTimer();
+        } else if (pc.connectionState === 'failed') {
+            // Almost always symmetric NAT with no TURN relay configured.
+            toast(call.turnAvailable
+                ? 'Zəng qoşula bilmədi.'
+                : 'Zəng qoşula bilmədi — şəbəkə məhdudiyyəti (TURN server konfiqurasiya olunmayıb).', 'error');
+            endCall('failed');
+        } else if (pc.connectionState === 'disconnected') {
+            setCallState('Bağlantı kəsildi…');
+        }
+    };
+
+    return pc;
+}
+
+function setCallState(text) { $('call-state').textContent = text; }
+
+function startCallTimer() {
+    if (call.timer) return;
+    call.startedAt = Date.now();
+    call.timer = setInterval(() => {
+        const s = Math.floor((Date.now() - call.startedAt) / 1000);
+        const mm = String(Math.floor(s / 60)).padStart(2, '0');
+        const ss = String(s % 60).padStart(2, '0');
+        setCallState(mm + ':' + ss);
+    }, 1000);
+}
+
+async function getLocalStream(media) {
+    const constraints = media === 'video'
+        ? { audio: true, video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } }
+        : { audio: true, video: false };
+    return navigator.mediaDevices.getUserMedia(constraints);
+}
+
+function showCallUI(peer, media) {
+    $('call-peer-name').textContent = peer.full_name;
+    $('call-face-avatar').textContent = initials(peer.full_name);
+    const audioOnly = media !== 'video';
+    $('call-audio-face').hidden = !audioOnly;
+    $('remote-video').hidden = audioOnly;
+    $('local-video').hidden = audioOnly;
+    $('btn-toggle-cam').hidden = audioOnly;
+    $('call-overlay').hidden = false;
+    setCallState('Qoşulur…');
+}
+
+function hideCallUI() {
+    $('call-overlay').hidden = true;
+    $('remote-video').srcObject = null;
+    $('local-video').srcObject = null;
+    $('btn-toggle-mic').classList.remove('active-off');
+    $('btn-toggle-cam').classList.remove('active-off');
+    clearInterval(call.timer);
+    call.timer = null;
+}
+
+async function startCall(media) {
+    if (!state.activePeer || !state.wsReady) return;
+    if (call.pc) { toast('Artıq davam edən zəng var.', 'error'); return; }
+
+    try {
+        call.localStream = await getLocalStream(media);
+    } catch (e) {
+        // NotAllowedError = user denied; NotFoundError = no such device.
+        toast(e && e.name === 'NotAllowedError'
+            ? 'Kamera/mikrofon icazəsi verilmədi.'
+            : 'Kamera və ya mikrofon tapılmadı.', 'error');
+        return;
+    }
+
+    call.role = 'caller';
+    call.media = media;
+    call.peer = state.activePeer;
+    call.pendingIce = [];
+    call.remoteReady = false;
+
+    showCallUI(call.peer, media);
+    setCallState('Zəng edilir…');
+    if (media === 'video') $('local-video').srcObject = call.localStream;
+
+    call.pc = createPeerConnection();
+    call.localStream.getTracks().forEach((t) => call.pc.addTrack(t, call.localStream));
+
+    wsSend({ type: 'call:invite', to: call.peer.id, media: media });
+}
+
+async function acceptCall() {
+    $('incoming-modal').hidden = true;
+    try {
+        call.localStream = await getLocalStream(call.media);
+    } catch (e) {
+        toast('Kamera/mikrofon icazəsi verilmədi.', 'error');
+        wsSend({ type: 'call:reject', call_id: call.id });
+        resetCall();
+        return;
+    }
+
+    showCallUI(call.peer, call.media);
+    if (call.media === 'video') $('local-video').srcObject = call.localStream;
+
+    call.pc = createPeerConnection();
+    call.localStream.getTracks().forEach((t) => call.pc.addTrack(t, call.localStream));
+
+    wsSend({ type: 'call:accept', call_id: call.id });
+}
+
+function rejectCall() {
+    $('incoming-modal').hidden = true;
+    if (call.id) wsSend({ type: 'call:reject', call_id: call.id });
+    resetCall();
+}
+
+function endCall(reason) {
+    if (call.id && reason !== 'remote') wsSend({ type: 'call:end', call_id: call.id });
+    resetCall();
+}
+
+function resetCall() {
+    if (call.pc) { try { call.pc.close(); } catch (e) {} }
+    if (call.localStream) call.localStream.getTracks().forEach((t) => t.stop());
+    call.pc = null;
+    call.localStream = null;
+    call.id = null;
+    call.peer = null;
+    call.role = null;
+    call.pendingIce = [];
+    call.remoteReady = false;
+    hideCallUI();
+    $('incoming-modal').hidden = true;
+}
+
+async function flushPendingIce() {
+    call.remoteReady = true;
+    for (const c of call.pendingIce) {
+        try { await call.pc.addIceCandidate(c); } catch (e) { /* stale candidate */ }
+    }
+    call.pendingIce = [];
+}
+
+async function handleCallSignal(data) {
+    switch (data.type) {
+        case 'call:incoming':
+            if (call.pc || call.id) { wsSend({ type: 'call:reject', call_id: data.call_id }); return; }
+            call.id = data.call_id;
+            call.media = data.media;
+            call.peer = data.from;
+            call.role = 'callee';
+            $('incoming-avatar').textContent = initials(data.from.full_name);
+            $('incoming-name').textContent = data.from.full_name;
+            $('incoming-kind').textContent = data.media === 'video' ? 'Video zəng' : 'Səsli zəng';
+            $('incoming-modal').hidden = false;
+            $('btn-accept').focus();
+            break;
+
+        case 'call:ringing':
+            call.id = data.call_id;
+            setCallState('Zəng çalınır…');
+            break;
+
+        case 'call:accepted': {
+            // We are the caller; the callee picked up, so make the offer.
+            setCallState('Qoşulur…');
+            const offer = await call.pc.createOffer();
+            await call.pc.setLocalDescription(offer);
+            wsSend({ type: 'call:offer', call_id: call.id, sdp: call.pc.localDescription });
+            break;
+        }
+
+        case 'call:offer': {
+            if (!call.pc) return;
+            await call.pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            await flushPendingIce();
+            const answer = await call.pc.createAnswer();
+            await call.pc.setLocalDescription(answer);
+            wsSend({ type: 'call:answer', call_id: call.id, sdp: call.pc.localDescription });
+            break;
+        }
+
+        case 'call:answer':
+            if (!call.pc) return;
+            await call.pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            await flushPendingIce();
+            break;
+
+        case 'call:ice': {
+            if (!call.pc || !data.candidate) return;
+            const cand = new RTCIceCandidate(data.candidate);
+            // Candidates can beat the SDP; queue until there is a remote description.
+            if (!call.remoteReady) call.pendingIce.push(cand);
+            else { try { await call.pc.addIceCandidate(cand); } catch (e) {} }
+            break;
+        }
+
+        case 'call:rejected': {
+            const reasons = {
+                offline: 'İstifadəçi oflayndır.',
+                busy: 'İstifadəçi başqa zəngdədir.',
+                rejected: 'Zəng rədd edildi.',
+            };
+            toast(reasons[data.reason] || 'Zəng rədd edildi.');
+            resetCall();
+            break;
+        }
+
+        case 'call:ended':
+            if (data.reason === 'answered_elsewhere') { resetCall(); break; }
+            if (data.reason === 'rejected') toast('Zəng rədd edildi.');
+            else if (data.reason === 'disconnected') toast('Əlaqə kəsildi.');
+            resetCall();
+            break;
+    }
+}
+
+$('btn-audio-call').addEventListener('click', () => startCall('audio'));
+$('btn-video-call').addEventListener('click', () => startCall('video'));
+$('btn-accept').addEventListener('click', acceptCall);
+$('btn-reject').addEventListener('click', rejectCall);
+$('btn-hangup').addEventListener('click', () => endCall('local'));
+
+$('btn-toggle-mic').addEventListener('click', () => {
+    if (!call.localStream) return;
+    const track = call.localStream.getAudioTracks()[0];
+    if (!track) return;
+    track.enabled = !track.enabled;
+    $('btn-toggle-mic').classList.toggle('active-off', !track.enabled);
+    $('btn-toggle-mic').setAttribute('aria-label', track.enabled ? 'Mikrofonu söndür' : 'Mikrofonu aç');
+});
+
+$('btn-toggle-cam').addEventListener('click', () => {
+    if (!call.localStream) return;
+    const track = call.localStream.getVideoTracks()[0];
+    if (!track) return;
+    track.enabled = !track.enabled;
+    $('btn-toggle-cam').classList.toggle('active-off', !track.enabled);
+    $('btn-toggle-cam').setAttribute('aria-label', track.enabled ? 'Kameranı söndür' : 'Kameranı aç');
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (!$('incoming-modal').hidden) rejectCall();
+    else if (!$('call-overlay').hidden) endCall('local');
+});
+
+/* =========================================================================
+   Boot
+   ========================================================================= */
+$('btn-logout').addEventListener('click', async () => {
+    try { await api('/api/logout', { method: 'POST' }); } catch (e) {}
+    window.location.href = '/';
+});
+
+window.addEventListener('beforeunload', () => {
+    if (call.id) wsSend({ type: 'call:end', call_id: call.id });
+});
+
+(async function boot() {
+    try {
+        const me = await api('/api/me');
+        state.me = me.user;
+        $('auth-user').textContent = me.user.full_name;
+    } catch (e) { return; }
+
+    if (!navigator.mediaDevices || !window.RTCPeerConnection) {
+        // Either an old browser or, far more often, a plain-HTTP origin:
+        // getUserMedia is only exposed on HTTPS and localhost.
+        $('btn-audio-call').disabled = true;
+        $('btn-video-call').disabled = true;
+    }
+
+    await Promise.all([loadFriends(), loadRequests(), loadRtcConfig()]);
+    connectSocket();
+})();
+</script>
+</body>
+</html>

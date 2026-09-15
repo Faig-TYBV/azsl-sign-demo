@@ -1,5 +1,8 @@
 # Deploy to Google Cloud Run (free tier)
 
+> Run `py scripts/preflight_deploy.py` first — it checks the build context, dependencies, routes and environment for this target before you spend a build on it.
+
+
 Cloud Run runs the **whole app** — pages, auth *and* the recognition WebSocket —
 on one origin. That means no Vercel, no cross-origin token, no tunnel: the
 browser just uses the normal session cookie.
@@ -80,7 +83,7 @@ After committing changes:
 | `--timeout 3600` | WebSockets are long-lived requests. The 5-minute default would cut off every session mid-demo; 3600 s is Cloud Run's maximum. |
 | `--concurrency 8` | ~50 MB per concurrent viewer on top of ~300 MB idle — keeps a 1 GiB instance safely under its limit. |
 | `--min-instances 0` | Scale to zero. This is what keeps it inside the free tier (and what causes the cold start). |
-| `--max-instances 3` | Caps runaway scaling so a busy moment can't quietly leave the free tier. |
+| `--max-instances 1` | **Must stay at 1.** Friend presence, live chat and call signalling are held in memory in one process, so two instances would split users into groups that can't see or call each other. Also caps runaway scaling. To serve more people, raise `--concurrency` and `--memory` together (16 viewers ≈ 2 GiB) rather than adding instances. |
 | `--cpu-boost` | Extra CPU during startup, so the ~15 s model load finishes sooner. |
 | `--memory 1Gi` / `--cpu 1` | Measured need is ~300 MB + ~50 MB per viewer; 1 GiB is comfortable. |
 
@@ -101,6 +104,8 @@ would still upload the on-disk `node_modules`.
 | First visit takes ~a minute | cold start — expected with `--min-instances 0`. Warm it up before the demo, or set `--min-instances 1` (leaves the free tier: ~$8-15/mo) |
 | `Killed` / OOM in logs | lower `--concurrency`, or raise `--memory` to `2Gi` |
 | Camera won't start | the page must be HTTPS — `*.run.app` already is |
+| Friends show offline / calls fail between two real users | `--max-instances` is above 1 — redeploy with the script |
+| Call rings but never connects | no TURN relay; see the TURN section of DEPLOY_RECOGNITION.md and pass `-TurnUrl/-TurnUsername/-TurnCredential` |
 
 ## Keeping Vercel as the public URL (optional)
 

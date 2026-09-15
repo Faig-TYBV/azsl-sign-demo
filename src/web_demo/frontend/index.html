@@ -68,6 +68,48 @@ header {
     color: var(--border-muted);
     font-style: italic;
 }
+/* Cross-page nav. Mirrors the .nav-link rules in friends.html — keep both
+   in step if you restyle one. */
+.top-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.9rem;
+    font-size: 0.9rem;
+}
+.nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(194, 178, 128, 0.3);
+    color: var(--text-light);
+    text-decoration: none;
+    transition: border-color var(--transition), background-color var(--transition),
+                color var(--transition);
+}
+.nav-link:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+.nav-link[aria-current="page"] {
+    background: rgba(160, 255, 255, 0.12);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    font-weight: 600;
+}
+.nav-badge {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--accent-cyan);
+    color: #262626;
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+}
 main {
     display: flex;
     flex-direction: column;
@@ -995,6 +1037,13 @@ main {
 <div class="container">
     <header>
         <h1 class="title">Azərbaycan İşarə Dilinin Tanınması</h1>
+        <nav class="top-nav" aria-label="Əsas naviqasiya">
+            <a class="nav-link" href="/app" aria-current="page">İşarə Tanıma</a>
+            <a class="nav-link" href="/friends">
+                Dostlar
+                <span class="nav-badge" id="nav-unread" hidden>0</span>
+            </a>
+        </nav>
         <div class="auth-bar" id="auth-bar" style="display:flex;align-items:center;gap:12px;justify-content:center;margin-top:8px;font-size:0.9rem;">
             <span id="auth-user" style="opacity:0.8;"></span>
             <button id="btn-logout" type="button"
@@ -2323,6 +2372,24 @@ window.addEventListener('beforeunload', () => {
             .then(function () { window.location.href = '/login'; })
             .catch(function () { window.location.href = '/login'; });
     });
+
+    // Unread-message count on the Dostlar tab. Polled rather than socket-driven:
+    // this page already holds the recognition socket open, and a second one just
+    // for a number is not worth the connection on a free-tier instance.
+    var badge = document.getElementById('nav-unread');
+    function refreshUnread() {
+        fetch('/api/friends', { credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                if (!d || !badge) return;
+                var total = (d.friends || []).reduce(function (n, f) { return n + (f.unread || 0); }, 0);
+                badge.textContent = total > 99 ? '99+' : String(total);
+                badge.hidden = total === 0;
+            })
+            .catch(function () { /* transient — the next tick retries */ });
+    }
+    refreshUnread();
+    setInterval(refreshUnread, 30000);
 })();
 </script>
 

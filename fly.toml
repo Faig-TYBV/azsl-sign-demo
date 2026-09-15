@@ -5,6 +5,14 @@
 #   fly secrets set DATABASE_URL='...' SESSION_SECRET='...' SESSION_COOKIE_SECURE=1
 #   fly deploy
 #
+# Optional — WebRTC relay so friend calls also work for users behind symmetric
+# NAT (mobile data, corporate firewalls). Without it calls still connect for
+# most people via STUN. See the TURN section of DEPLOY_RECOGNITION.md.
+#   fly secrets set TURN_URL='turn:...' TURN_USERNAME='...' TURN_CREDENTIAL='...'
+#
+# Keep this app at ONE machine: presence and call state are held in memory, so
+# users on two different machines could not see or call each other.
+#
 # Rename `app` if that name is taken — it decides your <app>.fly.dev hostname.
 
 app = "azsl-recognition"

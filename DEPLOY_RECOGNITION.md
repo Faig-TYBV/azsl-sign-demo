@@ -1,5 +1,8 @@
 # Running the recognition backend (your machine, Fly.io, or Render)
 
+> Run `py scripts/preflight_deploy.py` first — it checks the build context, dependencies, routes and environment for this target before you spend a build on it.
+
+
 Vercel serves the pages and auth; something else has to run the sign-language
 recognition (`/ws`), because it needs a persistent WebSocket process holding
 MediaPipe + PyTorch in memory.
@@ -250,3 +253,77 @@ One process, same origin, cookie auth — no token involved:
 pip install -r requirements.txt -r requirements-recognition.txt
 py -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port 8000
 ```
+
+---
+
+# Friend calls: do you need a TURN server?
+
+Audio and video calls between friends are **WebRTC**. The two browsers send
+media directly to each other; this backend only relays the handshake (SDP and
+ICE), which is a few KB per call. Nothing about calling scales with your
+instance size — a free Render box handles it as well as a paid one.
+
+There are two ways a browser finds a path to its peer:
+
+| | What it does | Cost | Credentials |
+|---|---|---|---|
+| **STUN** | Tells each browser its own public address so they can connect directly | Free (Google's public servers, built in) | None |
+| **TURN** | Relays the media when a direct path is impossible | Paid — it carries every byte of the call | **Yes** |
+
+**STUN alone is enough for most users.** TURN is only needed for *symmetric
+NAT*, which in practice means some mobile-carrier networks and corporate
+firewalls. The usual rule of thumb is that it affects roughly 10–20% of calls.
+
+## Without TURN
+
+Nothing to do — this is the default. Calls work for most pairs of users. The
+ones that can't find a path fail with
+*"Zəng qoşula bilmədi — şəbəkə məhdudiyyəti"* rather than hanging on a spinner,
+and `/api/rtc-config` reports `"turn": false`.
+
+## With TURN
+
+Set three environment variables on the host that serves `/ws/social`:
+
+```bash
+TURN_URL=turn:turn.example.com:3478       # or turns:...:5349 for TLS
+TURN_USERNAME=<username>
+TURN_CREDENTIAL=<password>
+```
+
+All three must be set; a URL without credentials is ignored (a half-configured
+relay would fail every call at ICE time, which is worse than no relay).
+
+Where to get them:
+
+- **Twilio Network Traversal Service** — pay per GB, no server to run. The
+  usual choice if you want this working today.
+- **Metered / Open Relay** — has a small free tier, good for testing.
+- **Cloudflare Calls** — TURN included, generous free allowance.
+- **Self-hosted `coturn`** — free software, but you supply the VM and the
+  bandwidth, and it needs its own public IP and open UDP ports.
+
+Verify it took effect:
+
+```bash
+curl -s https://<your-host>/api/rtc-config   # signed in
+# {"iceServers":[{"urls":[...]},{"urls":"turn:...","username":"..."}],"turn":true}
+```
+
+## HTTPS is not optional for calls
+
+Browsers only expose the camera and microphone on a **secure origin**. That
+means `localhost` or HTTPS. A LAN IP over plain HTTP (`http://192.168.1.20:8000`)
+will load the page and the chat fine, but the call buttons will be disabled
+because `navigator.mediaDevices` does not exist there. If you are testing from
+a phone against your laptop, use the Cloudflare tunnel from Option C2 — it
+gives you an HTTPS URL.
+
+## One instance only
+
+Presence, live chat delivery and call signalling are held in memory in a single
+process. Two users connected to *different* instances would not see each other
+online and could not call. Keep the recognition/social host at one instance
+(Fly: `min_machines_running = 0` with a single machine is fine; Render free is
+a single instance by definition) until `Hub.send_to_user` in
+`src/web_demo/social.py` is backed by Redis pub/sub.

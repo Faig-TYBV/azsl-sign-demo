@@ -10,6 +10,11 @@ param(
     [string]$Region       = "europe-west1",
     [string]$DatabaseUrl  = "",
     [string]$SessionSecret = "",
+    # Optional WebRTC relay for friend calls. Leave blank for STUN only, which
+    # connects most users; all three are needed to enable a relay.
+    [string]$TurnUrl        = "",
+    [string]$TurnUsername   = "",
+    [string]$TurnCredential = "",
     [switch]$SkipEnv
 )
 
@@ -41,13 +46,28 @@ $gcloudArgs = @(
     # ~50 MB per concurrent viewer on top of ~300 MB idle — keep well inside 1Gi.
     "--concurrency", "8",
     "--min-instances", "0",       # scale to zero => stays in the free tier
-    "--max-instances", "3",
+    # MUST stay at 1. Friend presence, live chat delivery and call signalling
+    # are held in memory in a single process (see Hub/CallRegistry in
+    # src/web_demo/social.py). With two instances, users routed to different
+    # ones would show each other as offline and could not call. Raising this
+    # requires putting Redis pub/sub behind Hub.send_to_user first. To serve
+    # more people meanwhile, raise --concurrency and --memory together
+    # (16 viewers needs ~2Gi).
+    "--max-instances", "1",
     "--cpu-boost"                 # faster cold start (model load is ~15 s)
 )
 
 if (-not $SkipEnv) {
     # ^##^ picks '##' as the delimiter so a URL containing commas is safe.
     $envs = "^##^DATABASE_URL=$DatabaseUrl##SESSION_SECRET=$SessionSecret##SESSION_COOKIE_SECURE=1"
+    if ($TurnUrl -and $TurnUsername -and $TurnCredential) {
+        $envs += "##TURN_URL=$TurnUrl##TURN_USERNAME=$TurnUsername##TURN_CREDENTIAL=$TurnCredential"
+        Write-Host "TURN relay enabled for friend calls." -ForegroundColor Green
+    } elseif ($TurnUrl -or $TurnUsername -or $TurnCredential) {
+        # A partial config is ignored by the app and would fail every call at
+        # ICE time, so say so rather than deploying a broken relay.
+        Write-Host "Ignoring TURN settings: all three of -TurnUrl, -TurnUsername and -TurnCredential are required." -ForegroundColor Yellow
+    }
     $gcloudArgs += @("--set-env-vars", $envs)
 }
 
