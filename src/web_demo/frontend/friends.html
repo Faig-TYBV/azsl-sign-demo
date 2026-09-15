@@ -848,6 +848,7 @@ header {
     <div class="call-banner">
         <div class="peer" id="call-peer-name"></div>
         <div class="state" id="call-state">Qoşulur…</div>
+        <div class="state" id="call-link" style="opacity:0.65;font-size:0.72rem;"></div>
     </div>
 
     <div class="call-controls">
@@ -892,6 +893,10 @@ const TYPING_IDLE_MS = 1800;
 // Long enough for someone to reach their phone, short enough that a dead
 // socket does not leave the caller staring at "ringing" indefinitely.
 const RING_TIMEOUT_MS = 40000;
+// The server answers an invite immediately (call:ringing or call:rejected).
+// Silence for this long means the frame never arrived — a socket that looked
+// open but was not, or a process that is not the one holding the callee.
+const INVITE_ACK_TIMEOUT_MS = 8000;
 
 const state = {
     me: null,
@@ -922,6 +927,7 @@ const call = {
     remoteStream: null,
     relayed: false,
     ringTimer: null,
+    ackTimer: null,
     timer: null,
     startedAt: null,
     iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }],
@@ -1797,7 +1803,17 @@ window.azslCallReport = function () {
     return report;
 };
 
-function setCallState(text) { $('call-state').textContent = text; }
+function setCallState(text) {
+    $('call-state').textContent = text;
+    // The header pill is hidden behind the overlay during a call, so mirror the
+    // socket state here. "Zəng edilir…" with a closed socket is the whole
+    // explanation, and it was previously invisible.
+    const el = $('call-link');
+    if (el) {
+        const open = state.ws && state.ws.readyState === WebSocket.OPEN;
+        el.textContent = open ? '' : 'canlı bağlantı yoxdur';
+    }
+}
 
 function startCallTimer() {
     if (call.timer) return;
@@ -1901,7 +1917,18 @@ async function startCall(media) {
     if (!sent) {
         toast('Zəng göndərilə bilmədi — bağlantı kəsildi.', 'error');
         endCall('local');
+        return;
     }
+
+    // Written to the socket is not the same as received by the server.
+    clearTimeout(call.ackTimer);
+    call.ackTimer = setTimeout(() => {
+        callLog('NO ACK: server never answered the invite within',
+                INVITE_ACK_TIMEOUT_MS + 'ms',
+                'socket=' + (state.ws ? state.ws.readyState : 'none'));
+        toast('Server zəngə cavab vermir. Səhifəni yeniləyin.', 'error');
+        endCall('no-ack');
+    }, INVITE_ACK_TIMEOUT_MS);
 }
 
 async function acceptCall() {
@@ -1939,6 +1966,8 @@ function endCall(reason) {
 function resetCall() {
     clearTimeout(call.ringTimer);
     call.ringTimer = null;
+    clearTimeout(call.ackTimer);
+    call.ackTimer = null;
     if (call.pc) { try { call.pc.close(); } catch (e) {} }
     if (call.localStream) call.localStream.getTracks().forEach((t) => t.stop());
     call.pc = null;
@@ -1990,6 +2019,8 @@ async function handleCallSignal(data) {
         }
 
         case 'call:ringing':
+            clearTimeout(call.ackTimer);
+            call.ackTimer = null;
             call.id = data.call_id;
             setCallState('Zəng çalınır…');
             // A ring that never ends is the worst failure mode: it looks like
@@ -2041,6 +2072,8 @@ async function handleCallSignal(data) {
         }
 
         case 'call:rejected': {
+            clearTimeout(call.ackTimer);
+            call.ackTimer = null;
             const reasons = {
                 offline: 'İstifadəçi oflayndır.',
                 busy: 'İstifadəçi başqa zəngdədir.',
