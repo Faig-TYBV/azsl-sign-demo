@@ -331,12 +331,23 @@ real call between two networks.
 
 Where to get them:
 
-- **Twilio Network Traversal Service** — pay per GB, no server to run. The
-  usual choice if you want this working today.
-- **Metered / Open Relay** — has a small free tier, good for testing.
-- **Cloudflare Calls** — TURN included, generous free allowance.
-- **Self-hosted `coturn`** — free software, but you supply the VM and the
-  bandwidth, and it needs its own public IP and open UDP ports.
+| Provider | Free tier | Card to sign up? | Notes |
+| --- | --- | --- | --- |
+| **ExpressTURN** | 1000 GB/mo | Reportedly no | Static username/password, works with this app unchanged. Free tier is port 3478 UDP+TCP only — no TLS/443. Best free option. |
+| **Metered** | 20 GB/mo | **Yes** | Static credentials, includes TLS/443. Fine if you have a card. |
+| **Cloudflare Realtime** | None standalone | Yes | $0.05/GB unless paired with their SFU, and credentials are API-minted with a TTL — would need code changes here. Not a drop-in. |
+| **Twilio** | None | Yes | Pay per GB. Most reliable, least free. |
+| **coturn** (self-hosted) | Unlimited | No | Free software; you supply a VM with a public IP and open UDP ports. |
+
+Verify the current free allowance yourself before relying on it — these change,
+and published figures age badly.
+
+**About TLS/443.** Free tiers often omit it. It matters only for networks that
+block every port except 80/443. The far more common case — symmetric NAT on
+mobile data — is about unpredictable port *mapping*, not blocked ports, and a
+plain UDP relay on 3478 fixes it. So a free tier without TLS/443 is usually
+enough; add the `?transport=tcp` variant on 3478 as a second entry and you
+cover most of the rest.
 
 Verify it took effect:
 
