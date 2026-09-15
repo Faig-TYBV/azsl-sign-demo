@@ -838,6 +838,7 @@ const call = {
     pendingIce: [],    // candidates that arrived before setRemoteDescription
     remoteReady: false,
     remoteStream: null,
+    relayed: false,
     timer: null,
     startedAt: null,
     iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }],
@@ -1485,6 +1486,7 @@ function createPeerConnection() {
             setCallState('Qoşuldu');
             startCallTimer();
             playRemote();
+            adaptToRelay(pc);
         } else if (pc.connectionState === 'failed') {
             // Almost always symmetric NAT with no TURN relay configured.
             toast(call.turnAvailable
@@ -1497,6 +1499,68 @@ function createPeerConnection() {
     };
 
     return pc;
+}
+
+/* A relayed call is the only kind that costs money: every byte passes through
+   the TURN server and is billed against its bandwidth quota. A direct call
+   costs nothing, so there is no reason to degrade it.
+
+   So once connected, look at which candidate pair actually won. If either end
+   is a relay candidate, cap the outgoing video; otherwise leave it alone.
+
+   500 kbps at half resolution is roughly a quarter of what 720p costs, which
+   turns a 500 MB allowance from ~30 minutes of calling into a couple of hours.
+   Audio is untouched — it is a small fraction of the total and the first thing
+   you would miss. */
+const RELAY_MAX_BITRATE = 500000;   // bits per second
+const RELAY_SCALE_DOWN = 2;         // halve each dimension
+
+async function adaptToRelay(pc) {
+    let relayed = false;
+    try {
+        const stats = await pc.getStats();
+        const candidates = new Map();
+        let pair = null;
+        stats.forEach((report) => {
+            if (report.type === 'local-candidate' || report.type === 'remote-candidate') {
+                candidates.set(report.id, report);
+            }
+            // nominated/selected varies by browser; 'succeeded' is the portable signal.
+            if (report.type === 'candidate-pair' && report.state === 'succeeded' && report.nominated !== false) {
+                pair = report;
+            }
+        });
+        if (pair) {
+            const local = candidates.get(pair.localCandidateId);
+            const remote = candidates.get(pair.remoteCandidateId);
+            relayed = (local && local.candidateType === 'relay')
+                   || (remote && remote.candidateType === 'relay');
+            callLog('path', (local && local.candidateType) + '/' + (remote && remote.candidateType));
+        }
+    } catch (e) {
+        callLog('getStats failed', e && e.name);
+        return;
+    }
+
+    call.relayed = relayed;
+    if (!relayed) return;
+
+    // Relayed: this call is spending the TURN quota, so trade resolution for
+    // minutes. The label tells the user why the picture is softer.
+    const sender = (pc.getSenders() || []).find((s) => s.track && s.track.kind === 'video');
+    if (!sender || !sender.getParameters) return;
+    try {
+        const params = sender.getParameters();
+        if (!params.encodings || !params.encodings.length) params.encodings = [{}];
+        params.encodings[0].maxBitrate = RELAY_MAX_BITRATE;
+        params.encodings[0].scaleResolutionDownBy = RELAY_SCALE_DOWN;
+        await sender.setParameters(params);
+        callLog('relayed call — video capped at', RELAY_MAX_BITRATE / 1000 + ' kbps');
+    } catch (e) {
+        // Firefox historically rejected some setParameters shapes; a call at
+        // full quality is better than no call.
+        callLog('bitrate cap not applied', e && e.name);
+    }
 }
 
 /* Remote video carries audio, so browsers refuse to autoplay it without fresh
@@ -1574,14 +1638,23 @@ function startCallTimer() {
         const s = Math.floor((Date.now() - call.startedAt) / 1000);
         const mm = String(Math.floor(s / 60)).padStart(2, '0');
         const ss = String(s % 60).padStart(2, '0');
-        setCallState(mm + ':' + ss);
+        // The relay note has to be re-applied here: this interval repaints the
+        // state line every second and would otherwise wipe it immediately.
+        setCallState(mm + ':' + ss + (call.relayed ? ' · ötürücü' : ''));
     }, 1000);
 }
 
 async function getLocalStream(media) {
+    // 640x480 rather than 720p. On a relayed call the bitrate cap in
+    // adaptToRelay() dominates anyway, and on a direct call this is still
+    // perfectly legible for a face — 720p mostly bought a bigger bill.
     const constraints = media === 'video'
-        ? { audio: true, video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } }
-        : { audio: true, video: false };
+        ? {
+            audio: { echoCancellation: true, noiseSuppression: true },
+            video: { width: { ideal: 640 }, height: { ideal: 480 },
+                     frameRate: { ideal: 24, max: 30 }, facingMode: 'user' },
+          }
+        : { audio: { echoCancellation: true, noiseSuppression: true }, video: false };
     return navigator.mediaDevices.getUserMedia(constraints);
 }
 
@@ -1677,6 +1750,7 @@ function resetCall() {
     call.pc = null;
     call.localStream = null;
     call.remoteStream = null;
+    call.relayed = false;
     call.id = null;
     call.peer = null;
     call.role = null;

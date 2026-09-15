@@ -308,8 +308,10 @@ a half-configured relay fails every call at ICE time — worse than no relay.
 
 ### Getting credentials from Metered (free tier, fastest)
 
-1. Sign up at https://dashboard.metered.ca — free tier is ~50 GB/month, which
-   is a lot of testing (video runs roughly 0.5–1.5 GB per hour).
+1. Sign up at https://dashboard.metered.ca. Check the current free
+   allowance before relying on it — it is measured in hundreds of MB, not
+   GB, and relayed video is expensive. See "Budgeting relay bandwidth"
+   below.
 2. Create an app; open its **TURN credentials** page. You get one username,
    one password, and a list of URLs.
 3. Join the URLs with commas into `TURN_URL`, and set the other two.
@@ -342,6 +344,43 @@ Verify it took effect:
 curl -s https://<your-host>/api/rtc-config   # signed in
 # {"iceServers":[{"urls":[...]},{"urls":"turn:...","username":"..."}],"turn":true}
 ```
+
+## Budgeting relay bandwidth
+
+Only **relayed** calls cost anything. ICE tries a direct path first, and a
+direct call never touches the TURN server — so on most networks the quota is
+untouched. You pay only for the calls that could not connect any other way,
+which are also the ones that would otherwise have failed entirely.
+
+When a call *is* relayed, every byte crosses the relay and is billed. Rough
+figures per hour, per call:
+
+| Mode | Approx. relay usage |
+| --- | --- |
+| Audio only | ~30–60 MB/hour |
+| Video, capped (what this app sends on a relayed call) | ~200–250 MB/hour |
+| Video, uncapped 720p | ~700 MB – 1.1 GB/hour |
+
+Free allowances are small — typically hundreds of MB, not GB — so uncapped
+video would exhaust one in well under an hour.
+
+The app therefore adapts automatically: on connecting it inspects the selected
+ICE candidate pair, and **only if the path is a relay** does it cap outgoing
+video to 500 kbps at half resolution. Direct calls keep full quality, because
+they are free. A relayed call shows `· ötürücü` next to the timer so the softer
+picture is explained rather than mysterious.
+
+To stretch a small allowance further while testing:
+
+* **use audio calls** — roughly five times cheaper, and enough to prove the
+  relay works at all
+* remember only one side needs a bad network to force the relay; testing two
+  devices on the same Wi-Fi goes direct and costs nothing
+* watch the usage counter in your provider's dashboard after the first call to
+  calibrate against these estimates
+
+`RELAY_MAX_BITRATE` in `src/web_demo/frontend/friends.html` is the knob if you
+want to trade quality for minutes differently.
 
 ## HTTPS is not optional for calls
 
