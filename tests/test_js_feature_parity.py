@@ -178,3 +178,95 @@ def test_python_normalize_hand_still_uses_the_reference_this_js_assumes():
         "normalize_hand no longer scales by ||wrist - landmark 9||; "
         "azsl_features.js must be updated to match"
     )
+
+
+# --------------------------------------------------------------------------- #
+# Speech recognition: wrong-language results
+# --------------------------------------------------------------------------- #
+FRIENDS_HTML = PROJECT_ROOT / "src" / "web_demo" / "frontend" / "friends.html"
+
+
+def _extract_script_guard(tmp: Path) -> Path:
+    """Pull the pure script-detection helpers out of the page for node."""
+    import re
+
+    html = FRIENDS_HTML.read_text(encoding="utf-8")
+    script = re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", html, re.S)[0]
+    body = script[script.index("const CYRILLIC_RE"): script.index("function startSpeech()")]
+    out = tmp / "guard.cjs"
+    out.write_text(
+        body + "\nmodule.exports={scriptMismatch,stripWrongScript};\n", encoding="utf-8"
+    )
+    return out
+
+
+def _run_guard(fn, text, lang):
+    """Run one guard function under node.
+
+    The payload goes through argv as ASCII-escaped JSON, and stdout is decoded
+    as UTF-8 explicitly. Passing "necəsən" as a raw argument mangles it to
+    "necЙ™sЙ™n" on Windows, where argv and the default pipe encoding follow the
+    system codepage rather than UTF-8 — a test artefact that looks exactly like
+    the encoding bug being tested for.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        guard = _extract_script_guard(Path(tmp))
+        runner = Path(tmp) / "run.cjs"
+        runner.write_text(
+            f"const g=require({json.dumps(str(guard))});"
+            "const a=JSON.parse(process.argv[2]);"
+            f"process.stdout.write(JSON.stringify(g[{json.dumps(fn)}](a.text, a.lang)));",
+            encoding="utf-8",
+        )
+        payload = json.dumps({"text": text, "lang": lang}, ensure_ascii=True)
+        out = subprocess.run(
+            ["node", str(runner), payload],
+            capture_output=True, encoding="utf-8", timeout=60,
+        )
+    if out.returncode != 0:
+        raise AssertionError(f"node failed: {out.stderr}")
+    return json.loads(out.stdout)
+
+
+@pytest.mark.parametrize(
+    "text,lang,expected",
+    [
+        # Real output from a reported session: az-AZ requested, Russian returned.
+        ("salam", "az-AZ", False),
+        ("necəsən", "az-AZ", False),
+        ("nə var nə yox", "az-AZ", False),
+        ("удал", "az-AZ", True),
+        ("ить", "az-AZ", True),
+        ("ть мой", "az-AZ", True),
+        ("и", "az-AZ", True),
+        # The one a majority rule would wave through: 7 Latin vs 4 Cyrillic.
+        ("necəsən удал", "az-AZ", True),
+        # Russian is legitimate when Russian is what was asked for.
+        ("Привет как дела", "ru-RU", False),
+        ("salam", "ru-RU", True),
+        ("Nasılsın", "tr-TR", False),
+    ],
+)
+def test_wrong_script_results_are_detected(text, lang, expected):
+    """Azerbaijani is written in Latin script; Cyrillic means a wrong language.
+
+    Chrome's speech engine silently falls back when it cannot serve the
+    requested language, and in this region it falls back to Russian. The result
+    is not a near miss to be corrected later — Russian in the middle of an
+    Azerbaijani sentence is worse than nothing.
+    """
+    assert _run_guard("scriptMismatch", text, lang) is expected
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("necəsən удал", "necəsən"),
+        ("salam ить necəsən", "salam necəsən"),
+        ("удал ить", ""),                 # nothing worth keeping
+        ("nə var nə yox", "nə var nə yox"),
+    ],
+)
+def test_wrong_script_words_are_stripped_not_the_whole_phrase(text, expected):
+    """The engine often gets part of an utterance right; keep that part."""
+    assert _run_guard("stripWrongScript", text, "az-AZ") == expected

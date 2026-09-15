@@ -223,9 +223,15 @@ def test_conversation_panel_is_wired_for_both_input_modes():
     assert "'/ws?token='" in html or "'/ws'" in html
     assert "$('local-video')" in html, "frames must come from the existing call stream"
 
-    # Speech uses the browser engine: free, no API key, Azerbaijani.
+    # Speech uses the browser engine: free, no API key.
     assert "webkitSpeechRecognition" in html
-    assert "rec.lang = 'az-AZ'" in html
+    # The language is selectable, defaulting to Azerbaijani. It was hard-coded
+    # until Chrome was seen silently falling back to Russian for az-AZ.
+    assert "rec.lang = conv.speechLang" in html
+    assert "speechLang: 'az-AZ'" in html
+    assert 'id="speech-lang"' in html
+    # ...and a wrong-language result must not reach the other person.
+    assert "function scriptMismatch" in html
 
     # Recognised text is composed before sending, not sent blind.
     assert "function sendCaption()" in html

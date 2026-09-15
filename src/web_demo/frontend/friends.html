@@ -783,6 +783,17 @@ header {
     font-weight: 700;
 }
 .conv-auto { display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; opacity: 0.8; }
+.conv-lang { display: inline-flex; align-items: center; gap: 0.35rem; opacity: 0.85; }
+.conv-lang[hidden] { display: none !important; }
+.conv-lang select {
+    background: rgba(38, 38, 38, 0.9);
+    color: var(--text-light);
+    border: 1px solid rgba(194, 178, 128, 0.35);
+    border-radius: 8px;
+    padding: 0.2rem 0.4rem;
+    font-family: inherit;
+    font-size: 0.82rem;
+}
 .conv-status { font-size: 0.78rem; color: var(--state-trial); min-height: 1.1rem; }
 
 @media (max-width: 640px) {
@@ -1045,6 +1056,15 @@ header {
                 <button class="conv-chip" id="sign-word" type="button">Söz</button>
                 <button class="btn btn-sm btn-ghost" id="sign-trial" type="button" hidden>SINAĞA BAŞLA</button>
             </div>
+            <label class="conv-lang" id="speech-lang-wrap" hidden>
+                Dil:
+                <select id="speech-lang" aria-label="Səs tanıma dili">
+                    <option value="az-AZ">Azərbaycan</option>
+                    <option value="tr-TR">Türkçe</option>
+                    <option value="ru-RU">Русский</option>
+                    <option value="en-US">English</option>
+                </select>
+            </label>
             <label class="conv-auto">
                 <input type="checkbox" id="conv-autosend"> Avtomatik göndər
             </label>
@@ -2425,6 +2445,9 @@ const conv = {
     rec: null,            // SpeechRecognition
     recRunning: false,
     interim: '',
+    speechLang: 'az-AZ',
+    recGeneration: 0,
+    wrongScriptCount: 0,
     wordState: 'READY',
     lines: [],            // caption history for this call
 };
@@ -2785,53 +2808,140 @@ function onRecognitionMessage(data) {
 }
 
 /* ---- speech -> text (browser engine: free, no API key) ---- */
+/* Azerbaijani is written in Latin script. When the engine returns Cyrillic it
+   has fallen back to a different language — Russian, in practice, which is a
+   common system language in the region — and the result is simply wrong. It is
+   not a near miss to be corrected later: inserting Russian into the middle of
+   an Azerbaijani sentence is worse than dropping it. */
+const CYRILLIC_RE = /[Ѐ-ӿ]/g;
+const LATIN_RE = /[A-Za-zƏəĞğİıÖöŞşÜüÇçÂâÎî]/g;
+
+function scriptMismatch(text, lang) {
+    if (!text) return false;
+    const cyr = (text.match(CYRILLIC_RE) || []).length;
+    const lat = (text.match(LATIN_RE) || []).length;
+    // Russian may legitimately borrow a Latin word, so only a Latin majority
+    // means the engine picked the wrong language.
+    if (lang.startsWith('ru')) return lat > cyr;
+    // Azerbaijani and Turkish are written in Latin script and never contain
+    // Cyrillic, so a single Cyrillic character is proof of a wrong result.
+    // A majority test would pass "necəsən удал" — seven Latin to four
+    // Cyrillic — which is exactly the failure being fixed.
+    return cyr > 0;
+}
+
+/* Drop only the words in the wrong script, keeping the rest.
+
+   "necəsən удал" is not entirely wrong: the engine heard "necəsən" correctly
+   and produced noise for the rest. Discarding the whole utterance would lose a
+   good word; keeping it whole would put Russian into an Azerbaijani sentence.
+   Removing the offending words keeps what was understood. */
+function stripWrongScript(text, lang) {
+    const kept = text.split(/\s+/).filter(function (word) {
+        return word && !scriptMismatch(word, lang);
+    });
+    return kept.join(' ').trim();
+}
+
+/** Prefer an alternative written in the script the chosen language uses. */
+function pickAlternative(result, lang) {
+    for (let i = 0; i < result.length; i++) {
+        const text = (result[i].transcript || '').trim();
+        if (text && !scriptMismatch(text, lang)) return text;
+    }
+    return null;
+}
+
 function startSpeech() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
         convStatus('Bu brauzer səs tanımanı dəstəkləmir (Chrome/Edge tələb olunur).');
         return false;
     }
-    if (conv.recRunning) return true;
+    // Stop whatever was running first. The old guard tested a flag set in
+    // onstart, which fires asynchronously, so two quick calls could create two
+    // recognisers — each restarting itself forever in onend, while conv.rec
+    // pointed at only one of them. The orphan kept transcribing.
+    stopSpeech();
 
     const rec = new SR();
+    const generation = ++conv.recGeneration;
     conv.rec = rec;
-    rec.lang = 'az-AZ';
+    rec.lang = conv.speechLang;
     rec.continuous = true;
     rec.interimResults = true;
+    // Ask for several candidates so a wrong-script top result can be replaced
+    // by a correct-script alternative instead of being lost.
+    rec.maxAlternatives = 4;
 
-    rec.onstart = () => { conv.recRunning = true; convStatus('Dinlənilir…'); };
+    rec.onstart = () => {
+        conv.recRunning = true;
+        convStatus('Dinlənilir… (' + conv.speechLang + ')');
+    };
+
     rec.onresult = (ev) => {
+        if (generation !== conv.recGeneration) return;   // an orphan spoke
         let interim = '';
-        let final = '';
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
             const r = ev.results[i];
-            if (r.isFinal) final += r[0].transcript;
-            else interim += r[0].transcript;
-        }
-        if (final.trim()) {
-            appendToCompose(final.trim());
-            callLog('speech final', final.trim().slice(0, 40));
-            if (conv.autoSend) sendCaption();
+            if (!r.isFinal) { interim += r[0].transcript; continue; }
+
+            const top = (r[0].transcript || '').trim();
+            let text = top;
+            if (scriptMismatch(top, conv.speechLang)) {
+                const better = pickAlternative(r, conv.speechLang);
+                if (better) {
+                    callLog('speech: wrong script, used alternative',
+                            JSON.stringify(top), '->', JSON.stringify(better));
+                    text = better;
+                } else {
+                    // No clean alternative. Salvage the words that are in the
+                    // right script rather than losing the whole phrase.
+                    const salvaged = stripWrongScript(top, conv.speechLang);
+                    conv.wrongScriptCount = (conv.wrongScriptCount || 0) + 1;
+                    if (conv.wrongScriptCount === 3) {
+                        toast('Səs tanıma bu dili düzgün tanımır. Aşağıdan başqa dil seçin.', 'error');
+                    }
+                    if (!salvaged) {
+                        callLog('speech: DROPPED wrong-script result', JSON.stringify(top));
+                        convStatus('Tanınmadı (dil uyğunsuzluğu) — təkrar deyin');
+                        continue;
+                    }
+                    callLog('speech: stripped wrong-script words',
+                            JSON.stringify(top), '->', JSON.stringify(salvaged));
+                    convStatus('Bəzi sözlər tanınmadı');
+                    text = salvaged;
+                }
+            }
+            if (text) {
+                appendToCompose(text);
+                callLog('speech final', text.slice(0, 40));
+                if (conv.autoSend) sendCaption();
+            }
         }
         conv.interim = interim.trim();
-        convStatus(conv.interim ? '… ' + conv.interim : 'Dinlənilir…');
+        if (conv.interim) convStatus('… ' + conv.interim);
     };
+
     rec.onerror = (ev) => {
-        callLog('speech error', ev.error);
+        callLog('speech error', ev.error, 'lang=' + conv.speechLang);
         if (ev.error === 'language-not-supported') {
-            convStatus('az-AZ bu brauzerdə dəstəklənmir — türk dilinə keçilir.');
-            rec.lang = 'tr-AZ' in window ? 'tr-AZ' : 'tr-TR';
-        } else if (ev.error === 'not-allowed') {
+            convStatus(conv.speechLang + ' dəstəklənmir — başqa dil seçin.');
+            toast('Bu brauzer ' + conv.speechLang + ' dilini dəstəkləmir.', 'error');
+            setConvMode('off');
+        } else if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
             convStatus('Mikrofon icazəsi verilmədi.');
-            conv.mode = 'off';
-            renderConvModes();
-        } else if (ev.error !== 'no-speech') {
+            setConvMode('off');
+        } else if (ev.error !== 'no-speech' && ev.error !== 'aborted') {
             convStatus('Səs tanıma xətası: ' + ev.error);
         }
     };
-    // continuous still stops on silence in some builds; keep it alive.
+
+    // `continuous` still stops on silence in some builds; keep it alive, but
+    // only for the current generation so a replaced recogniser stays dead.
     rec.onend = () => {
         conv.recRunning = false;
+        if (generation !== conv.recGeneration) return;
         if (conv.mode === 'speech' && conv.open) {
             try { rec.start(); } catch (e) { /* already starting */ }
         }
@@ -2842,9 +2952,16 @@ function startSpeech() {
 }
 
 function stopSpeech() {
-    conv.mode === 'speech' && convStatus('');
+    // Bumping the generation orphans any in-flight recogniser: its onend will
+    // not restart it and its onresult is ignored.
+    conv.recGeneration++;
     if (conv.rec) {
-        try { conv.rec.onend = null; conv.rec.stop(); } catch (e) {}
+        try {
+            conv.rec.onend = null;
+            conv.rec.onresult = null;
+            conv.rec.onerror = null;
+            conv.rec.abort();
+        } catch (e) { /* already stopped */ }
         conv.rec = null;
     }
     conv.recRunning = false;
@@ -2895,6 +3012,7 @@ function renderConvModes() {
         ([id, value]) => $(id).classList.toggle('active', conv.mode === value)
     );
     $('sign-submodes').hidden = conv.mode !== 'sign';
+    $('speech-lang-wrap').hidden = conv.mode !== 'speech';
     $('sign-alphabet').classList.toggle('active', conv.signMode === 'alphabet');
     $('sign-word').classList.toggle('active', conv.signMode === 'word');
     $('sign-trial').hidden = !(conv.mode === 'sign' && conv.signMode === 'word');
@@ -2975,6 +3093,20 @@ $('mode-off').addEventListener('click', () => setConvMode('off'));
 $('mode-sign').addEventListener('click', () => setConvMode('sign'));
 $('mode-speech').addEventListener('click', () => setConvMode('speech'));
 $('conv-autosend').addEventListener('change', (e) => { conv.autoSend = e.target.checked; });
+// Remembered per browser: whichever language actually works here is unlikely
+// to change between calls, and re-picking it every time would be tedious.
+try {
+    const saved = localStorage.getItem('azsl.speechLang');
+    if (saved) conv.speechLang = saved;
+} catch (e) { /* private mode */ }
+$('speech-lang').value = conv.speechLang;
+$('speech-lang').addEventListener('change', (e) => {
+    conv.speechLang = e.target.value;
+    conv.wrongScriptCount = 0;
+    try { localStorage.setItem('azsl.speechLang', conv.speechLang); } catch (err) {}
+    callLog('speech language ->', conv.speechLang);
+    if (conv.mode === 'speech') startSpeech();   // restart on the new language
+});
 $('conv-send').addEventListener('click', sendCaption);
 $('conv-clear').addEventListener('click', () => {
     $('conv-input').value = '';
