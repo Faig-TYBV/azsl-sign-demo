@@ -1959,15 +1959,26 @@ async function startCall(media) {
 }
 
 async function acceptCall() {
+    callLog('accept pressed', call.media, 'call_id=' + (call.id || 'none'),
+            'socket=' + (state.ws ? state.ws.readyState : 'none'));
     $('incoming-modal').hidden = true;
+
     try {
         call.localStream = await getLocalStream(call.media);
     } catch (e) {
-        toast('Kamera/mikrofon icazəsi verilmədi.', 'error');
+        // On a phone this is where a denied camera prompt lands. It is also
+        // where an already-in-use camera lands, which is easy to hit when
+        // another tab or app holds it.
+        callLog('getUserMedia FAILED', e && e.name, e && e.message);
+        toast(e && e.name === 'NotAllowedError'
+            ? 'Kamera/mikrofon icazəsi verilmədi.'
+            : 'Kamera açıla bilmədi: ' + ((e && e.name) || 'xəta'), 'error');
         wsSend({ type: 'call:reject', call_id: call.id });
         resetCall();
         return;
     }
+    callLog('local media ok',
+            call.localStream.getTracks().map((t) => t.kind).join('+'));
 
     call.remoteStream = null;
     showCallUI(call.peer, call.media);
@@ -1976,7 +1987,24 @@ async function acceptCall() {
     call.pc = createPeerConnection();
     call.localStream.getTracks().forEach((t) => call.pc.addTrack(t, call.localStream));
 
-    wsSend({ type: 'call:accept', call_id: call.id });
+    // The caller only learns we answered if this frame actually goes out. A
+    // phone can lose its socket while the camera permission prompt is up, and
+    // then the caller waits on a ring that will never be answered.
+    if (!wsSend({ type: 'call:accept', call_id: call.id })) {
+        toast('Cavab göndərilə bilmədi — bağlantı kəsildi.', 'error');
+        endCall('local');
+        return;
+    }
+
+    // Having accepted, the caller should send an SDP offer straight away.
+    // Silence means the signalling path broke after we answered, which would
+    // otherwise leave both sides staring at "Qoşulur…" forever.
+    clearTimeout(call.ackTimer);
+    call.ackTimer = setTimeout(() => {
+        callLog('NO OFFER: caller never sent SDP after we accepted');
+        toast('Zəng qurula bilmədi — qarşı tərəfdən cavab gəlmədi.', 'error');
+        endCall('no-offer');
+    }, INVITE_ACK_TIMEOUT_MS + 4000);
 }
 
 function rejectCall() {
@@ -2074,7 +2102,9 @@ async function handleCallSignal(data) {
         }
 
         case 'call:offer': {
-            if (!call.pc) return;
+            clearTimeout(call.ackTimer);
+            call.ackTimer = null;
+            if (!call.pc) { callLog('offer arrived but no peer connection'); return; }
             await call.pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
             await flushPendingIce();
             const answer = await call.pc.createAnswer();
@@ -2149,7 +2179,15 @@ function onCallButton(media) {
 
 $('btn-audio-call').addEventListener('click', () => onCallButton('audio'));
 $('btn-video-call').addEventListener('click', () => onCallButton('video'));
-$('btn-accept').addEventListener('click', acceptCall);
+$('btn-accept').addEventListener('click', () => {
+    acceptCall().catch((err) => {
+        callLog('acceptCall FAILED', err && err.name, err && err.message);
+        console.error(err);
+        toast('Zəng qəbul edilə bilmədi: ' + ((err && err.message) || 'naməlum xəta'), 'error');
+        if (call.id) wsSend({ type: 'call:reject', call_id: call.id });
+        resetCall();
+    });
+});
 $('btn-reject').addEventListener('click', rejectCall);
 $('btn-hangup').addEventListener('click', () => endCall('local'));
 $('tap-to-play').addEventListener('click', () => {
