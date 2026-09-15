@@ -136,9 +136,20 @@ async def _in_db(fn: Callable, *args, **kwargs):
 # Connection hub
 # --------------------------------------------------------------------------- #
 # A socket is considered dead if nothing has been received on it for this long.
-# The page sends a ping every 10 s, so three missed pings is a confident verdict
-# without being trigger-happy about a brief mobile stall.
-SOCKET_STALE_AFTER = 45.0
+#
+# The page heartbeats every 10 s, which suggests a much shorter window would do.
+# It will not: mobile browsers throttle background timers to roughly ONCE PER
+# MINUTE, so a phone whose tab is merely dimmed or behind another app pings at
+# ~60 s intervals while its socket is perfectly alive. At 45 s that phone was
+# marked offline and could not be called — while calls *from* it worked, since
+# its tab was necessarily in the foreground. That asymmetry is the bug this
+# number caused.
+#
+# 120 s tolerates one missed throttled ping. It does weaken ghost detection,
+# but a false offline is far worse: it breaks calling outright, whereas a ghost
+# is already caught by the delivery count on invite and the caller's ring
+# timeout.
+SOCKET_STALE_AFTER = 120.0
 
 
 class Hub:

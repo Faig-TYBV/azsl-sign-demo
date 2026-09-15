@@ -3228,7 +3228,13 @@ window.addEventListener('beforeunload', () => {
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
     if (!SOCIAL_WS_ENABLED) return;
-    if (state.ws && state.ws.readyState === WebSocket.OPEN) return;
+    if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+        // Background timers are throttled to about once a minute, so the
+        // server may have been waiting a while to hear from us. Say something
+        // immediately rather than waiting for the next throttled tick.
+        wsSend({ type: 'ping' });
+        return;
+    }
     callLog('page visible again — reconnecting now');
     state.reconnectDelay = 1000;
     setConnState('connecting', 'Bağlanır…');

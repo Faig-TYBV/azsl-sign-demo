@@ -735,3 +735,44 @@ def test_hub_tracks_presence_across_multiple_tabs():
         assert hub.is_online(7) is False
 
     asyncio.run(scenario())
+
+
+def test_staleness_window_tolerates_mobile_background_throttling():
+    """A backgrounded phone is still reachable, not "offline".
+
+    Mobile browsers throttle background timers to roughly once a minute, so a
+    phone whose tab is merely dimmed heartbeats at ~60 s intervals while its
+    socket is perfectly alive. A window at or below that marked it offline and
+    made it uncallable — while calls *from* it worked, because its tab was
+    necessarily in the foreground. That asymmetry is what this guards.
+    """
+    assert social.SOCKET_STALE_AFTER > 60.0, (
+        "the window must exceed the ~60 s mobile background timer throttle, or "
+        "a backgrounded phone is falsely reported offline and cannot be called"
+    )
+    # ...and still short enough that a genuinely dead socket is noticed.
+    assert social.SOCKET_STALE_AFTER <= 180.0
+
+
+def test_a_phone_throttled_to_one_ping_a_minute_stays_online(monkeypatch):
+    """Simulate the exact reported case: pings arriving 60 s apart."""
+    async def scenario():
+        hub = social.Hub()
+        phone = FakeWS()
+        now = [0.0]
+        monkeypatch.setattr(social.time, "monotonic", lambda: now[0])
+
+        await hub.add(3, phone)
+        for _ in range(5):
+            now[0] += 60.0            # one throttled heartbeat per minute
+            hub.touch(phone)
+            assert hub.is_online(3) is True, (
+                "a backgrounded phone heartbeating once a minute must stay online"
+            )
+            assert await hub.send_to_user(3, {"type": "call:incoming"}) == 1
+
+        # A device that stops heartbeating entirely is still detected.
+        now[0] += social.SOCKET_STALE_AFTER + 1
+        assert hub.is_online(3) is False
+
+    asyncio.run(scenario())
