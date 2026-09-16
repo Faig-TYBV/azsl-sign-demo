@@ -1058,7 +1058,7 @@ header {
 
         <div class="conv-compose">
             <input id="conv-input" class="field" type="text" autocomplete="off"
-                   placeholder="Tanınan mətn burada yığılır…" aria-label="Göndəriləcək mətn">
+                   placeholder="Tanınan mətn burada yığılır — və ya əl ilə yazın…" aria-label="Göndəriləcək mətn">
             <button class="btn btn-primary" id="conv-send" type="button">Göndər</button>
             <button class="btn btn-reset" id="conv-clear" type="button" title="Təmizlə">Sil</button>
         </div>
@@ -2482,6 +2482,9 @@ const conv = {
     committed: '',        // confirmed text; interim is rendered on top of it
     speechLang: 'az-AZ',
     recGeneration: 0,
+    speechRestarts: 0,
+    speechLastStart: 0,
+    speechHeardAnything: false,
     wrongScriptCount: 0,
     wordState: 'READY',
     lines: [],            // caption history for this call
@@ -3008,10 +3011,16 @@ function pickAlternative(result, lang) {
     return null;
 }
 
+const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+
 function startSpeech() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
-        convStatus('Bu brauzer səs tanımanı dəstəkləmir (Chrome/Edge tələb olunur).');
+        // iOS Safari before 14.5 and most non-Chromium mobile browsers.
+        convStatus('Bu brauzer səs tanımanı dəstəkləmir.');
+        toast(IS_MOBILE
+            ? 'Telefonda səs tanıma dəstəklənmir — mətni əl ilə yaza bilərsiniz.'
+            : 'Bu brauzer səs tanımanı dəstəkləmir (Chrome/Edge tələb olunur).', 'error');
         return false;
     }
     // Stop whatever was running first. The old guard tested a flag set in
@@ -3042,6 +3051,8 @@ function startSpeech() {
             const r = ev.results[i];
             if (!r.isFinal) { interim += r[0].transcript; continue; }
 
+            conv.speechHeardAnything = true;
+            conv.speechRestarts = 0;
             const top = (r[0].transcript || '').trim();
             let text = top;
             if (scriptMismatch(top, conv.speechLang)) {
@@ -3088,23 +3099,74 @@ function startSpeech() {
             setConvMode('off');
         } else if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
             convStatus('Mikrofon icazəsi verilmədi.');
+            toast(IS_MOBILE
+                ? 'Mikrofon icazəsi yoxdur və ya zəng tərəfindən tutulub.'
+                : 'Mikrofon icazəsi verilmədi.', 'error');
+            setConvMode('off');
+        } else if (ev.error === 'audio-capture') {
+            // The clearest signal of the mic conflict: the engine started but
+            // could not open an audio device, because the call has it.
+            convStatus('Mikrofona çıxış yoxdur.');
+            toast('Mikrofon zəng tərəfindən istifadə olunur — telefonda səs tanıma işləmir.', 'error');
             setConvMode('off');
         } else if (ev.error !== 'no-speech' && ev.error !== 'aborted') {
             convStatus('Səs tanıma xətası: ' + ev.error);
         }
     };
 
-    // `continuous` still stops on silence in some builds; keep it alive, but
-    // only for the current generation so a replaced recogniser stays dead.
+    // Android Chrome ignores `continuous` and ends after every utterance, so
+    // the session has to be restarted constantly. Restarting synchronously
+    // inside onend throws InvalidStateError and can spin: give it a moment.
     rec.onend = () => {
         conv.recRunning = false;
         if (generation !== conv.recGeneration) return;
-        if (conv.mode === 'speech' && conv.open) {
-            try { rec.start(); } catch (e) { /* already starting */ }
+        if (conv.mode !== 'speech' || !conv.open) return;
+
+        const ranFor = Date.now() - conv.speechLastStart;
+        // A session that ends almost immediately never really started —
+        // typically the microphone is unavailable because the call already
+        // holds it. Counting those separates "ended after an utterance", which
+        // is normal on Android, from "cannot run at all".
+        if (ranFor < 400) {
+            conv.speechRestarts += 1;
+        } else {
+            conv.speechRestarts = 0;
         }
+
+        if (conv.speechRestarts >= 5) {
+            callLog('speech: giving up after', conv.speechRestarts, 'immediate restarts',
+                    'heardAnything=' + conv.speechHeardAnything);
+            convStatus('Səs tanıma başlamır.');
+            toast(IS_MOBILE
+                ? 'Telefonda zəng zamanı səs tanıma işləmir (mikrofon zəng tərəfindən tutulub). Mətni əl ilə yazın.'
+                : 'Səs tanıma başlamadı. Mikrofonu başqa proqram istifadə edir ola bilər.', 'error');
+            setConvMode('off');
+            const box = $('conv-input');
+            if (box) box.focus();
+            return;
+        }
+
+        // Back off a little as failures repeat, so a broken start does not spin.
+        const delay = Math.min(250 * (conv.speechRestarts + 1), 1500);
+        setTimeout(() => {
+            if (generation !== conv.recGeneration) return;
+            if (conv.mode !== 'speech' || !conv.open) return;
+            try {
+                conv.speechLastStart = Date.now();
+                rec.start();
+            } catch (e) {
+                callLog('speech restart failed', e && e.name, e && e.message);
+            }
+        }, delay);
     };
 
-    try { rec.start(); } catch (e) { callLog('speech start failed', e && e.message); }
+    try {
+        conv.speechLastStart = Date.now();
+        rec.start();
+    } catch (e) {
+        callLog('speech start failed', e && e.name, e && e.message);
+        convStatus('Səs tanıma başladıla bilmədi.');
+    }
     return true;
 }
 

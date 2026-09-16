@@ -654,3 +654,35 @@ def test_degenerate_scaler_variance_is_guarded_in_both_implementations():
     assert "np.where(std == 0, 1.0, std)" not in py_src, (
         "an exact-zero test misses a std of 4.4e-07, which is the case that bit"
     )
+
+
+def test_speech_restart_backs_off_instead_of_spinning():
+    """Android Chrome ignores `continuous` and ends after every utterance.
+
+    Restarting synchronously inside onend throws InvalidStateError and can spin
+    at full speed. A session that ends almost immediately never really started
+    — typically because the call already holds the microphone — and that has to
+    be distinguished from the normal end-of-utterance case.
+    """
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+    onend = html.split("rec.onend = () => {", 1)[1].split("try {", 1)[0]
+
+    assert "setTimeout(" in onend, "a synchronous restart throws and can spin"
+    assert "speechRestarts" in onend, "immediate failures must be counted"
+    assert "ranFor < 400" in onend, (
+        "a session that ends instantly is a failure to start, not an utterance"
+    )
+
+
+def test_microphone_conflict_is_reported_rather_than_silent():
+    """On a phone the call owns the mic, so recognition often cannot open it.
+
+    Reporting nothing leaves the user tapping a mode that will never work.
+    """
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+
+    assert "'audio-capture'" in html, "the clearest signal of the mic conflict"
+    assert "IS_MOBILE" in html, "the advice differs on a phone"
+    # And the fallback that does work is offered, not just an error.
+    assert "əl ilə yaz" in html
+    assert 'placeholder="Tanınan mətn burada yığılır — və ya əl ilə yazın…"' in html
