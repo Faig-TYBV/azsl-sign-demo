@@ -54,9 +54,11 @@ from src.web_demo.webapp import build_web_layer, verify_ws_token
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    # Prepare the PostgreSQL auth store (creates the database + the users,
-    # friendships and messages tables on first run). A bad DATABASE_URL fails
-    # loudly here rather than at the first login.
+    # Prepare the PostgreSQL store: creates the database and any missing table
+    # on first run, adds any column a previous deploy did not have, and seeds
+    # the interest catalogue. Every step is idempotent, so this is also the
+    # migration path — a deploy that adds a column needs no separate command.
+    # A bad DATABASE_URL fails loudly here rather than at the first login.
     try:
         auth_db.init_db()
         print("Auth database ready (PostgreSQL).", flush=True)
