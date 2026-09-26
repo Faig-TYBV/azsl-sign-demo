@@ -886,6 +886,237 @@ header {
     .btn:hover:not(:disabled) { transform: none; }
 }
 
+/* ---------- Sidebar tabs (Dostlar / Qruplar) ---------- */
+.tab-bar {
+    display: flex;
+    gap: 0.35rem;
+    margin-top: 0.85rem;
+    padding: 0.25rem;
+    border-radius: 999px;
+    background: rgba(38, 38, 38, 0.65);
+    border: 1px solid rgba(194, 178, 128, 0.2);
+}
+.tab {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.7rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: rgba(235, 235, 235, 0.7);
+    font-family: inherit;
+    font-size: 0.87rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--transition), color var(--transition);
+}
+.tab:hover { color: var(--text-light); }
+.tab:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(160, 255, 255, 0.3); }
+.tab[aria-selected="true"] {
+    background: rgba(160, 255, 255, 0.14);
+    color: var(--accent-cyan);
+}
+.tab .count-pill { margin: 0; }
+
+.btn-block { width: 100%; justify-content: center; margin-bottom: 0.85rem; }
+
+/* ---------- Group rows and cards ---------- */
+/* A group avatar is a rounded square, so a group is never mistaken for a
+   person at a glance in a list that mixes both. */
+.avatar.group {
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--state-success));
+    color: #1f1f1f;
+}
+.avatar.group[data-online="true"]::after { display: none; }
+
+.match-pill {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--state-success);
+    border: 1px solid rgba(107, 142, 35, 0.55);
+    background: rgba(107, 142, 35, 0.14);
+    border-radius: 999px;
+    padding: 0.05rem 0.5rem;
+}
+.role-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--state-trial);
+    border: 1px solid rgba(255, 204, 0, 0.45);
+    border-radius: 999px;
+    padding: 0.02rem 0.45rem;
+    flex-shrink: 0;
+}
+
+/* Read-only interest chips, reused in the group sheet and the member list. */
+.chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid rgba(194, 178, 128, 0.32);
+    background: rgba(38, 38, 38, 0.5);
+    color: var(--text-light);
+    font-family: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: border-color var(--transition), background-color var(--transition),
+                color var(--transition);
+}
+.chip:hover { border-color: var(--accent-cyan); }
+.chip:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(160, 255, 255, 0.35); }
+.chip[aria-pressed="true"] {
+    background: rgba(160, 255, 255, 0.16);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    font-weight: 600;
+}
+.chip.static { cursor: default; }
+.chip.static:hover { border-color: rgba(194, 178, 128, 0.32); }
+.chip.tiny { padding: 0.12rem 0.5rem; font-size: 0.72rem; }
+
+/* ---------- Photo messages ---------- */
+.composer .attach-btn { flex-shrink: 0; }
+.msg-image {
+    display: block;
+    max-width: min(260px, 60vw);
+    max-height: 320px;
+    width: auto;
+    border-radius: 10px;
+    margin-bottom: 0.3rem;
+    cursor: zoom-in;
+    background: rgba(0, 0, 0, 0.25);
+    object-fit: cover;
+}
+.msg-image.loading { min-height: 120px; min-width: 120px; }
+.msg-sender {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    margin-bottom: 0.15rem;
+}
+/* System notices (joined / left / renamed) are not anybody's speech, so they
+   are centred and unstyled rather than sitting in a bubble on one side. */
+.msg.system {
+    align-self: center;
+    max-width: 90%;
+    background: transparent;
+    border: 0;
+    color: rgba(235, 235, 235, 0.5);
+    font-size: 0.78rem;
+    font-style: italic;
+    text-align: center;
+    padding: 0.2rem 0.5rem;
+}
+.msg.system .msg-time { display: none; }
+
+.upload-hint {
+    font-size: 0.8rem;
+    color: var(--state-trial);
+    padding: 0 0.25rem 0.35rem;
+    min-height: 1.2rem;
+}
+
+/* ---------- Image lightbox ---------- */
+.lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 130;
+    background: rgba(8, 8, 8, 0.92);
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    cursor: zoom-out;
+}
+.lightbox[hidden] { display: none !important; }
+.lightbox img {
+    max-width: 96vw;
+    max-height: 88vh;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+.lightbox .close-hint {
+    position: absolute;
+    top: 1rem;
+    right: 1.15rem;
+    font-size: 0.85rem;
+    color: rgba(235, 235, 235, 0.7);
+}
+
+/* ---------- Sheet-style modal (group info, new group) ---------- */
+/* Same backdrop as the incoming-call modal, but a taller scrollable card: these
+   hold a form and a member list rather than two buttons. */
+.modal-card.sheet {
+    width: min(94vw, 520px);
+    max-height: min(88vh, 720px);
+    padding: 0;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    justify-items: stretch;
+}
+/* .modal-card .avatar pulses for an incoming call; here it must sit still. */
+.modal-card.sheet .avatar { animation: none; }
+.sheet-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.1rem 1.25rem;
+    border-bottom: 1px solid rgba(194, 178, 128, 0.2);
+}
+.sheet-head h3 { font-size: 1.1rem; flex: 1; min-width: 0; }
+.sheet-body {
+    padding: 1.1rem 1.25rem;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.sheet-foot {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding: 0.9rem 1.25rem;
+    border-top: 1px solid rgba(194, 178, 128, 0.2);
+    background: rgba(38, 38, 38, 0.4);
+}
+.sheet-section > h4 {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--border-muted);
+    margin-bottom: 0.5rem;
+}
+.labelled { display: flex; flex-direction: column; gap: 0.3rem; }
+.labelled > span { font-size: 0.8rem; color: var(--border-muted); }
+textarea.field { resize: vertical; min-height: 74px; line-height: 1.5; font-family: inherit; }
+.inline-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.87rem;
+    cursor: pointer;
+}
+.sheet-note { font-size: 0.82rem; color: rgba(235, 235, 235, 0.55); }
+.member-list { display: flex; flex-direction: column; gap: 0.15rem; }
+.group-desc-view { font-size: 0.9rem; color: rgba(235, 235, 235, 0.78); white-space: pre-wrap; }
+
 .sr-only {
     position: absolute;
     width: 1px; height: 1px;
@@ -906,6 +1137,7 @@ header {
         <nav class="top-nav" aria-label="Əsas naviqasiya">
             <a class="nav-link" href="/app">İşarə Tanıma</a>
             <a class="nav-link" href="/friends" aria-current="page">Dostlar</a>
+            <a class="nav-link" href="/profile">Profil</a>
         </nav>
         <div class="auth-bar">
             <span id="conn-pill" class="conn-pill connecting" role="status">
@@ -923,40 +1155,75 @@ header {
 
     <main class="social-grid">
         <!-- ---------------- Sidebar ---------------- -->
-        <section class="panel sidebar-panel" aria-label="Dostlar siyahısı">
+        <section class="panel sidebar-panel" aria-label="Şəbəkəm">
             <div class="panel-head">
                 <h2>👥 Şəbəkəm</h2>
+                <div class="tab-bar" role="tablist" aria-label="Siyahı növü">
+                    <button class="tab" id="tab-friends" type="button" role="tab"
+                            aria-selected="true" aria-controls="pane-friends">Dostlar</button>
+                    <button class="tab" id="tab-groups" type="button" role="tab"
+                            aria-selected="false" aria-controls="pane-groups">
+                        Qruplar
+                        <span class="count-pill" id="groups-unread-pill" hidden>0</span>
+                    </button>
+                </div>
                 <div class="search-wrap">
-                    <label class="sr-only" for="user-search">İstifadəçi axtar</label>
+                    <label class="sr-only" for="user-search">Axtar</label>
                     <input id="user-search" class="field" type="search" autocomplete="off"
                            placeholder="Ad və ya e-poçt ilə axtarın…">
                 </div>
             </div>
             <div class="panel-body">
-                <div id="search-results" hidden>
-                    <div class="section-label">Axtarış nəticələri</div>
-                    <div id="search-list"></div>
-                </div>
-
-                <div id="requests-block" hidden>
-                    <div class="section-label">
-                        <span>Gələn sorğular</span>
-                        <span class="count-pill" id="requests-count">0</span>
+                <div id="pane-friends" role="tabpanel" aria-labelledby="tab-friends">
+                    <div id="search-results" hidden>
+                        <div class="section-label">Axtarış nəticələri</div>
+                        <div id="search-list"></div>
                     </div>
-                    <div id="requests-list"></div>
-                </div>
 
-                <div id="outgoing-block" hidden>
-                    <div class="section-label">Göndərilmiş sorğular</div>
-                    <div id="outgoing-list"></div>
-                </div>
-
-                <div id="friends-block">
-                    <div class="section-label">
-                        <span>Dostlar</span>
-                        <span class="count-pill" id="friends-count">0</span>
+                    <div id="requests-block" hidden>
+                        <div class="section-label">
+                            <span>Gələn sorğular</span>
+                            <span class="count-pill" id="requests-count">0</span>
+                        </div>
+                        <div id="requests-list"></div>
                     </div>
-                    <div id="friends-list"></div>
+
+                    <div id="outgoing-block" hidden>
+                        <div class="section-label">Göndərilmiş sorğular</div>
+                        <div id="outgoing-list"></div>
+                    </div>
+
+                    <div id="friends-block">
+                        <div class="section-label">
+                            <span>Dostlar</span>
+                            <span class="count-pill" id="friends-count">0</span>
+                        </div>
+                        <div id="friends-list"></div>
+                    </div>
+                </div>
+
+                <div id="pane-groups" role="tabpanel" aria-labelledby="tab-groups" hidden>
+                    <button class="btn btn-primary btn-block" id="btn-new-group" type="button">
+                        + Yeni qrup yarat
+                    </button>
+
+                    <div id="group-search-results" hidden>
+                        <div class="section-label">Axtarış nəticələri</div>
+                        <div id="group-search-list"></div>
+                    </div>
+
+                    <div id="my-groups-block">
+                        <div class="section-label">
+                            <span>Qruplarım</span>
+                            <span class="count-pill" id="my-groups-count">0</span>
+                        </div>
+                        <div id="my-groups-list"></div>
+                    </div>
+
+                    <div id="rec-groups-block">
+                        <div class="section-label">Sizə uyğun qruplar</div>
+                        <div id="rec-groups-list"></div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -980,7 +1247,7 @@ header {
                         <div class="person-name" id="chat-name"></div>
                         <div class="person-sub" id="chat-status"></div>
                     </div>
-                    <div class="chat-actions">
+                    <div class="chat-actions" id="chat-actions-dm">
                         <button class="icon-btn" id="btn-audio-call" type="button" aria-label="Səsli zəng" title="Səsli zəng">
                             <svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg>
                         </button>
@@ -991,13 +1258,28 @@ header {
                             <svg viewBox="0 0 24 24"><path d="M15 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4zm0 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4zM6 9V7H0v2h6z"/></svg>
                         </button>
                     </div>
+                    <!-- Groups have no call buttons: WebRTC here is one peer connection
+                         between two browsers, and a group call would need either a mesh
+                         or a media server. See the README. -->
+                    <div class="chat-actions" id="chat-actions-group" hidden>
+                        <button class="icon-btn" id="btn-group-info" type="button"
+                                aria-label="Qrup məlumatı" title="Qrup məlumatı">
+                            <svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8zM11 9h2V7h-2v2z"/></svg>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="messages" id="messages" role="log" aria-live="polite" aria-label="Mesajlar"></div>
                 <div class="typing-hint" id="typing-hint" aria-live="polite"></div>
+                <div class="upload-hint" id="upload-hint" aria-live="polite"></div>
 
                 <form class="composer" id="composer">
                     <label class="sr-only" for="msg-input">Mesaj yazın</label>
+                    <input id="photo-input" type="file" accept="image/*" hidden>
+                    <button class="icon-btn attach-btn" id="btn-attach" type="button"
+                            aria-label="Şəkil göndər" title="Şəkil göndər">
+                        <svg viewBox="0 0 24 24"><path d="M20 4h-3.2l-1.8-2H9L7.2 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 13c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0-8c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3z"/></svg>
+                    </button>
                     <input id="msg-input" class="field" type="text" autocomplete="off"
                            placeholder="Mesaj yazın…" maxlength="2000">
                     <button class="btn btn-primary" type="submit" id="btn-send">Göndər</button>
@@ -1018,6 +1300,115 @@ header {
 </div>
 
 <div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="false"></div>
+<!-- ---------------- Image lightbox ---------------- -->
+<div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Şəkil">
+    <span class="close-hint">Bağlamaq üçün toxunun ✕</span>
+    <img id="lightbox-img" alt="Göndərilən şəkil">
+</div>
+
+<!-- ---------------- New group ---------------- -->
+<div class="modal-backdrop" id="new-group-modal" hidden role="dialog" aria-modal="true"
+     aria-labelledby="new-group-title">
+    <div class="modal-card sheet">
+        <div class="sheet-head">
+            <h3 id="new-group-title">Yeni qrup</h3>
+            <button class="icon-btn" id="new-group-close" type="button" aria-label="Bağla">
+                <svg viewBox="0 0 24 24"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>
+            </button>
+        </div>
+        <div class="sheet-body">
+            <label class="labelled">
+                <span>Qrupun adı</span>
+                <input id="ng-name" class="field" type="text" maxlength="64"
+                       placeholder="Məsələn: Bakıda həftəsonu futbol">
+            </label>
+            <label class="labelled">
+                <span>Təsvir (istəyə bağlı)</span>
+                <textarea id="ng-desc" class="field" maxlength="400"
+                          placeholder="Qrup nə haqqındadır, kimlər üçündür…"></textarea>
+            </label>
+            <div class="sheet-section">
+                <h4>Mövzular — tövsiyə üçün</h4>
+                <div class="chips" id="ng-interests"></div>
+                <p class="sheet-note" id="ng-interest-note"></p>
+            </div>
+            <label class="inline-check">
+                <input type="checkbox" id="ng-open" checked>
+                Hər kəs qoşula bilər
+            </label>
+            <p class="sheet-note">
+                Bağlı qrupa yalnız admin üzv əlavə edə bilər, lakin qrup axtarışda
+                görünməyə davam edir.
+            </p>
+        </div>
+        <div class="sheet-foot">
+            <button class="btn btn-ghost" id="ng-cancel" type="button">Ləğv et</button>
+            <button class="btn btn-primary" id="ng-create" type="button">Yarat</button>
+        </div>
+    </div>
+</div>
+
+<!-- ---------------- Group info / administration ---------------- -->
+<div class="modal-backdrop" id="group-modal" hidden role="dialog" aria-modal="true"
+     aria-labelledby="gm-title">
+    <div class="modal-card sheet">
+        <div class="sheet-head">
+            <div class="avatar group" id="gm-avatar" aria-hidden="true"></div>
+            <h3 id="gm-title"></h3>
+            <button class="icon-btn" id="gm-close" type="button" aria-label="Bağla">
+                <svg viewBox="0 0 24 24"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>
+            </button>
+        </div>
+        <div class="sheet-body">
+            <!-- Read-only view, for members who are not admins. -->
+            <div id="gm-view">
+                <p class="group-desc-view" id="gm-desc"></p>
+                <div class="chips" id="gm-interests" style="margin-top:0.6rem;"></div>
+                <p class="sheet-note" id="gm-meta" style="margin-top:0.6rem;"></p>
+            </div>
+
+            <!-- Admin-only editor. -->
+            <div class="sheet-section" id="gm-edit" hidden>
+                <h4>Qrup parametrləri</h4>
+                <label class="labelled" style="margin-bottom:0.7rem;">
+                    <span>Ad</span>
+                    <input id="gm-name-input" class="field" type="text" maxlength="64">
+                </label>
+                <label class="labelled" style="margin-bottom:0.7rem;">
+                    <span>Təsvir</span>
+                    <textarea id="gm-desc-input" class="field" maxlength="400"></textarea>
+                </label>
+                <div class="chips" id="gm-interest-picker"></div>
+                <p class="sheet-note" id="gm-interest-note" style="margin:0.4rem 0 0.7rem;"></p>
+                <label class="inline-check" style="margin-bottom:0.7rem;">
+                    <input type="checkbox" id="gm-open-input"> Hər kəs qoşula bilər
+                </label>
+                <div>
+                    <button class="btn btn-primary btn-sm" id="gm-save" type="button">Dəyişiklikləri saxla</button>
+                </div>
+            </div>
+
+            <div class="sheet-section">
+                <h4>Üzvlər (<span id="gm-member-count">0</span>)</h4>
+                <div class="member-list" id="gm-members"></div>
+            </div>
+
+            <!-- Admins can pull in their own friends; everyone else meets people
+                 by talking in the group and sending a friend request. -->
+            <div class="sheet-section" id="gm-add-block" hidden>
+                <h4>Dost əlavə et</h4>
+                <div class="member-list" id="gm-addable"></div>
+                <p class="sheet-note" id="gm-addable-note"></p>
+            </div>
+        </div>
+        <div class="sheet-foot">
+            <button class="btn btn-danger" id="gm-delete" type="button" hidden>Qrupu sil</button>
+            <button class="btn btn-primary" id="gm-join" type="button" hidden>Qrupa qoşul</button>
+            <button class="btn btn-ghost" id="gm-leave" type="button">Qrupdan ayrıl</button>
+            <button class="btn" id="gm-done" type="button">Bağla</button>
+        </div>
+    </div>
+</div>
 
 <!-- ---------------- Active call ---------------- -->
 <div class="call-overlay" id="call-overlay" hidden role="dialog" aria-modal="true" aria-label="Zəng">
@@ -1157,6 +1548,17 @@ const state = {
     peerTypingTimer: null,
     pollTimer: null,
     heartbeat: null,
+
+    /* ---- groups ---- */
+    tab: 'friends',          // which sidebar list is showing
+    groups: [],              // groups I am in
+    recGroups: [],           // recommended, not joined
+    hasInterests: false,     // whether the recommendation had anything to go on
+    // activeGroup and activePeer are mutually exclusive: the chat panel shows
+    // one conversation, and every render path branches on which kind it is.
+    activeGroup: null,
+    modalGroup: null,        // the group whose info sheet is open
+    interestCategories: [],  // catalogue, fetched once and cached
 };
 
 /* WebRTC state for the one call we allow at a time. */
@@ -1277,6 +1679,9 @@ function personRow(user, opts) {
             b.type = 'button';
             b.className = 'btn btn-sm ' + (a.variant || 'btn-ghost');
             b.textContent = a.label;
+            // "Göndərilib" and friends: shown so the state is visible, not
+            // clickable because there is nothing to do.
+            if (a.disabled) b.disabled = true;
             b.addEventListener('click', a.onClick);
             box.appendChild(b);
         });
@@ -1342,6 +1747,9 @@ function renderRequests() {
 
 function renderMessages() {
     const box = $('messages');
+    // An image arriving later changes the scroll height, so remember whether the
+    // reader was at the bottom before re-rendering rather than after.
+    const inGroup = !!state.activeGroup;
     box.innerHTML = '';
     let lastDay = null;
 
@@ -1354,12 +1762,60 @@ function renderMessages() {
             box.appendChild(sep);
             lastDay = day;
         }
+
+        // "X joined", "renamed to Y": nobody's speech, so no bubble and no side.
+        if (m.kind === 'system') {
+            const note = document.createElement('div');
+            note.className = 'msg system';
+            note.textContent = m.body;
+            box.appendChild(note);
+            return;
+        }
+
         const el = document.createElement('div');
         const mine = m.sender_id === state.me.id;
         el.className = 'msg ' + (mine ? 'from-me' : 'from-them') + (m.pending ? ' pending' : '');
-        el.innerHTML = escapeHtml(m.body).replace(/\n/g, '<br>') +
-            '<span class="msg-time">' + escapeHtml(fmtTime(m.created_at)) +
-            (mine && m.read_at ? ' ✓✓' : (mine ? ' ✓' : '')) + '</span>';
+
+        // In a group you cannot tell who is talking from the side alone.
+        if (inGroup && !mine && m.sender_name) {
+            const who = document.createElement('span');
+            who.className = 'msg-sender';
+            who.textContent = m.sender_name;
+            el.appendChild(who);
+        }
+
+        if (m.kind === 'image') {
+            // local_url is the blob we are still uploading; attachment_id is the
+            // stored copy. Preferring the blob while both exist avoids a blink.
+            const src = m.local_url ||
+                (m.attachment_id ? '/api/attachments/' + encodeURIComponent(m.attachment_id) : '');
+            if (src) {
+                const img = document.createElement('img');
+                img.className = 'msg-image';
+                img.alt = 'Göndərilən şəkil';
+                img.loading = 'lazy';
+                img.src = src;
+                img.addEventListener('click', () => openLightbox(src));
+                // Once it has real dimensions the list is taller than it was.
+                img.addEventListener('load', () => { box.scrollTop = box.scrollHeight; });
+                el.appendChild(img);
+            }
+        }
+
+        if (m.body) {
+            const text = document.createElement('span');
+            text.innerHTML = escapeHtml(m.body).replace(/\n/g, '<br>');
+            el.appendChild(text);
+        }
+
+        const time = document.createElement('span');
+        time.className = 'msg-time';
+        // Groups have no per-member read receipts - one watermark per member is
+        // what drives the badge - so a tick there would be a claim we cannot back.
+        const ticks = inGroup ? '' : (mine && m.read_at ? ' ✓✓' : (mine ? ' ✓' : ''));
+        time.textContent = fmtTime(m.created_at) + ticks;
+        el.appendChild(time);
+
         box.appendChild(el);
     });
     box.scrollTop = box.scrollHeight;
@@ -1438,6 +1894,48 @@ let searchTimer = null;
 $('user-search').addEventListener('input', (e) => {
     const q = e.target.value.trim();
     clearTimeout(searchTimer);
+
+    // One box, two searches - whichever list is in front is what it searches.
+    if (state.tab === 'groups') {
+        if (q.length < 2) { $('group-search-results').hidden = true; return; }
+        searchTimer = setTimeout(async () => {
+            try {
+                const data = await api('/api/groups/search?q=' + encodeURIComponent(q));
+                const list = $('group-search-list');
+                list.innerHTML = '';
+                const found = data.groups || [];
+                if (!found.length) {
+                    const p = document.createElement('p');
+                    p.className = 'muted-note';
+                    p.textContent = 'Qrup tapılmadı.';
+                    list.appendChild(p);
+                }
+                found.forEach((g) => {
+                    const joined = !!g.role;
+                    list.appendChild(groupRow(g, {
+                        sub: g.member_count + ' üzv' + (joined ? ' · üzvsünüz' : ''),
+                        actions: [{
+                            label: joined ? 'Aç' : (g.is_open ? 'Qoşul' : 'Bax'),
+                            variant: joined || !g.is_open ? 'btn-ghost' : 'btn-primary',
+                            onClick: () => {
+                                if (joined) {
+                                    const mine = state.groups.find((x) => x.id === g.id);
+                                    if (mine) openGroup(mine); else openGroupModal(g.id);
+                                } else if (g.is_open) {
+                                    joinGroup(g);
+                                } else {
+                                    openGroupModal(g.id);
+                                }
+                            },
+                        }],
+                    }));
+                });
+                $('group-search-results').hidden = false;
+            } catch (err) { toast(err.message, 'error'); }
+        }, 280);
+        return;
+    }
+
     if (q.length < 2) { $('search-results').hidden = true; return; }
     searchTimer = setTimeout(async () => {
         try {
@@ -1477,6 +1975,11 @@ $('user-search').addEventListener('input', (e) => {
 function updateChatHeader() {
     const p = state.activePeer;
     if (!p) return;
+    // Coming back from a group: both the avatar shape and the header buttons
+    // belong to whichever conversation kind is open.
+    $('chat-avatar').className = 'avatar';
+    $('chat-actions-dm').hidden = false;
+    $('chat-actions-group').hidden = true;
     $('chat-avatar').textContent = initials(p.full_name);
     $('chat-avatar').dataset.online = String(!!p.online);
     $('chat-name').textContent = p.full_name;
@@ -1502,13 +2005,16 @@ function updateChatHeader() {
 
 async function openChat(friend) {
     state.activePeer = friend;
+    state.activeGroup = null;
     state.messages = [];
     $('chat-empty').hidden = true;
     $('chat-view').hidden = false;
     document.body.classList.add('chat-open');
     $('typing-hint').textContent = '';
+    $('upload-hint').textContent = '';
     updateChatHeader();
     renderFriends();
+    renderGroups();
 
     try {
         const data = await api('/api/messages/' + friend.id);
@@ -1526,11 +2032,15 @@ async function openChat(friend) {
 
 function closeChat() {
     state.activePeer = null;
+    state.activeGroup = null;
     state.messages = [];
     $('chat-view').hidden = true;
     $('chat-empty').hidden = false;
     document.body.classList.remove('chat-open');
+    $('typing-hint').textContent = '';
+    $('upload-hint').textContent = '';
     renderFriends();
+    renderGroups();
 }
 
 $('chat-back').addEventListener('click', () => {
@@ -1538,13 +2048,12 @@ $('chat-back').addEventListener('click', () => {
 });
 $('btn-unfriend').addEventListener('click', unfriend);
 
-$('composer').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const input = $('msg-input');
-    const body = input.value.trim();
-    if (!body || !state.activePeer) return;
-    input.value = '';
-    const peerId = state.activePeer.id;
+/* Takes an optional attachment so a photo travels the same path as text - see
+   sendPhoto(), which uploads first and then calls this with the returned id. */
+function sendDirectMessage(body, attachmentId, localUrl) {
+    const peer = state.activePeer;
+    if (!peer) return;
+    const peerId = peer.id;
 
     if (state.wsReady) {
         const clientId = 'c' + Date.now() + Math.random().toString(16).slice(2);
@@ -1552,31 +2061,50 @@ $('composer').addEventListener('submit', async (e) => {
         state.messages.push({
             id: clientId, client_id: clientId, sender_id: state.me.id,
             recipient_id: peerId, body: body,
+            kind: attachmentId ? 'image' : 'text',
+            attachment_id: attachmentId || null, local_url: localUrl || null,
             created_at: new Date().toISOString(), pending: true,
         });
         renderMessages();
-        wsSend({ type: 'chat:send', to: peerId, body: body, client_id: clientId });
-    } else {
-        try {
-            const data = await api('/api/messages', {
-                method: 'POST', body: JSON.stringify({ to: peerId, body: body }),
-            });
-            state.messages.push(data.message);
-            renderMessages();
-        } catch (err) { toast(err.message, 'error'); }
+        wsSend({
+            type: 'chat:send', to: peerId, body: body,
+            attachment_id: attachmentId || null, client_id: clientId,
+        });
+        return;
     }
+
+    api('/api/messages', {
+        method: 'POST',
+        body: JSON.stringify({ to: peerId, body: body, attachment_id: attachmentId || null }),
+    }).then((data) => {
+        state.messages.push(data.message);
+        renderMessages();
+    }).catch((err) => toast(err.message, 'error'));
+}
+
+$('composer').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = $('msg-input');
+    const body = input.value.trim();
+    if (!body) return;
+    if (!state.activePeer && !state.activeGroup) return;
+    input.value = '';
+    if (state.activeGroup) sendGroupMessage(body, null, null);
+    else sendDirectMessage(body, null, null);
 });
 
 $('msg-input').addEventListener('input', () => {
-    if (!state.wsReady || !state.activePeer) return;
-    if (!state.typingTimer) {
-        wsSend({ type: 'chat:typing', to: state.activePeer.id, state: true });
-    }
+    if (!state.wsReady) return;
+    // The two conversation kinds use different frames but identical timing.
+    const frame = state.activeGroup
+        ? { type: 'group:typing', group_id: state.activeGroup.id }
+        : (state.activePeer ? { type: 'chat:typing', to: state.activePeer.id } : null);
+    if (!frame) return;
+
+    if (!state.typingTimer) wsSend(Object.assign({}, frame, { state: true }));
     clearTimeout(state.typingTimer);
     state.typingTimer = setTimeout(() => {
-        if (state.activePeer) {
-            wsSend({ type: 'chat:typing', to: state.activePeer.id, state: false });
-        }
+        wsSend(Object.assign({}, frame, { state: false }));
         state.typingTimer = null;
     }, TYPING_IDLE_MS);
 });
@@ -1713,6 +2241,10 @@ function handleSocketMessage(data) {
                 resetCall();
             }
 
+            // Anything that happened in a group while the socket was down
+            // arrived nowhere, so the unread counts have to be re-read.
+            loadGroups().catch(() => {});
+
             // Presence we cached before the drop is unreliable now.
             state.friends.forEach((f) => { f.online = false; });
             (data.online || []).forEach((id) => {
@@ -1739,8 +2271,14 @@ function handleSocketMessage(data) {
         case 'chat:sent': {
             // Swap the optimistic bubble for the stored row.
             const idx = state.messages.findIndex((m) => m.client_id === data.client_id);
-            if (idx >= 0) state.messages[idx] = data.message;
-            else state.messages.push(data.message);
+            if (idx >= 0) {
+                // Carry the local blob URL over: the stored copy has to be
+                // fetched, and switching straight to it makes the photo blink.
+                const local = state.messages[idx].local_url;
+                state.messages[idx] = Object.assign({}, data.message, { local_url: local });
+            } else {
+                state.messages.push(data.message);
+            }
             renderMessages();
             break;
         }
@@ -1819,7 +2357,8 @@ function handleSocketMessage(data) {
             break;
 
         default:
-            if (String(data.type || '').startsWith('call:')) handleCallSignal(data);
+            if (String(data.type || '').startsWith('group:')) handleGroupSocketMessage(data);
+            else if (String(data.type || '').startsWith('call:')) handleCallSignal(data);
     }
 }
 
@@ -3432,9 +3971,864 @@ $('btn-toggle-cam').addEventListener('click', () => {
 
 document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
+    // Topmost first, so Escape never hangs up a call because a sheet was open.
+    if (!$('lightbox').hidden) { closeLightbox(); return; }
+    if (!$('new-group-modal').hidden) { closeNewGroup(); return; }
+    if (!$('group-modal').hidden) { closeGroupModal(); return; }
     if (!$('incoming-modal').hidden) rejectCall();
     else if (!$('call-overlay').hidden) endCall('local');
 });
+
+/* =========================================================================
+   Groups
+
+   A group is a room for people who are NOT friends yet — that is its whole
+   point, so membership is the only access check and friendship plays no part
+   in it. Becoming friends happens afterwards, from the member list.
+
+   The conversation reuses the chat panel rather than getting its own: the
+   message list, composer, typing hint and photo upload are identical, and the
+   only differences are the header, who a message is attributed to, and which
+   socket frame carries it. `state.activeGroup` and `state.activePeer` are
+   mutually exclusive, and every render path branches on which one is set.
+   ========================================================================= */
+function totalGroupUnread() {
+    return state.groups.reduce((n, g) => n + (g.unread || 0), 0);
+}
+
+function setTab(which) {
+    state.tab = which;
+    const onGroups = which === 'groups';
+    $('tab-friends').setAttribute('aria-selected', String(!onGroups));
+    $('tab-groups').setAttribute('aria-selected', String(onGroups));
+    $('pane-friends').hidden = onGroups;
+    $('pane-groups').hidden = !onGroups;
+    // One search box serves both lists; only what it searches changes.
+    $('user-search').placeholder = onGroups
+        ? 'Qrup adı ilə axtarın…'
+        : 'Ad və ya e-poçt ilə axtarın…';
+    $('user-search').value = '';
+    $('search-results').hidden = true;
+    $('group-search-results').hidden = true;
+}
+
+$('tab-friends').addEventListener('click', () => setTab('friends'));
+$('tab-groups').addEventListener('click', () => setTab('groups'));
+
+/* ---- rendering ---- */
+function groupRow(group, opts) {
+    opts = opts || {};
+    const wrap = document.createElement(opts.actions ? 'div' : 'button');
+    wrap.className = 'person';
+    if (!opts.actions) {
+        wrap.type = 'button';
+        wrap.setAttribute('role', 'option');
+        wrap.setAttribute('aria-selected', String(!!opts.selected));
+    }
+
+    const av = document.createElement('div');
+    av.className = 'avatar group';
+    av.setAttribute('aria-hidden', 'true');
+    av.textContent = initials(group.name);
+    wrap.appendChild(av);
+
+    const meta = document.createElement('div');
+    meta.className = 'person-meta';
+    const name = document.createElement('div');
+    name.className = 'person-name';
+    name.textContent = group.name;
+    meta.appendChild(name);
+    const sub = document.createElement('div');
+    sub.className = 'person-sub';
+    sub.textContent = opts.sub !== undefined
+        ? opts.sub
+        : group.member_count + ' üzv' + (group.role === 'admin' ? ' · admin' : '');
+    meta.appendChild(sub);
+    wrap.appendChild(meta);
+
+    // Only on the recommendation list, where it is the reason the row is there.
+    if (group.shared_interests > 0) {
+        const pill = document.createElement('span');
+        pill.className = 'match-pill';
+        pill.textContent = group.shared_interests + ' uyğun';
+        pill.title = 'Maraqlarınızla üst-üstə düşən mövzu sayı';
+        wrap.appendChild(pill);
+    }
+
+    if (opts.unread) {
+        const badge = document.createElement('span');
+        badge.className = 'unread-badge';
+        badge.textContent = opts.unread > 99 ? '99+' : String(opts.unread);
+        wrap.appendChild(badge);
+    }
+
+    if (opts.actions) {
+        const actions = document.createElement('div');
+        actions.className = 'row-actions';
+        opts.actions.forEach((a) => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'btn btn-sm ' + (a.variant || 'btn-ghost');
+            b.textContent = a.label;
+            if (a.disabled) b.disabled = true;
+            b.addEventListener('click', a.onClick);
+            actions.appendChild(b);
+        });
+        wrap.appendChild(actions);
+    } else if (opts.onClick) {
+        wrap.addEventListener('click', opts.onClick);
+    }
+    return wrap;
+}
+
+function renderGroups() {
+    const mine = $('my-groups-list');
+    mine.innerHTML = '';
+    $('my-groups-count').textContent = String(state.groups.length);
+
+    if (!state.groups.length) {
+        const p = document.createElement('p');
+        p.className = 'muted-note';
+        p.textContent = 'Hələ heç bir qrupda deyilsiniz. Aşağıdaki tövsiyələrə baxın ' +
+                        'və ya yeni qrup yaradın.';
+        mine.appendChild(p);
+    } else {
+        state.groups.forEach((g) => {
+            mine.appendChild(groupRow(g, {
+                unread: g.unread,
+                selected: state.activeGroup && state.activeGroup.id === g.id,
+                onClick: () => openGroup(g),
+            }));
+        });
+    }
+
+    const rec = $('rec-groups-list');
+    rec.innerHTML = '';
+    if (!state.recGroups.length) {
+        const p = document.createElement('p');
+        p.className = 'muted-note';
+        p.textContent = state.hasInterests
+            ? 'Uyğun yeni qrup tapılmadı.'
+            : 'Maraqlarınızı seçsəniz, sizə uyğun qruplar burada görünəcək.';
+        rec.appendChild(p);
+        if (!state.hasInterests) {
+            const link = document.createElement('a');
+            link.className = 'btn btn-sm btn-ghost';
+            link.href = '/profile';
+            link.textContent = 'Maraqları seç';
+            rec.appendChild(link);
+        }
+    }
+    state.recGroups.forEach((g) => {
+        rec.appendChild(groupRow(g, {
+            sub: g.member_count + ' üzv' + (g.description ? ' · ' + g.description : ''),
+            actions: [
+                {
+                    label: g.is_open ? 'Qoşul' : 'Bax',
+                    variant: g.is_open ? 'btn-primary' : 'btn-ghost',
+                    onClick: () => (g.is_open ? joinGroup(g) : openGroupModal(g.id)),
+                },
+            ],
+        }));
+    });
+
+    const pill = $('groups-unread-pill');
+    const unread = totalGroupUnread();
+    pill.hidden = unread === 0;
+    pill.textContent = unread > 99 ? '99+' : String(unread);
+}
+
+/* ---- data ---- */
+async function loadGroups() {
+    const data = await api('/api/groups');
+    state.groups = data.groups || [];
+    if (state.activeGroup) {
+        const fresh = state.groups.find((g) => g.id === state.activeGroup.id);
+        if (fresh) { state.activeGroup = fresh; updateGroupHeader(); }
+    }
+    renderGroups();
+}
+
+async function loadRecommendedGroups() {
+    const data = await api('/api/groups/recommended');
+    state.recGroups = data.groups || [];
+    state.hasInterests = !!data.has_interests;
+    renderGroups();
+}
+
+async function joinGroup(group) {
+    try {
+        const data = await api('/api/groups/' + group.id + '/join', { method: 'POST' });
+        toast('“' + group.name + '” qrupuna qoşuldunuz.', 'success');
+        await Promise.all([loadGroups(), loadRecommendedGroups()]);
+        const joined = state.groups.find((g) => g.id === group.id) ||
+                       (data.group || null);
+        if (joined) openGroup(joined);
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+/* ---- the group conversation ---- */
+function updateGroupHeader() {
+    const g = state.activeGroup;
+    if (!g) return;
+    const av = $('chat-avatar');
+    av.className = 'avatar group';
+    av.removeAttribute('data-online');
+    av.textContent = initials(g.name);
+    $('chat-name').textContent = g.name;
+    $('chat-status').textContent =
+        g.member_count + ' üzv' +
+        (g.role === 'admin' ? ' · siz adminsiniz' : '') +
+        (g.is_open ? '' : ' · qapalı');
+    $('chat-actions-dm').hidden = true;
+    $('chat-actions-group').hidden = false;
+}
+
+async function openGroup(group) {
+    // The two conversation kinds are mutually exclusive.
+    state.activePeer = null;
+    state.activeGroup = group;
+    state.messages = [];
+    $('chat-empty').hidden = true;
+    $('chat-view').hidden = false;
+    document.body.classList.add('chat-open');
+    $('typing-hint').textContent = '';
+    $('upload-hint').textContent = '';
+    updateGroupHeader();
+    renderFriends();
+    renderGroups();
+
+    try {
+        const data = await api('/api/groups/' + group.id + '/messages');
+        state.messages = data.messages || [];
+        renderMessages();
+        const g = state.groups.find((x) => x.id === group.id);
+        if (g) { g.unread = 0; renderGroups(); }
+        // The REST read above only counts on the host that served it; in a split
+        // deploy the socket is the one that reaches the other members.
+        wsSend({ type: 'group:read', group_id: group.id });
+    } catch (e) {
+        toast(e.message, 'error');
+    }
+}
+
+function sendGroupMessage(body, attachmentId, localUrl) {
+    const g = state.activeGroup;
+    if (!g) return;
+
+    if (state.wsReady) {
+        const clientId = 'g' + Date.now() + Math.random().toString(16).slice(2);
+        state.messages.push({
+            id: clientId, client_id: clientId, group_id: g.id,
+            sender_id: state.me.id, sender_name: state.me.full_name,
+            body: body, kind: attachmentId ? 'image' : 'text',
+            attachment_id: attachmentId || null, local_url: localUrl || null,
+            created_at: new Date().toISOString(), pending: true,
+        });
+        renderMessages();
+        wsSend({
+            type: 'group:send', group_id: g.id, body: body,
+            attachment_id: attachmentId || null, client_id: clientId,
+        });
+        return;
+    }
+
+    api('/api/groups/' + g.id + '/messages', {
+        method: 'POST',
+        body: JSON.stringify({ body: body, attachment_id: attachmentId || null }),
+    }).then((data) => {
+        state.messages.push(data.message);
+        renderMessages();
+    }).catch((err) => toast(err.message, 'error'));
+}
+
+/* =========================================================================
+   Photos
+
+   Uploaded as a raw body to /api/uploads/image, which answers with an id; the
+   id then rides on an ordinary message. Re-encoding in the browser first is
+   not just about size: it also fixes the rotation phone cameras record in EXIF
+   rather than in the pixels, and drops that EXIF block — which is where the
+   GPS coordinates of where the photo was taken live.
+   ========================================================================= */
+const MAX_UPLOAD_SIDE = 1600;
+const JPEG_QUALITY = 0.82;
+
+async function decodeImage(file) {
+    if (window.createImageBitmap) {
+        try {
+            // 'from-image' applies the EXIF rotation; not every engine knows the
+            // option, hence the retry without it.
+            let bitmap;
+            try {
+                bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+            } catch (e) {
+                bitmap = await createImageBitmap(file);
+            }
+            return {
+                source: bitmap, width: bitmap.width, height: bitmap.height,
+                release: () => { if (bitmap.close) bitmap.close(); },
+            };
+        } catch (e) { /* fall through to the <img> path */ }
+    }
+    return await new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => resolve({
+            source: img, width: img.naturalWidth, height: img.naturalHeight,
+            release: () => URL.revokeObjectURL(url),
+        });
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Şəkil oxunmadı.')); };
+        img.src = url;
+    });
+}
+
+async function prepareImage(file) {
+    // A GIF is passed through untouched, because re-encoding it through a canvas
+    // would keep only the first frame.
+    if (file.type === 'image/gif') return { blob: file, width: 0, height: 0 };
+
+    const decoded = await decodeImage(file);
+    const longest = Math.max(decoded.width, decoded.height) || 1;
+    const scale = Math.min(1, MAX_UPLOAD_SIDE / longest);
+    const w = Math.max(1, Math.round(decoded.width * scale));
+    const h = Math.max(1, Math.round(decoded.height * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    // JPEG has no alpha channel, so a transparent PNG would come out black
+    // without a background painted first.
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(decoded.source, 0, 0, w, h);
+    decoded.release();
+
+    const blob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', JPEG_QUALITY));
+    if (!blob) throw new Error('Şəkil hazırlana bilmədi.');
+    return { blob: blob, width: w, height: h };
+}
+
+async function sendPhoto(file) {
+    if (!state.activePeer && !state.activeGroup) return;
+    if (!/^image\//.test(file.type || '')) {
+        toast('Yalnız şəkil göndərilə bilər.', 'error');
+        return;
+    }
+
+    const hint = $('upload-hint');
+    hint.textContent = 'Şəkil hazırlanır…';
+    let localUrl = null;
+    try {
+        const prepared = await prepareImage(file);
+        localUrl = URL.createObjectURL(prepared.blob);
+        hint.textContent = 'Şəkil göndərilir…';
+
+        const res = await fetch(
+            '/api/uploads/image?w=' + prepared.width + '&h=' + prepared.height,
+            {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': prepared.blob.type || 'application/octet-stream' },
+                body: prepared.blob,
+            }
+        );
+        if (res.status === 401) { window.location.href = '/login'; return; }
+        let data = null;
+        try { data = await res.json(); } catch (e) { data = null; }
+        if (!res.ok) throw new Error((data && data.detail) || 'Şəkil göndərilə bilmədi.');
+
+        const attachmentId = data.attachment.id;
+        const caption = $('msg-input').value.trim();
+        $('msg-input').value = '';
+        hint.textContent = '';
+
+        if (state.activeGroup) {
+            sendGroupMessage(caption, attachmentId, localUrl);
+        } else {
+            sendDirectMessage(caption, attachmentId, localUrl);
+        }
+    } catch (e) {
+        hint.textContent = '';
+        if (localUrl) URL.revokeObjectURL(localUrl);
+        toast(e.message || 'Şəkil göndərilə bilmədi.', 'error');
+    }
+}
+
+$('btn-attach').addEventListener('click', () => $('photo-input').click());
+$('photo-input').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    // Reset first, so picking the same file twice in a row still fires a change.
+    e.target.value = '';
+    if (file) sendPhoto(file);
+});
+
+/* ---- lightbox ---- */
+function openLightbox(src) {
+    $('lightbox-img').src = src;
+    $('lightbox').hidden = false;
+}
+function closeLightbox() {
+    $('lightbox').hidden = true;
+    $('lightbox-img').removeAttribute('src');
+}
+$('lightbox').addEventListener('click', closeLightbox);
+
+/* =========================================================================
+   Interest chips, shared by the new-group form and the group editor
+   ========================================================================= */
+async function ensureInterestCatalogue() {
+    if (state.interestCategories.length) return state.interestCategories;
+    const data = await api('/api/interests');
+    state.interestCategories = data.categories || [];
+    return state.interestCategories;
+}
+
+const MAX_GROUP_INTERESTS = 6;
+
+function renderInterestPicker(host, selected, noteEl) {
+    host.innerHTML = '';
+    state.interestCategories.forEach((cat) => {
+        cat.interests.forEach((item) => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'chip tiny';
+            chip.setAttribute('aria-pressed', String(selected.has(item.slug)));
+            chip.innerHTML = '<span aria-hidden="true">' + escapeHtml(item.emoji) +
+                             '</span>' + escapeHtml(item.label);
+            chip.addEventListener('click', () => {
+                if (selected.has(item.slug)) {
+                    selected.delete(item.slug);
+                } else if (selected.size >= MAX_GROUP_INTERESTS) {
+                    toast('Bir qrupa ən çoxu ' + MAX_GROUP_INTERESTS + ' mövzu seçilə bilər.', 'error');
+                    return;
+                } else {
+                    selected.add(item.slug);
+                }
+                chip.setAttribute('aria-pressed', String(selected.has(item.slug)));
+                if (noteEl) {
+                    noteEl.textContent = selected.size + ' / ' + MAX_GROUP_INTERESTS + ' seçilib.';
+                }
+            });
+            host.appendChild(chip);
+        });
+    });
+    if (noteEl) noteEl.textContent = selected.size + ' / ' + MAX_GROUP_INTERESTS + ' seçilib.';
+}
+
+function staticChips(host, interests) {
+    host.innerHTML = '';
+    (interests || []).forEach((i) => {
+        const c = document.createElement('span');
+        c.className = 'chip static tiny';
+        c.innerHTML = '<span aria-hidden="true">' + escapeHtml(i.emoji) + '</span>' +
+                      escapeHtml(i.label);
+        host.appendChild(c);
+    });
+    host.hidden = !(interests && interests.length);
+}
+
+/* =========================================================================
+   New group
+   ========================================================================= */
+const newGroupPicks = new Set();
+
+async function openNewGroup() {
+    $('ng-name').value = '';
+    $('ng-desc').value = '';
+    $('ng-open').checked = true;
+    newGroupPicks.clear();
+    $('new-group-modal').hidden = false;
+    $('ng-name').focus();
+    try {
+        await ensureInterestCatalogue();
+        renderInterestPicker($('ng-interests'), newGroupPicks, $('ng-interest-note'));
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+function closeNewGroup() { $('new-group-modal').hidden = true; }
+
+$('btn-new-group').addEventListener('click', openNewGroup);
+$('ng-cancel').addEventListener('click', closeNewGroup);
+$('new-group-close').addEventListener('click', closeNewGroup);
+
+$('ng-create').addEventListener('click', async () => {
+    const btn = $('ng-create');
+    btn.disabled = true;
+    try {
+        const data = await api('/api/groups', {
+            method: 'POST',
+            body: JSON.stringify({
+                name: $('ng-name').value,
+                description: $('ng-desc').value,
+                interests: Array.from(newGroupPicks),
+                is_open: $('ng-open').checked,
+            }),
+        });
+        closeNewGroup();
+        toast('Qrup yaradıldı.', 'success');
+        await Promise.all([loadGroups(), loadRecommendedGroups()]);
+        const created = state.groups.find((g) => g.id === data.group.id);
+        if (created) openGroup(created);
+    } catch (e) {
+        toast(e.message, 'error');
+    } finally {
+        btn.disabled = false;
+    }
+});
+
+/* =========================================================================
+   Group info + administration
+   ========================================================================= */
+const editPicks = new Set();
+
+async function openGroupModal(groupId) {
+    try {
+        const data = await api('/api/groups/' + groupId);
+        state.modalGroup = data.group;
+        await ensureInterestCatalogue().catch(() => {});
+        renderGroupModal();
+        $('group-modal').hidden = false;
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+function closeGroupModal() {
+    $('group-modal').hidden = true;
+    state.modalGroup = null;
+}
+
+function memberRow(m, group) {
+    const isAdmin = group.role === 'admin';
+    const me = state.me && m.id === state.me.id;
+    const actions = [];
+
+    if (isAdmin && !me) {
+        actions.push({
+            label: m.role === 'admin' ? 'Adminliyi al' : 'Admin et',
+            variant: 'btn-ghost',
+            onClick: () => setMemberRole(group.id, m.id, m.role === 'admin' ? 'member' : 'admin'),
+        });
+        actions.push({
+            label: 'Çıxar',
+            variant: 'btn-danger',
+            onClick: () => removeMember(group.id, m.id, m.full_name),
+        });
+    }
+    // The point of a group: meet here, then befriend. Offered to every member,
+    // admin or not.
+    if (!me && m.friend_state === 'none') {
+        actions.push({
+            label: 'Dost əlavə et',
+            variant: 'btn-primary',
+            onClick: () => sendRequest(m.id).then(() => openGroupModal(group.id)),
+        });
+    } else if (!me && m.friend_state === 'request_sent') {
+        actions.push({ label: 'Göndərilib', variant: 'btn-ghost', disabled: true });
+    } else if (!me && m.friend_state === 'request_received') {
+        actions.push({ label: 'Sizə sorğu göndərib', variant: 'btn-ghost', disabled: true });
+    }
+
+    const row = personRow(
+        { id: m.id, full_name: m.full_name, online: m.online },
+        {
+            sub: (m.online ? 'Onlayn' : 'Oflayn') +
+                 (m.friend_state === 'friends' ? ' · dostunuz' : '') +
+                 (me ? ' · siz' : ''),
+            actions: actions.length ? actions : undefined,
+        }
+    );
+    if (m.role === 'admin') {
+        const badge = document.createElement('span');
+        badge.className = 'role-badge';
+        badge.textContent = 'admin';
+        // Before .row-actions, so the badge sits with the name rather than the
+        // buttons.
+        const anchor = row.querySelector('.row-actions');
+        if (anchor) row.insertBefore(badge, anchor); else row.appendChild(badge);
+    }
+    return row;
+}
+
+function renderGroupModal() {
+    const g = state.modalGroup;
+    if (!g) return;
+    const isAdmin = g.role === 'admin';
+    const isMember = !!g.role;
+
+    $('gm-avatar').textContent = initials(g.name);
+    $('gm-title').textContent = g.name;
+    $('gm-desc').textContent = g.description || 'Təsvir yoxdur.';
+    staticChips($('gm-interests'), g.interests);
+    $('gm-meta').textContent =
+        g.member_count + ' üzv · ' +
+        (g.is_open ? 'hər kəs qoşula bilər' : 'yalnız admin üzv əlavə edə bilər');
+
+    $('gm-edit').hidden = !isAdmin;
+    if (isAdmin) {
+        $('gm-name-input').value = g.name;
+        $('gm-desc-input').value = g.description || '';
+        $('gm-open-input').checked = !!g.is_open;
+        editPicks.clear();
+        (g.interests || []).forEach((i) => editPicks.add(i.slug));
+        if (state.interestCategories.length) {
+            renderInterestPicker($('gm-interest-picker'), editPicks, $('gm-interest-note'));
+        }
+    }
+
+    $('gm-member-count').textContent = String(g.member_count);
+    const list = $('gm-members');
+    list.innerHTML = '';
+    (g.members || []).forEach((m) => list.appendChild(memberRow(m, g)));
+
+    // Admins can add their own friends; the list is friends not already in.
+    $('gm-add-block').hidden = !isAdmin;
+    if (isAdmin) {
+        const present = new Set((g.members || []).map((m) => m.id));
+        const addable = state.friends.filter((f) => !present.has(f.id));
+        const host = $('gm-addable');
+        host.innerHTML = '';
+        addable.forEach((f) => {
+            host.appendChild(personRow(f, {
+                sub: f.online ? 'Onlayn' : 'Oflayn',
+                actions: [{
+                    label: 'Əlavə et',
+                    variant: 'btn-primary',
+                    onClick: () => addMember(g.id, f.id),
+                }],
+            }));
+        });
+        $('gm-addable-note').textContent = addable.length
+            ? ''
+            : 'Əlavə edilə biləcək dostunuz yoxdur.';
+    }
+
+    $('gm-delete').hidden = !isAdmin;
+    $('gm-leave').hidden = !isMember;
+    $('gm-join').hidden = isMember;
+}
+
+async function groupAction(fn, okMessage) {
+    try {
+        await fn();
+        if (okMessage) toast(okMessage, 'success');
+        if (state.modalGroup) await openGroupModal(state.modalGroup.id);
+        await loadGroups();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+function setMemberRole(groupId, userId, role) {
+    return groupAction(
+        () => api('/api/groups/' + groupId + '/members/' + userId + '/role', {
+            method: 'POST',
+            body: JSON.stringify({ user_id: userId, role: role }),
+        }),
+        role === 'admin' ? 'Admin təyin edildi.' : 'Adminlik geri alındı.'
+    );
+}
+
+function removeMember(groupId, userId, name) {
+    if (!window.confirm(name + ' qrupdan çıxarılsın?')) return Promise.resolve();
+    return groupAction(
+        () => api('/api/groups/' + groupId + '/members/' + userId, { method: 'DELETE' }),
+        'Üzv çıxarıldı.'
+    );
+}
+
+function addMember(groupId, userId) {
+    return groupAction(
+        () => api('/api/groups/' + groupId + '/members', {
+            method: 'POST',
+            body: JSON.stringify({ user_id: userId }),
+        }),
+        'Qrupa əlavə edildi.'
+    );
+}
+
+$('gm-save').addEventListener('click', async () => {
+    const g = state.modalGroup;
+    if (!g) return;
+    const btn = $('gm-save');
+    btn.disabled = true;
+    try {
+        await api('/api/groups/' + g.id, {
+            method: 'PATCH',
+            body: JSON.stringify({
+                name: $('gm-name-input').value,
+                description: $('gm-desc-input').value,
+                interests: Array.from(editPicks),
+                is_open: $('gm-open-input').checked,
+            }),
+        });
+        toast('Dəyişikliklər saxlanıldı.', 'success');
+        await Promise.all([loadGroups(), loadRecommendedGroups()]);
+        await openGroupModal(g.id);
+    } catch (e) {
+        toast(e.message, 'error');
+    } finally {
+        btn.disabled = false;
+    }
+});
+
+$('gm-join').addEventListener('click', async () => {
+    const g = state.modalGroup;
+    if (!g) return;
+    closeGroupModal();
+    await joinGroup(g);
+});
+
+$('gm-leave').addEventListener('click', async () => {
+    const g = state.modalGroup;
+    if (!g) return;
+    if (!window.confirm('“' + g.name + '” qrupundan ayrılmaq istəyirsiniz?')) return;
+    try {
+        const result = await api('/api/groups/' + g.id + '/leave', { method: 'POST' });
+        closeGroupModal();
+        if (state.activeGroup && state.activeGroup.id === g.id) closeChat();
+        toast(result.deleted
+            ? 'Qrupdan ayrıldınız — başqa üzv qalmadığı üçün qrup silindi.'
+            : 'Qrupdan ayrıldınız.');
+        await Promise.all([loadGroups(), loadRecommendedGroups()]);
+    } catch (e) { toast(e.message, 'error'); }
+});
+
+$('gm-delete').addEventListener('click', async () => {
+    const g = state.modalGroup;
+    if (!g) return;
+    if (!window.confirm('“' + g.name + '” qrupu tamamilə silinsin? Bütün mesajlar itəcək.')) return;
+    try {
+        await api('/api/groups/' + g.id, { method: 'DELETE' });
+        closeGroupModal();
+        if (state.activeGroup && state.activeGroup.id === g.id) closeChat();
+        toast('Qrup silindi.');
+        await Promise.all([loadGroups(), loadRecommendedGroups()]);
+    } catch (e) { toast(e.message, 'error'); }
+});
+
+$('gm-close').addEventListener('click', closeGroupModal);
+$('gm-done').addEventListener('click', closeGroupModal);
+$('btn-group-info').addEventListener('click', () => {
+    if (state.activeGroup) openGroupModal(state.activeGroup.id);
+});
+
+/* =========================================================================
+   Group socket events
+   ========================================================================= */
+function handleGroupSocketMessage(data) {
+    switch (data.type) {
+        case 'group:sent': {
+            const idx = state.messages.findIndex((m) => m.client_id === data.client_id);
+            if (state.activeGroup && state.activeGroup.id === data.group_id) {
+                if (idx >= 0) {
+                    // Keep the object URL: the server copy has to be fetched, and
+                    // swapping straight to it makes the picture blink.
+                    const local = state.messages[idx].local_url;
+                    state.messages[idx] = Object.assign({}, data.message, { local_url: local });
+                } else {
+                    state.messages.push(data.message);
+                }
+                renderMessages();
+            }
+            break;
+        }
+
+        case 'group:message': {
+            const open = state.activeGroup && state.activeGroup.id === data.group_id;
+            if (open) {
+                if (!state.messages.some((m) => m.id === data.message.id)) {
+                    state.messages.push(data.message);
+                    renderMessages();
+                }
+                wsSend({ type: 'group:read', group_id: data.group_id });
+            } else {
+                const g = state.groups.find((x) => x.id === data.group_id);
+                // System notices must not raise a badge or a toast: "someone
+                // joined" is not a message addressed to you.
+                if (g && data.message.kind !== 'system') {
+                    g.unread = (g.unread || 0) + 1;
+                    renderGroups();
+                    const who = data.message.sender_name || 'Qrup';
+                    const preview = data.message.kind === 'image'
+                        ? '📷 Şəkil'
+                        : String(data.message.body || '').slice(0, 60);
+                    toast(g.name + ' — ' + who + ': ' + preview);
+                }
+            }
+            break;
+        }
+
+        case 'group:typing': {
+            if (state.activeGroup && state.activeGroup.id === data.group_id) {
+                clearTimeout(state.peerTypingTimer);
+                if (data.state) {
+                    $('typing-hint').textContent = data.name + ' yazır…';
+                    state.peerTypingTimer = setTimeout(() => {
+                        $('typing-hint').textContent = '';
+                    }, TYPING_IDLE_MS + 1200);
+                } else {
+                    $('typing-hint').textContent = '';
+                }
+            }
+            break;
+        }
+
+        case 'group:joined':
+            toast('“' + data.group.name + '” qrupuna əlavə edildiniz.', 'success');
+            loadGroups();
+            loadRecommendedGroups();
+            break;
+
+        case 'group:removed':
+        case 'group:deleted': {
+            const gone = state.groups.find((x) => x.id === data.group_id);
+            if (state.activeGroup && state.activeGroup.id === data.group_id) closeChat();
+            if (state.modalGroup && state.modalGroup.id === data.group_id) closeGroupModal();
+            toast(gone
+                ? (data.type === 'group:deleted'
+                    ? '“' + gone.name + '” qrupu silindi.'
+                    : '“' + gone.name + '” qrupundan çıxarıldınız.')
+                : 'Qrup artıq əlçatan deyil.');
+            loadGroups();
+            loadRecommendedGroups();
+            break;
+        }
+
+        case 'group:updated': {
+            const g = state.groups.find((x) => x.id === data.group.id);
+            if (g) {
+                g.name = data.group.name;
+                g.description = data.group.description;
+                g.is_open = data.group.is_open;
+                renderGroups();
+                if (state.activeGroup && state.activeGroup.id === g.id) {
+                    state.activeGroup = g;
+                    updateGroupHeader();
+                }
+            }
+            break;
+        }
+
+        case 'group:members-changed':
+            loadGroups();
+            if (state.modalGroup && state.modalGroup.id === data.group_id) {
+                openGroupModal(data.group_id);
+            }
+            break;
+    }
+}
+
+/* Deep links from the profile page: #groups opens the tab, #group-12 opens that
+   group (or its info sheet, when you are not a member yet). */
+function applyGroupHash() {
+    const hash = String(window.location.hash || '');
+    if (hash === '#groups') { setTab('groups'); return; }
+    const m = hash.match(/^#group-(\d+)$/);
+    if (!m) return;
+    setTab('groups');
+    const id = parseInt(m[1], 10);
+    const mine = state.groups.find((g) => g.id === id);
+    if (mine) openGroup(mine); else openGroupModal(id);
+}
 
 /* =========================================================================
    Boot
@@ -3500,6 +4894,12 @@ if (DEBUG_PANEL) {
     }
 
     await Promise.all([loadFriends(), loadRequests(), loadRtcConfig()]);
+    // Separate from the await above: a failure loading groups must not take the
+    // friends list and calling down with it.
+    try {
+        await Promise.all([loadGroups(), loadRecommendedGroups()]);
+    } catch (e) { /* the groups tab shows its own empty state */ }
+    applyGroupHash();
     connectSocket();
 })();
 </script>

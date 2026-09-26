@@ -686,3 +686,419 @@ def test_microphone_conflict_is_reported_rather_than_silent():
     # And the fallback that does work is offered, not just an error.
     assert "əl ilə yaz" in html
     assert 'placeholder="Tanınan mətn burada yığılır — və ya əl ilə yazın…"' in html
+
+
+# --------------------------------------------------------------------------- #
+# Groups, profiles and photos over HTTP
+# --------------------------------------------------------------------------- #
+# A real JPEG header, so the server's magic-byte check accepts it.
+JPEG_BYTES = bytes.fromhex("ffd8ffe000104a464946000101") + b"\x00" * 128
+
+
+@pytest.mark.parametrize(
+    "path,method",
+    [
+        ("/api/interests", "get"),
+        ("/api/profile", "get"),
+        ("/api/profile/1", "get"),
+        ("/api/groups", "get"),
+        ("/api/groups/recommended", "get"),
+        ("/api/groups/search?q=test", "get"),
+        ("/api/groups/1", "get"),
+        ("/api/groups/1/messages", "get"),
+        ("/api/attachments/1", "get"),
+    ],
+)
+def test_group_endpoints_require_a_session(app, path, method):
+    anonymous = TestClient(app)
+    assert getattr(anonymous, method)(path).status_code == 401
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["/api/groups", "/api/groups/1/join", "/api/groups/1/leave",
+     "/api/groups/1/messages", "/api/groups/1/members", "/api/uploads/image"],
+)
+def test_group_mutations_require_a_session(app, path):
+    anonymous = TestClient(app)
+    assert anonymous.post(path, json={}).status_code == 401
+
+
+def test_profile_page_redirects_when_signed_out(app):
+    anonymous = TestClient(app)
+    res = anonymous.get("/profile", follow_redirects=False)
+    assert res.status_code == 302
+    assert res.headers["location"] == "/login"
+
+
+def test_profile_round_trips_and_drops_unknown_interests(app):
+    client, _ = new_client(app, "Profil Sahibi")
+
+    res = client.put("/api/profile", json={
+        "bio": "Şahmat və futbol.", "city": "Bakı",
+        "interests": ["chess", "football", "not-a-real-slug"],
+    })
+    assert res.status_code == 200, res.text
+    profile = res.json()["profile"]
+    assert profile["bio"] == "Şahmat və futbol."
+    assert profile["city"] == "Bakı"
+    # Unknown slugs are dropped rather than failing the whole save.
+    assert sorted(i["slug"] for i in profile["interests"]) == ["chess", "football"]
+
+    # A PATCH that omits interests must not clear them.
+    client.put("/api/profile", json={"bio": "yeni mətn"})
+    again = client.get("/api/profile").json()["profile"]
+    assert sorted(i["slug"] for i in again["interests"]) == ["chess", "football"]
+
+
+def test_public_profile_does_not_leak_the_email(app):
+    viewer, _ = new_client(app, "Baxan")
+    subject, subject_user = new_client(app, "Baxılan")
+    subject.put("/api/profile", json={"bio": "salam", "interests": ["music"]})
+
+    body = viewer.get(f"/api/profile/{subject_user['id']}").json()
+    assert "email" not in body["profile"], (
+        "e-mail is the login identifier and the search key; nothing on a "
+        "profile needs it"
+    )
+    assert body["profile"]["bio"] == "salam"
+    assert body["friend_state"] == "none"
+
+
+def test_full_group_flow(app):
+    admin, admin_user = new_client(app, "Qrup Qurucusu")
+    member, member_user = new_client(app, "Qrup Üzvü")
+
+    res = admin.post("/api/groups", json={
+        "name": "Bakıda həftəsonu futbol",
+        "description": "Hər şənbə saat 10",
+        "interests": ["football"],
+    })
+    assert res.status_code == 200, res.text
+    group = res.json()["group"]
+    gid = group["id"]
+    assert group["role"] == "admin"
+    assert group["member_count"] == 1
+
+    # A stranger can read the group's front page (that is how you decide to
+    # join) but not a word of its conversation.
+    assert member.get(f"/api/groups/{gid}").status_code == 200
+    assert member.get(f"/api/groups/{gid}/messages").status_code == 403
+    assert member.post(f"/api/groups/{gid}/messages", json={"body": "salam"}).status_code == 403
+
+    assert member.post(f"/api/groups/{gid}/join").status_code == 200
+    assert member.post(f"/api/groups/{gid}/messages", json={"body": "Salam hamıya"}).status_code == 200
+
+    messages = admin.get(f"/api/groups/{gid}/messages").json()["messages"]
+    assert any(m["kind"] == "system" for m in messages), "joining should be recorded"
+    assert any(m["sender_name"] == "Qrup Üzvü" for m in messages)
+
+    # The badge appears for the other side and clears on read.
+    member.post(f"/api/groups/{gid}/messages", json={"body": "ikinci"})
+    assert admin.get("/api/groups").json()["groups"][0]["unread"] >= 1
+    admin.get(f"/api/groups/{gid}/messages")
+    assert admin.get("/api/groups").json()["groups"][0]["unread"] == 0
+
+
+def test_only_an_admin_can_administer_over_http(app):
+    admin, admin_user = new_client(app, "Admin Rolu")
+    member, member_user = new_client(app, "Sadə Üzv")
+    outsider, outsider_user = new_client(app, "Kənar Şəxs")
+
+    gid = admin.post("/api/groups", json={"name": "İdarəetmə qrupu"}).json()["group"]["id"]
+    member.post(f"/api/groups/{gid}/join")
+
+    assert member.patch(f"/api/groups/{gid}", json={"name": "ələ keçirildi"}).status_code == 403
+    assert member.delete(f"/api/groups/{gid}").status_code == 403
+    assert member.post(
+        f"/api/groups/{gid}/members", json={"user_id": outsider_user["id"]}
+    ).status_code == 403
+    assert member.post(
+        f"/api/groups/{gid}/members/{member_user['id']}/role",
+        json={"user_id": member_user["id"], "role": "admin"},
+    ).status_code == 403
+
+    assert admin.get(f"/api/groups/{gid}").json()["group"]["name"] == "İdarəetmə qrupu"
+
+    # The admin can do all of it.
+    assert admin.patch(f"/api/groups/{gid}", json={"name": "Yeni ad"}).status_code == 200
+    assert admin.post(
+        f"/api/groups/{gid}/members/{member_user['id']}/role",
+        json={"user_id": member_user["id"], "role": "admin"},
+    ).status_code == 200
+    assert admin.delete(f"/api/groups/{gid}").status_code == 200
+
+
+def test_a_closed_group_cannot_be_self_joined(app):
+    admin, _ = new_client(app, "Qapalı Qrup Admini")
+    stranger, stranger_user = new_client(app, "Qonaq")
+
+    gid = admin.post("/api/groups", json={
+        "name": "Yalnız dəvətlə", "is_open": False,
+    }).json()["group"]["id"]
+
+    assert stranger.post(f"/api/groups/{gid}/join").status_code == 403
+    assert admin.post(
+        f"/api/groups/{gid}/members", json={"user_id": stranger_user["id"]}
+    ).status_code == 200
+    assert stranger.get(f"/api/groups/{gid}/messages").status_code == 200
+
+
+def test_recommendation_is_ordered_by_shared_interests(app):
+    author, _ = new_client(app, "Qrup Müəllifi")
+    seeker, _ = new_client(app, "Axtaran")
+    seeker.put("/api/profile", json={"interests": ["chess", "football"]})
+
+    author.post("/api/groups", json={"name": "Uyğunsuz qrup", "interests": ["gardening"]})
+    both = author.post("/api/groups", json={
+        "name": "Şahmat və futbol", "interests": ["chess", "football"],
+    }).json()["group"]["id"]
+
+    body = seeker.get("/api/groups/recommended").json()
+    assert body["has_interests"] is True
+    assert body["groups"][0]["id"] == both
+    assert body["groups"][0]["shared_interests"] == 2
+
+
+def test_recommendation_explains_itself_when_the_profile_is_empty(app):
+    author, _ = new_client(app, "Başqa Müəllif")
+    author.post("/api/groups", json={"name": "Hər hansı bir qrup"})
+    fresh, _ = new_client(app, "Yeni İstifadəçi")
+
+    body = fresh.get("/api/groups/recommended").json()
+    # Still a list to act on, but flagged as generic so the page can say why.
+    assert body["groups"]
+    assert body["has_interests"] is False
+
+
+def test_photo_upload_is_served_only_to_the_conversation(app):
+    sender, sender_user = new_client(app, "Şəkil Göndərən")
+    friend, friend_user = new_client(app, "Şəkil Alan")
+    stranger, _ = new_client(app, "Kənar Baxan")
+
+    res = sender.post(
+        "/api/uploads/image?w=800&h=600",
+        content=JPEG_BYTES,
+        headers={"Content-Type": "image/jpeg"},
+    )
+    assert res.status_code == 200, res.text
+    attachment = res.json()["attachment"]
+    assert attachment["mime"] == "image/jpeg"
+    assert (attachment["width"], attachment["height"]) == (800, 600)
+
+    # Uploaded but not sent: only the uploader.
+    assert sender.get(f"/api/attachments/{attachment['id']}").status_code == 200
+    assert stranger.get(f"/api/attachments/{attachment['id']}").status_code == 404
+
+    sender.post("/api/friends/request", json={"user_id": friend_user["id"]})
+    request_id = friend.get("/api/friends/requests").json()["incoming"][0]["request_id"]
+    friend.post("/api/friends/respond", json={"request_id": request_id, "accept": True})
+
+    res = sender.post("/api/messages", json={
+        "to": friend_user["id"], "attachment_id": attachment["id"],
+    })
+    assert res.status_code == 200, res.text
+    assert res.json()["message"]["kind"] == "image"
+    assert res.json()["message"]["body"] == "", "a photo needs no caption"
+
+    got = friend.get(f"/api/attachments/{attachment['id']}")
+    assert got.status_code == 200
+    assert got.content == JPEG_BYTES
+    # A stranger must not even learn that the id exists.
+    assert stranger.get(f"/api/attachments/{attachment['id']}").status_code == 404
+
+
+def test_upload_rejects_a_lie_about_the_content_type(app):
+    client, _ = new_client(app, "Yalançı Yükləmə")
+    res = client.post(
+        "/api/uploads/image",
+        content=b"<svg onload=alert(1)></svg>",
+        headers={"Content-Type": "image/png"},
+    )
+    assert res.status_code == 400, (
+        "the declared type is not evidence; the bytes are"
+    )
+
+
+def test_upload_refuses_something_far_too_large(app):
+    client, _ = new_client(app, "Böyük Yükləmə")
+    oversized = JPEG_BYTES + b"\x00" * (auth_db.MAX_ATTACHMENT_BYTES + 1024)
+    res = client.post(
+        "/api/uploads/image", content=oversized,
+        headers={"Content-Type": "image/jpeg"},
+    )
+    assert res.status_code == 413
+
+
+def test_you_cannot_attach_an_image_you_do_not_own(app):
+    owner, owner_user = new_client(app, "Şəkil Sahibi")
+    thief, thief_user = new_client(app, "Şəkil Oğrusu")
+
+    attachment = owner.post(
+        "/api/uploads/image", content=JPEG_BYTES,
+        headers={"Content-Type": "image/jpeg"},
+    ).json()["attachment"]["id"]
+
+    gid = thief.post("/api/groups", json={"name": "Oğurluq qrupu"}).json()["group"]["id"]
+    res = thief.post(f"/api/groups/{gid}/messages", json={"attachment_id": attachment})
+    assert res.status_code == 400, (
+        "visibility is derived from the messages an attachment appears in, so "
+        "attaching someone else's id would hand out access to their photo"
+    )
+
+
+def test_attachment_response_tells_the_browser_not_to_sniff(app):
+    client, _ = new_client(app, "Başlıq Yoxlaması")
+    attachment = client.post(
+        "/api/uploads/image", content=JPEG_BYTES,
+        headers={"Content-Type": "image/jpeg"},
+    ).json()["attachment"]["id"]
+
+    res = client.get(f"/api/attachments/{attachment}")
+    assert res.headers["x-content-type-options"] == "nosniff"
+    assert res.headers["content-type"] == "image/jpeg"
+    assert res.headers["content-disposition"] == "inline"
+
+
+# --------------------------------------------------------------------------- #
+# Page wiring for the new features
+# --------------------------------------------------------------------------- #
+def test_groups_share_the_chat_panel_rather_than_duplicating_it():
+    """One message list, two kinds of conversation.
+
+    A second copy of the composer, typing hint and photo upload for groups would
+    be ~600 lines to keep in step by hand, and the bugs would only show up in
+    whichever copy was touched last.
+    """
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+
+    # A single composer and a single message list serve both.
+    assert html.count('id="composer"') == 1
+    assert html.count('id="messages"') == 1
+
+    # Which one is open is a single either/or, checked everywhere it matters.
+    assert "activeGroup: null" in html
+    assert "if (state.activeGroup) sendGroupMessage(body, null, null);" in html
+    assert "else sendDirectMessage(body, null, null);" in html
+    # Opening one must clear the other, or both headers would fight.
+    assert "state.activeGroup = null;" in html
+    assert "state.activePeer = null;" in html
+
+
+def test_group_header_swaps_the_call_buttons_for_group_info():
+    """Calling is one peer connection between two browsers.
+
+    Offering a call button in a group would produce a call to nobody, so the
+    header must hide them - and show them again on the way back to a DM.
+    """
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+
+    assert 'id="chat-actions-dm"' in html
+    assert 'id="chat-actions-group"' in html
+    assert "$('chat-actions-group').hidden = false;" in html
+    assert "$('chat-actions-dm').hidden = true;" in html
+    # updateChatHeader restores them when a DM is opened again.
+    assert "$('chat-actions-dm').hidden = false;" in html
+    assert "$('chat-actions-group').hidden = true;" in html
+
+
+def test_photos_are_downscaled_and_stripped_in_the_browser():
+    """Uploading the camera original would be a several-megabyte row.
+
+    Re-encoding also fixes the rotation phones record in EXIF rather than in the
+    pixels, and drops the EXIF block - which is where the GPS coordinates of
+    where the photo was taken live.
+    """
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+
+    assert "MAX_UPLOAD_SIDE" in html
+    assert "canvas.toBlob" in html
+    assert "image/jpeg" in html
+    assert "imageOrientation: 'from-image'" in html, "phone photos would be sideways"
+    # A GIF through a canvas would keep only its first frame.
+    assert "if (file.type === 'image/gif')" in html
+    # JPEG has no alpha, so a transparent PNG needs a background painted first.
+    assert "ctx.fillStyle = '#ffffff';" in html
+
+
+def test_an_uploading_photo_is_shown_before_the_server_has_it():
+    """The bubble appears immediately and must not blink when the ack lands."""
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+
+    assert "local_url" in html
+    assert "URL.createObjectURL(prepared.blob)" in html
+    # On ack the local blob URL is carried over onto the stored row.
+    assert "Object.assign({}, data.message, { local_url: local })" in html
+
+
+def test_system_notices_do_not_look_like_somebody_talking():
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+    assert "if (m.kind === 'system')" in html
+    assert "msg system" in html
+    # ...and they must not raise a badge or a toast either.
+    assert "data.message.kind !== 'system'" in html
+
+
+def test_group_messages_are_attributed_to_their_sender():
+    """In a DM the side of the bubble says who is talking; in a group it cannot."""
+    html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+    assert "if (inGroup && !mine && m.sender_name)" in html
+    assert "msg-sender" in html
+    # A tick in a group would claim a read receipt that does not exist: group
+    # unread is one watermark per member, not per message.
+    assert "const ticks = inGroup ? ''" in html
+
+
+def test_registration_leads_into_the_interest_picker():
+    """"Choose interests while registering" without a longer sign-up form.
+
+    The form itself is unchanged; a new account lands on the profile page with
+    the picker in front of it, and can skip.
+    """
+    register = (FRONTEND / "register.html").read_text(encoding="utf-8")
+    assert "ONBOARDING_URL = '/profile?welcome=1'" in register
+    assert "loginMode ? APP_URL : ONBOARDING_URL" in register, (
+        "signing in should not be sent through onboarding again"
+    )
+
+    profile = (FRONTEND / "profile.html").read_text(encoding="utf-8")
+    assert "welcome-banner" in profile
+    assert "has('welcome')" in profile
+    # Skippable: an interest picker must not be a wall in front of the product.
+    assert 'href="/app"' in profile
+
+
+def test_profile_page_shares_the_site_design_tokens():
+    """Tokens are copied per page in this project; a new page must match."""
+    profile = (FRONTEND / "profile.html").read_text(encoding="utf-8")
+    index = (FRONTEND / "index.html").read_text(encoding="utf-8")
+
+    for token in ("--accent-cyan: #A0FFFF", "--state-trial: #FFCC00",
+                  "--state-success: #6B8E23", "--bg-card: #3d3d3d",
+                  "--border-muted: #C2B280"):
+        assert token in profile, f"{token} differs from the rest of the site"
+        assert token in index
+
+    # The same [hidden] override every other page needs - see friends.html.
+    assert "[hidden] { display: none !important; }" in profile
+    # And the same reduced-motion courtesy.
+    assert "prefers-reduced-motion" in profile
+
+
+def test_every_page_can_reach_the_others():
+    """A page nobody can navigate to may as well not exist."""
+    for name in ("friends.html", "profile.html"):
+        html = (FRONTEND / name).read_text(encoding="utf-8")
+        assert 'href="/app"' in html
+        assert 'href="/friends"' in html
+        assert 'href="/profile"' in html
+
+
+def test_group_deep_links_from_the_profile_page_are_handled():
+    """The profile page links to /friends#group-12; that has to mean something."""
+    friends = (FRONTEND / "friends.html").read_text(encoding="utf-8")
+    profile = (FRONTEND / "profile.html").read_text(encoding="utf-8")
+
+    assert "'/friends#group-' + group.id" in profile
+    assert "applyGroupHash" in friends
+    assert "/^#group-(\\d+)$/" in friends

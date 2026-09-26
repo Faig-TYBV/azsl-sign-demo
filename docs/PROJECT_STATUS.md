@@ -142,6 +142,64 @@ This checkpoint is what the live backend loads — see §6.
    `TURN_CREDENTIAL`). Until those are set, a minority of calls fail —
    deliberately with a clear message rather than a hanging spinner.
 
+## 5c. Groups, profiles and photos (added 2026-09-26)
+
+Interest-based rooms where people who are **not** friends can meet, plus the
+profile that makes recommending them possible, plus image messages.
+
+- **`db.py`** — six new tables. `interests` is a seeded catalogue (40 entries,
+  three categories); `user_interests` and `group_interests` are the two halves
+  of the recommendation overlap; `groups`, `group_members` (with `role`) and
+  `group_messages` are the rooms themselves; `attachments` holds image bytes.
+  `users` gains `bio` / `city`, `messages` gains `kind` / `attachment_id`.
+- **`groups.py`** (new) — all of it is plain REST, so the whole feature works on
+  the serverless deployment too. It reaches into `social.hub` to push events and
+  is never imported by `social.py`, keeping the dependency one-directional.
+- **`social.py`** — `/ws/social` gained `group:send` / `group:typing` /
+  `group:read`, and both the REST and socket message paths accept an
+  `attachment_id`.
+- **`profile.html`** (new) — bio, city, the interest picker, and the group
+  recommendations those interests produce. Registration now redirects here
+  (`/profile?welcome=1`), which is what makes "pick interests while signing up"
+  true without lengthening the sign-up form. It is skippable.
+- **`friends.html`** — a Dostlar/Qruplar tab pair in the sidebar, and the group
+  conversation **reuses the existing chat panel** rather than duplicating it:
+  `state.activeGroup` and `state.activePeer` are mutually exclusive and every
+  render path branches on which is set. A second copy of the composer, typing
+  hint and photo upload would have been ~600 lines to keep in step by hand.
+
+**Four decisions worth remembering:**
+
+1. **The unread watermark is a message id, not a timestamp.** The first version
+   used a timestamp and was silently wrong: `created_at` comes from the database
+   clock while a Python-side watermark comes from the application clock, and
+   SQLite truncates `CURRENT_TIMESTAMP` to whole seconds — so a message sent in
+   the same second as a read compared as not-newer and never raised a badge.
+   Regression test: `test_unread_is_counted_by_message_id_not_by_clock`.
+2. **`init_db()` now runs an additive migration** (`_ensure_columns`).
+   `create_all` creates missing *tables* but never alters an existing one, so
+   without it the first request after this deploy would have failed with
+   "column users.bio does not exist" on the live database. Four hand-written
+   `ALTER TABLE ... ADD COLUMN` statements, applied only when absent, each
+   carrying a `DEFAULT` so pre-deploy rows are not left NULL. Four columns did
+   not justify Alembic and its version table on a host whose only deploy step is
+   "start the process".
+3. **Images live in Postgres, not object storage.** Deliberate: every such
+   service wants a card, and this project has no paid dependency. The browser
+   downscales to 1600px JPEG first, which also strips EXIF — *including the GPS
+   coordinates of where the photo was taken* — and applies the rotation phones
+   record in EXIF rather than in pixels. Swapping to S3 later touches
+   `save_attachment()` and the serving route only.
+4. **A group can never be left without an admin.** The last admin cannot demote
+   themselves, and if they leave, the longest-standing member is promoted. The
+   alternative is a frozen group that nobody can rename, add to or moderate,
+   with no route back.
+
+**Not offered: group calls.** A call here is one WebRTC peer connection between
+two browsers. A group call needs a mesh or an SFU, neither of which fits a
+free-tier instance, so the group header shows an info button where a DM shows
+the call buttons.
+
 ## 6. Deployment — three documented paths, pick one as canonical
 
 - `DEPLOY_VERCEL.md` — pages + auth API only (no `/ws`; needs a separate
@@ -164,7 +222,7 @@ equally-live paths.
 - ~~No automated tests for `src/web_demo`~~ — `tests/test_web_api.py` drives
   auth, friends and chat over real HTTP with real session cookies, and
   `tests/test_social.py` covers the friendship/message rules, ICE config and
-  call routing. Suite is now **126 tests** (was 91) and needs no Postgres:
+  call routing. Suite is now **307 tests** (was 91) and needs no Postgres:
   `tests/conftest.py` points `DATABASE_URL` at a temporary SQLite file.
   *Still untested:* the TTS endpoint (it calls out to Microsoft's service).
 - ~~`src/web_demo/README.md` is stale~~ — rewritten to match the current
@@ -183,7 +241,7 @@ equally-live paths.
 2. **Social state is single-process** — see §5b. Fine for the current demo
    scale; a blocker before running two instances.
 3. **End-to-end deploy not yet verified in a browser** — the full stack was
-   verified locally (126 unit/integration tests, plus a live two-client socket
+   verified locally (307 unit/integration tests, plus a live two-client socket
    run covering presence, chat delivery and the complete call handshake), but
    the webcam → `/ws` → GRU → TTS round trip and a real camera-to-camera call
    still need confirming on an actual HTTPS deployment. **Calls cannot be
@@ -235,6 +293,6 @@ python scripts/verify_vocabulary_24_cap50.py   # audits the checkpoint before it
 python -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port 8000
 # then open http://localhost:8000 , register/login, and go to /app
 
-# Run the test suite (126 tests: ML modules + the web/social layer)
+# Run the test suite (307 tests: ML modules + the web/social/groups layer)
 pytest
 ```

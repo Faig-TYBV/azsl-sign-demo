@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional, Set
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect, status
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 from src.web_demo import db as auth_db
 from src.web_demo.deps import get_db, require_user, verify_ws_token
@@ -337,19 +337,27 @@ class RespondIn(BaseModel):
 
 class MessageIn(BaseModel):
     to: int
-    body: str
+    body: str = ""
+    # Set for a photo message. The body then holds an optional caption, so the
+    # "must not be empty" rule below cannot apply unconditionally — a picture
+    # with no words is a perfectly ordinary message.
+    attachment_id: Optional[int] = None
 
     @field_validator("body")
     @classmethod
     def _body_ok(cls, v: str) -> str:
         v = (v or "").strip()
-        if not v:
-            raise ValueError("Mesaj boş ola bilməz.")
         if len(v) > auth_db.MAX_MESSAGE_LENGTH:
             raise ValueError(
                 f"Mesaj çox uzundur (maks. {auth_db.MAX_MESSAGE_LENGTH} simvol)."
             )
         return v
+
+    @model_validator(mode="after")
+    def _has_content(self):
+        if not self.body and self.attachment_id is None:
+            raise ValueError("Mesaj boş ola bilməz.")
+        return self
 
 
 # --------------------------------------------------------------------------- #
@@ -506,8 +514,21 @@ async def api_send_message(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Yalnız dostlarla yazışa bilərsiniz."
         )
+    kind = "text"
+    if payload.attachment_id is not None:
+        # Only the uploader may attach a picture: visibility is derived from the
+        # messages an attachment appears in, so allowing someone else's id here
+        # would let anyone hand out access to a photo that is not theirs.
+        if auth_db.attachment_owner(session, payload.attachment_id) != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Şəkil tapılmadı."
+            )
+        kind = "image"
     try:
-        msg = auth_db.save_message(session, user.id, payload.to, payload.body)
+        msg = auth_db.save_message(
+            session, user.id, payload.to, payload.body,
+            kind=kind, attachment_id=payload.attachment_id,
+        )
     except auth_db.FriendshipError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
@@ -691,6 +712,91 @@ async def _handle_call_message(
         await hub.send_to_socket(peer_ws, relay)
 
 
+async def _handle_group_message(
+    msg_type: str, message: dict, user, ws: WebSocket
+) -> None:
+    """Live group chat: send, typing, read receipts.
+
+    Membership is re-checked from the database on every frame rather than cached
+    per socket. A member who was removed mid-session keeps their socket open, and
+    caching would let them go on posting into a group they are no longer in until
+    they happened to reload.
+
+    Fan-out is one send per member, which is fine at this scale: a group is tens
+    of people, the payload is a chat line, and the alternative (a per-group
+    socket registry) would need invalidating on every membership change.
+    """
+    group_id = int(message.get("group_id", 0) or 0)
+    if not group_id:
+        return
+    if not await _in_db(auth_db.is_group_member, group_id, user.id):
+        await hub.send_to_socket(
+            ws, {"type": "error", "detail": "Bu qrupun üzvü deyilsiniz."}
+        )
+        return
+
+    if msg_type == "group:read":
+        await _in_db(auth_db.mark_group_read, group_id, user.id)
+        return
+
+    member_ids = await _in_db(auth_db.group_member_ids, group_id)
+
+    if msg_type == "group:typing":
+        payload = {
+            "type": "group:typing",
+            "group_id": group_id,
+            "from": user.id,
+            "name": user.full_name,
+            "state": bool(message.get("state")),
+        }
+        for uid in member_ids:
+            if uid != user.id:
+                await hub.send_to_user(uid, payload)
+        return
+
+    if msg_type == "group:send":
+        body = str(message.get("body", ""))
+        attachment_id = message.get("attachment_id")
+        kind = "text"
+        if attachment_id is not None:
+            # Same ownership rule as direct messages — see api_send_message.
+            owner = await _in_db(auth_db.attachment_owner, int(attachment_id))
+            if owner != user.id:
+                await hub.send_to_socket(
+                    ws, {"type": "error", "detail": "Şəkil tapılmadı."}
+                )
+                return
+            kind = "image"
+        try:
+            msg = await _in_db(
+                auth_db.save_group_message, group_id, user.id, body,
+                kind=kind, attachment_id=attachment_id,
+            )
+        except auth_db.SocialError as exc:
+            await hub.send_to_socket(ws, {"type": "error", "detail": str(exc)})
+            return
+
+        stored = msg.public_dict(user.full_name)
+        # Ack the sending tab so its optimistic bubble gets the real id...
+        await hub.send_to_socket(
+            ws,
+            {
+                "type": "group:sent",
+                "client_id": message.get("client_id"),
+                "group_id": group_id,
+                "message": stored,
+            },
+        )
+        payload = {"type": "group:message", "group_id": group_id, "message": stored}
+        # ...mirror to the sender's other tabs...
+        await hub.send_to_user(user.id, payload, exclude=ws)
+        # ...and deliver to everyone else.
+        for uid in member_ids:
+            if uid != user.id:
+                await hub.send_to_user(uid, payload)
+        return
+
+
 async def social_websocket(websocket: WebSocket) -> None:
     """``/ws/social`` — one socket per open tab, authenticated like ``/ws``."""
     uid = websocket.session.get("uid")
@@ -746,17 +852,35 @@ async def social_websocket(websocket: WebSocket) -> None:
                 await _handle_call_message(msg_type, message, user, websocket)
                 continue
 
+            if msg_type.startswith("group:"):
+                await _handle_group_message(msg_type, message, user, websocket)
+                continue
+
             if msg_type == "chat:send":
                 target_id = int(message.get("to", 0))
                 body = str(message.get("body", ""))
+                attachment_id = message.get("attachment_id")
                 if not await _in_db(auth_db.are_friends, user.id, target_id):
                     await hub.send_to_socket(
                         websocket,
                         {"type": "error", "detail": "Yalnız dostlarla yazışa bilərsiniz."},
                     )
                     continue
+                kind = "text"
+                if attachment_id is not None:
+                    # Same ownership rule as the REST route — see api_send_message.
+                    owner = await _in_db(auth_db.attachment_owner, int(attachment_id))
+                    if owner != user.id:
+                        await hub.send_to_socket(
+                            websocket, {"type": "error", "detail": "Şəkil tapılmadı."}
+                        )
+                        continue
+                    kind = "image"
                 try:
-                    msg = await _in_db(auth_db.save_message, user.id, target_id, body)
+                    msg = await _in_db(
+                        auth_db.save_message, user.id, target_id, body,
+                        kind=kind, attachment_id=attachment_id,
+                    )
                 except auth_db.FriendshipError as exc:
                     await hub.send_to_socket(websocket, {"type": "error", "detail": str(exc)})
                     continue

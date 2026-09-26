@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Profil — Azİşarə</title>
+<link rel="icon" type="image/png" href="/static/assets/logo_1.png">
+<style>
+/* Design tokens are copied from index.html so every page stays visually
+   identical. If you change a colour there, change it here too. */
+:root {
+    --bg-dark: #333333;
+    --bg-darker: #262626;
+    --bg-card: #3d3d3d;
+    --bg-card-hover: #474747;
+    --text-light: #EBEBEB;
+    --border-muted: #C2B280;
+    --accent-cyan: #A0FFFF;
+    --state-trial: #FFCC00;
+    --state-success: #6B8E23;
+    --state-danger: #B5533C;
+    --border-radius: 12px;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    --font-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --font-mono: 'Courier New', Courier, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* See friends.html for why this needs !important: any author `display` rule
+   beats the UA stylesheet's [hidden] rule, so without it el.hidden = true is
+   silently ignored on anything we have styled. */
+[hidden] { display: none !important; }
+
+body {
+    font-family: var(--font-sans);
+    background:
+        radial-gradient(circle at 15% 50%, rgba(160, 255, 255, 0.04), transparent 30%),
+        radial-gradient(circle at 85% 30%, rgba(128, 0, 128, 0.06), transparent 30%),
+        #222222;
+    background-attachment: fixed;
+    color: var(--text-light);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 1rem 1rem 3rem;
+}
+
+/* ---------- Header (mirrors friends.html) ---------- */
+header {
+    text-align: center;
+    padding: 1.25rem 0 1rem;
+    border-bottom: 1px solid rgba(194, 178, 128, 0.2);
+}
+.title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+    background: linear-gradient(to right, var(--accent-cyan), var(--state-trial));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+.subtitle { font-size: 0.9rem; color: var(--border-muted); font-style: italic; }
+.top-nav {
+    display: flex; align-items: center; justify-content: center;
+    flex-wrap: wrap; gap: 0.6rem; margin-top: 0.9rem; font-size: 0.9rem;
+}
+.nav-link {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.4rem 1rem; border-radius: 999px;
+    border: 1px solid rgba(194, 178, 128, 0.3);
+    color: var(--text-light); text-decoration: none;
+    transition: border-color var(--transition), background-color var(--transition),
+                color var(--transition);
+}
+.nav-link:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+.nav-link[aria-current="page"] {
+    background: rgba(160, 255, 255, 0.12);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    font-weight: 600;
+}
+.auth-bar {
+    display: flex; align-items: center; gap: 12px;
+    justify-content: center; margin-top: 0.6rem; font-size: 0.9rem;
+}
+#auth-user { opacity: 0.8; }
+#btn-logout {
+    background: transparent; border: 1px solid currentColor; color: inherit;
+    border-radius: 8px; padding: 4px 12px; cursor: pointer; opacity: 0.85;
+    font-family: inherit; font-size: 0.85rem;
+    transition: opacity var(--transition), color var(--transition);
+}
+#btn-logout:hover { opacity: 1; color: var(--state-trial); }
+
+/* ---------- Panels ---------- */
+.stack { display: flex; flex-direction: column; gap: 1.25rem; margin-top: 1.25rem; }
+.panel {
+    background: var(--bg-card);
+    border: 1px solid rgba(194, 178, 128, 0.18);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: border-color var(--transition);
+}
+.panel:hover, .panel:focus-within { border-color: rgba(194, 178, 128, 0.4); }
+.panel-head {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(194, 178, 128, 0.15);
+    background: rgba(38, 38, 38, 0.55);
+}
+.panel-head h2 {
+    font-size: 1.05rem; font-weight: 600; color: var(--accent-cyan);
+    display: flex; align-items: center; gap: 0.5rem;
+}
+.panel-head p { font-size: 0.85rem; color: rgba(235, 235, 235, 0.6); margin-top: 0.2rem; }
+.panel-body { padding: 1.25rem; }
+
+/* ---------- Welcome banner (shown after registration) ---------- */
+.welcome-banner {
+    margin-top: 1.25rem;
+    padding: 0.9rem 1.1rem;
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(255, 204, 0, 0.45);
+    background: rgba(255, 204, 0, 0.1);
+    font-size: 0.92rem;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;
+}
+.welcome-banner strong { color: var(--state-trial); }
+.welcome-banner .grow { flex: 1; min-width: 14ch; }
+
+/* ---------- Identity row ---------- */
+.identity { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.avatar {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: linear-gradient(135deg, rgba(160, 255, 255, 0.28), rgba(194, 178, 128, 0.28));
+    border: 1px solid rgba(194, 178, 128, 0.45);
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 1.3rem; color: var(--text-light);
+    flex-shrink: 0;
+}
+.identity-meta { min-width: 0; }
+.identity-name { font-size: 1.2rem; font-weight: 700; }
+.identity-sub { font-size: 0.85rem; color: rgba(235, 235, 235, 0.6); }
+
+/* ---------- Fields ---------- */
+.field-row { display: grid; gap: 1rem; margin-top: 1.1rem; }
+@media (min-width: 720px) { .field-row.two { grid-template-columns: 1fr 1fr; } }
+.labelled { display: flex; flex-direction: column; gap: 0.35rem; }
+.labelled > span { font-size: 0.82rem; color: var(--border-muted); letter-spacing: 0.02em; }
+.field {
+    width: 100%;
+    background: var(--bg-darker);
+    border: 1px solid rgba(194, 178, 128, 0.28);
+    border-radius: 10px;
+    padding: 0.6rem 0.85rem;
+    color: var(--text-light);
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+.field::placeholder { color: rgba(235, 235, 235, 0.42); }
+.field:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 3px rgba(160, 255, 255, 0.14);
+}
+textarea.field { resize: vertical; min-height: 92px; line-height: 1.5; }
+.char-count { font-size: 0.75rem; color: rgba(235, 235, 235, 0.45); text-align: right; }
+
+/* ---------- Interest chips ---------- */
+.chip-group { margin-top: 1rem; }
+.chip-group > h3 {
+    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--border-muted); margin-bottom: 0.6rem;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.chip {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid rgba(194, 178, 128, 0.32);
+    background: rgba(38, 38, 38, 0.5);
+    color: var(--text-light);
+    font-family: inherit; font-size: 0.85rem;
+    cursor: pointer;
+    transition: border-color var(--transition), background-color var(--transition),
+                color var(--transition), transform 0.15s ease;
+}
+.chip:hover { border-color: var(--accent-cyan); transform: translateY(-1px); }
+.chip:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(160, 255, 255, 0.35); }
+.chip[aria-pressed="true"] {
+    background: rgba(160, 255, 255, 0.16);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    font-weight: 600;
+}
+.chip .chip-emoji { font-size: 1rem; line-height: 1; }
+/* Read-only chips (someone else's profile, a group's tags) */
+.chip.static { cursor: default; }
+.chip.static:hover { transform: none; border-color: rgba(194, 178, 128, 0.32); }
+.chip.tiny { padding: 0.18rem 0.55rem; font-size: 0.75rem; }
+
+.picked-hint { font-size: 0.82rem; color: rgba(235, 235, 235, 0.55); margin-top: 0.85rem; }
+.picked-hint.warn { color: var(--state-trial); }
+
+/* ---------- Buttons (mirrors friends.html) ---------- */
+.btn {
+    border: 1px solid transparent;
+    background-color: var(--bg-card-hover);
+    color: var(--text-light);
+    padding: 0.5rem 1.15rem;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, filter var(--transition), background-color var(--transition);
+}
+.btn:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.12); }
+.btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(160, 255, 255, 0.35); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.btn-primary { background-color: var(--state-success); }
+.btn-ghost { background-color: transparent; color: var(--accent-cyan); border-color: var(--accent-cyan); }
+.btn-sm { padding: 0.32rem 0.75rem; font-size: 0.82rem; border-radius: 7px; }
+.actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.25rem; }
+.save-note { font-size: 0.85rem; color: var(--state-success); }
+
+/* ---------- Group cards ---------- */
+.group-grid { display: grid; gap: 0.9rem; }
+@media (min-width: 680px) { .group-grid { grid-template-columns: 1fr 1fr; } }
+.group-card {
+    background: rgba(38, 38, 38, 0.55);
+    border: 1px solid rgba(194, 178, 128, 0.2);
+    border-radius: 11px;
+    padding: 0.9rem 1rem;
+    display: flex; flex-direction: column; gap: 0.55rem;
+    transition: border-color var(--transition), background-color var(--transition);
+}
+.group-card:hover { border-color: var(--accent-cyan); background: rgba(71, 71, 71, 0.5); }
+.group-card-head { display: flex; align-items: flex-start; gap: 0.6rem; }
+.group-avatar {
+    width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(160, 255, 255, 0.25), rgba(107, 142, 35, 0.3));
+    border: 1px solid rgba(194, 178, 128, 0.4);
+    display: grid; place-items: center; font-weight: 700; font-size: 1.05rem;
+}
+.group-name { font-weight: 600; }
+.group-sub { font-size: 0.8rem; color: rgba(235, 235, 235, 0.55); }
+.group-desc { font-size: 0.87rem; color: rgba(235, 235, 235, 0.75); }
+.match-pill {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font-size: 0.75rem; font-weight: 700;
+    color: var(--state-success);
+    border: 1px solid rgba(107, 142, 35, 0.55);
+    background: rgba(107, 142, 35, 0.14);
+    border-radius: 999px; padding: 0.1rem 0.55rem;
+    flex-shrink: 0;
+}
+.group-card .card-actions { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 0.35rem; }
+
+.empty-state {
+    text-align: center; padding: 1.75rem 1rem;
+    color: rgba(235, 235, 235, 0.62);
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+}
+.empty-state .big { font-size: 2.4rem; line-height: 1; opacity: 0.55; }
+.empty-state h3 { font-size: 1.05rem; color: var(--text-light); font-weight: 600; }
+.empty-state p { font-size: 0.9rem; max-width: 46ch; }
+
+/* ---------- Toast (mirrors friends.html) ---------- */
+.toast-stack {
+    position: fixed; right: 1rem; bottom: 1rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+    z-index: 70; max-width: min(88vw, 360px);
+}
+.toast {
+    background: var(--bg-card); color: var(--text-light);
+    border: 1px solid rgba(194, 178, 128, 0.35);
+    border-left: 4px solid var(--accent-cyan);
+    border-radius: 10px; padding: 0.7rem 0.9rem;
+    font-size: 0.88rem; box-shadow: var(--shadow);
+    animation: toastIn 0.25s ease;
+}
+.toast.error { border-left-color: var(--state-danger); }
+.toast.success { border-left-color: var(--state-success); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001s !important; transition-duration: 0.001s !important; }
+    .chip:hover, .btn:hover:not(:disabled) { transform: none; }
+}
+
+.sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0;
+    margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0);
+    white-space: nowrap; border: 0;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1 class="title">Profil</h1>
+        <p class="subtitle">Maraqlarınızı seçin — sizə uyğun qruplar tapaq</p>
+        <nav class="top-nav" aria-label="Əsas naviqasiya">
+            <a class="nav-link" href="/app">İşarə Tanıma</a>
+            <a class="nav-link" href="/friends">Dostlar</a>
+            <a class="nav-link" href="/profile" aria-current="page">Profil</a>
+        </nav>
+        <div class="auth-bar">
+            <span id="auth-user"></span>
+            <button id="btn-logout" type="button">Çıxış</button>
+        </div>
+    </header>
+
+    <div class="welcome-banner" id="welcome-banner" hidden>
+        <span class="grow">
+            <strong>Xoş gəldiniz!</strong>
+            Maraqlarınızı seçin ki, sizə uyğun qruplar tövsiyə edə bilək.
+            Bunu sonra da edə bilərsiniz.
+        </span>
+        <a class="btn btn-ghost btn-sm" href="/app">Sonra</a>
+    </div>
+
+    <div class="stack">
+        <!-- ---------------- Profile ---------------- -->
+        <section class="panel">
+            <div class="panel-head">
+                <h2>🙋 Haqqınızda</h2>
+                <p>Bu məlumatları qruplardaki digər insanlar görəcək.</p>
+            </div>
+            <div class="panel-body">
+                <div class="identity">
+                    <div class="avatar" id="profile-avatar" aria-hidden="true"></div>
+                    <div class="identity-meta">
+                        <div class="identity-name" id="profile-name"></div>
+                        <div class="identity-sub" id="profile-email"></div>
+                    </div>
+                </div>
+
+                <div class="field-row two">
+                    <label class="labelled">
+                        <span>Ad və Soyad</span>
+                        <input id="in-name" class="field" type="text" maxlength="120"
+                               autocomplete="name" placeholder="Adınız">
+                    </label>
+                    <label class="labelled">
+                        <span>Şəhər (istəyə bağlı)</span>
+                        <input id="in-city" class="field" type="text" maxlength="64"
+                               autocomplete="address-level2" placeholder="Bakı">
+                    </label>
+                </div>
+
+                <div class="field-row">
+                    <label class="labelled">
+                        <span>Özünüz haqqında (istəyə bağlı)</span>
+                        <textarea id="in-bio" class="field" maxlength="400"
+                                  placeholder="Nə ilə maraqlanırsınız, nə axtarırsınız…"></textarea>
+                        <span class="char-count" id="bio-count">0 / 400</span>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <!-- ---------------- Interests ---------------- -->
+        <section class="panel">
+            <div class="panel-head">
+                <h2>✨ Maraqlar, hobbi və fəaliyyətlər</h2>
+                <p>Seçdiyiniz maraqlara uyğun qruplar aşağıda tövsiyə olunur.</p>
+            </div>
+            <div class="panel-body">
+                <div id="interest-groups"></div>
+                <p class="picked-hint" id="picked-hint"></p>
+                <div class="actions">
+                    <button class="btn btn-primary" id="btn-save" type="button">Yadda saxla</button>
+                    <span class="save-note" id="save-note" hidden>Yadda saxlanıldı ✓</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ---------------- Recommended groups ---------------- -->
+        <section class="panel">
+            <div class="panel-head">
+                <h2>🧩 Sizə uyğun qruplar</h2>
+                <p>Maraqlarınıza görə sıralanıb. Qoşulduqdan sonra söhbət “Dostlar”
+                   səhifəsindəki “Qruplar” bölməsində görünür.</p>
+            </div>
+            <div class="panel-body">
+                <div class="group-grid" id="rec-list"></div>
+                <div class="empty-state" id="rec-empty" hidden>
+                    <div class="big">🧩</div>
+                    <h3>Hələ qrup yoxdur</h3>
+                    <p>İlk qrupu siz yarada bilərsiniz — “Dostlar” səhifəsindəki
+                       “Qruplar” bölməsinə keçin.</p>
+                    <a class="btn btn-ghost btn-sm" href="/friends#groups">Qruplara keç</a>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="false"></div>
+
+<script>
+'use strict';
+
+const $ = (id) => document.getElementById(id);
+
+const state = {
+    me: null,
+    categories: [],
+    picked: new Set(),
+    maxPicks: 15,
+    dirty: false,
+};
+
+function escapeHtml(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function initials(name) {
+    const parts = String(name || '?').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+function toast(text, kind) {
+    const el = document.createElement('div');
+    el.className = 'toast' + (kind ? ' ' + kind : '');
+    el.textContent = text;
+    $('toast-stack').appendChild(el);
+    setTimeout(() => el.remove(), 4800);
+}
+
+async function api(path, options) {
+    const res = await fetch(path, Object.assign({
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+    }, options || {}));
+    if (res.status === 401) { window.location.href = '/login'; throw new Error('unauthenticated'); }
+    let data = null;
+    try { data = await res.json(); } catch (e) { data = null; }
+    if (!res.ok) throw new Error((data && data.detail) || 'Xəta baş verdi.');
+    return data;
+}
+
+/* =========================================================================
+   Interest picker
+   ========================================================================= */
+function renderInterests() {
+    const host = $('interest-groups');
+    host.innerHTML = '';
+
+    state.categories.forEach((cat) => {
+        const block = document.createElement('div');
+        block.className = 'chip-group';
+
+        const h = document.createElement('h3');
+        h.textContent = cat.label;
+        block.appendChild(h);
+
+        const row = document.createElement('div');
+        row.className = 'chips';
+        cat.interests.forEach((item) => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'chip';
+            chip.setAttribute('aria-pressed', String(state.picked.has(item.slug)));
+            chip.innerHTML = '<span class="chip-emoji" aria-hidden="true">' +
+                escapeHtml(item.emoji) + '</span>' + escapeHtml(item.label);
+            chip.addEventListener('click', () => togglePick(item.slug, chip));
+            row.appendChild(chip);
+        });
+        block.appendChild(row);
+        host.appendChild(block);
+    });
+
+    renderPickHint();
+}
+
+function togglePick(slug, chip) {
+    if (state.picked.has(slug)) {
+        state.picked.delete(slug);
+    } else {
+        if (state.picked.size >= state.maxPicks) {
+            toast('Ən çoxu ' + state.maxPicks + ' maraq seçə bilərsiniz.', 'error');
+            return;
+        }
+        state.picked.add(slug);
+    }
+    chip.setAttribute('aria-pressed', String(state.picked.has(slug)));
+    state.dirty = true;
+    $('save-note').hidden = true;
+    renderPickHint();
+}
+
+function renderPickHint() {
+    const hint = $('picked-hint');
+    const n = state.picked.size;
+    if (!n) {
+        hint.textContent = 'Heç nə seçilməyib — ən azı bir-ikisini seçin ki, ' +
+                           'tövsiyələr mənalı olsun.';
+        hint.classList.add('warn');
+        return;
+    }
+    hint.classList.remove('warn');
+    hint.textContent = n + ' / ' + state.maxPicks + ' seçilib.';
+}
+
+/* =========================================================================
+   Recommended groups
+   ========================================================================= */
+function groupCard(group) {
+    const card = document.createElement('div');
+    card.className = 'group-card';
+
+    const head = document.createElement('div');
+    head.className = 'group-card-head';
+
+    const av = document.createElement('div');
+    av.className = 'group-avatar';
+    av.setAttribute('aria-hidden', 'true');
+    av.textContent = initials(group.name);
+    head.appendChild(av);
+
+    const meta = document.createElement('div');
+    meta.style.flex = '1';
+    meta.style.minWidth = '0';
+    meta.innerHTML = '<div class="group-name">' + escapeHtml(group.name) + '</div>' +
+        '<div class="group-sub">' + group.member_count + ' üzv' +
+        (group.is_open ? '' : ' · qapalı') + '</div>';
+    head.appendChild(meta);
+
+    if (group.shared_interests > 0) {
+        const pill = document.createElement('span');
+        pill.className = 'match-pill';
+        pill.textContent = group.shared_interests + ' uyğun';
+        pill.title = 'Maraqlarınızdan ' + group.shared_interests + '-i bu qrupla üst-üstə düşür';
+        head.appendChild(pill);
+    }
+    card.appendChild(head);
+
+    if (group.description) {
+        const d = document.createElement('p');
+        d.className = 'group-desc';
+        d.textContent = group.description;
+        card.appendChild(d);
+    }
+
+    if (group.interests && group.interests.length) {
+        const tags = document.createElement('div');
+        tags.className = 'chips';
+        group.interests.forEach((i) => {
+            const t = document.createElement('span');
+            t.className = 'chip static tiny';
+            t.innerHTML = '<span class="chip-emoji" aria-hidden="true">' +
+                escapeHtml(i.emoji) + '</span>' + escapeHtml(i.label);
+            tags.appendChild(t);
+        });
+        card.appendChild(tags);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'card-actions';
+    const join = document.createElement('button');
+    join.type = 'button';
+    join.className = 'btn btn-primary btn-sm';
+    join.textContent = group.is_open ? 'Qoşul' : 'Yalnız dəvətlə';
+    join.disabled = !group.is_open;
+    join.addEventListener('click', async () => {
+        join.disabled = true;
+        try {
+            await api('/api/groups/' + group.id + '/join', { method: 'POST' });
+            toast('“' + group.name + '” qrupuna qoşuldunuz.', 'success');
+            card.remove();
+            if (!$('rec-list').children.length) loadRecommended();
+        } catch (e) {
+            toast(e.message, 'error');
+            join.disabled = false;
+        }
+    });
+    actions.appendChild(join);
+
+    const open = document.createElement('a');
+    open.className = 'btn btn-ghost btn-sm';
+    open.href = '/friends#group-' + group.id;
+    open.textContent = 'Bax';
+    actions.appendChild(open);
+
+    card.appendChild(actions);
+    return card;
+}
+
+async function loadRecommended() {
+    try {
+        const data = await api('/api/groups/recommended');
+        const list = $('rec-list');
+        list.innerHTML = '';
+        const groups = data.groups || [];
+        $('rec-empty').hidden = groups.length > 0;
+        groups.forEach((g) => list.appendChild(groupCard(g)));
+
+        // Distinguish "nothing matches you" from "you have told us nothing".
+        if (groups.length && !data.has_interests) {
+            const note = document.createElement('p');
+            note.className = 'picked-hint warn';
+            note.textContent = 'Maraq seçməmisiniz, deyə ən aktiv qruplar göstərilir.';
+            list.parentElement.insertBefore(note, list.nextSibling);
+        }
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+/* =========================================================================
+   Saving
+   ========================================================================= */
+async function save() {
+    const btn = $('btn-save');
+    btn.disabled = true;
+    try {
+        const data = await api('/api/profile', {
+            method: 'PUT',
+            body: JSON.stringify({
+                full_name: $('in-name').value.trim(),
+                bio: $('in-bio').value,
+                city: $('in-city').value,
+                interests: Array.from(state.picked),
+            }),
+        });
+        state.me = data.profile;
+        $('profile-name').textContent = state.me.full_name;
+        $('auth-user').textContent = state.me.full_name;
+        state.dirty = false;
+        $('save-note').hidden = false;
+        // The recommendations are a function of what was just saved, so they are
+        // stale the moment the save succeeds.
+        await loadRecommended();
+    } catch (e) {
+        toast(e.message, 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+$('btn-save').addEventListener('click', save);
+
+['in-name', 'in-city', 'in-bio'].forEach((id) => {
+    $(id).addEventListener('input', () => {
+        state.dirty = true;
+        $('save-note').hidden = true;
+    });
+});
+
+$('in-bio').addEventListener('input', () => {
+    $('bio-count').textContent = $('in-bio').value.length + ' / 400';
+});
+
+window.addEventListener('beforeunload', (e) => {
+    if (!state.dirty) return;
+    e.preventDefault();
+    e.returnValue = '';
+});
+
+$('btn-logout').addEventListener('click', async () => {
+    try { await api('/api/logout', { method: 'POST' }); } catch (e) {}
+    window.location.href = '/';
+});
+
+/* =========================================================================
+   Boot
+   ========================================================================= */
+(async function boot() {
+    if (new URLSearchParams(window.location.search).has('welcome')) {
+        $('welcome-banner').hidden = false;
+    }
+
+    try {
+        const [profile, interests] = await Promise.all([
+            api('/api/profile'),
+            api('/api/interests'),
+        ]);
+
+        state.me = profile.profile;
+        $('auth-user').textContent = state.me.full_name;
+        $('profile-avatar').textContent = initials(state.me.full_name);
+        $('profile-name').textContent = state.me.full_name;
+        $('profile-email').textContent = state.me.email || '';
+        $('in-name').value = state.me.full_name || '';
+        $('in-city').value = state.me.city || '';
+        $('in-bio').value = state.me.bio || '';
+        $('bio-count').textContent = ($('in-bio').value.length) + ' / 400';
+        (state.me.interests || []).forEach((i) => state.picked.add(i.slug));
+
+        state.categories = interests.categories || [];
+        renderInterests();
+    } catch (e) { return; }
+
+    await loadRecommended();
+})();
+</script>
+</body>
+</html>

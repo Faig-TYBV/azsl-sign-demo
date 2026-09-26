@@ -26,7 +26,16 @@ Live demo: https://azsl-sign-demo.onrender.com
 5. **Friends, Chat & Calls**:
    - Add people by name or e-mail, accept invites, and message them in real time with presence and typing indicators.
    - Peer-to-peer **audio and video calls** between friends over WebRTC — the backend relays only signalling, never media.
-6. **Live Conversation Accessibility (in-call sign→text and speech→text)**:
+6. **Profiles, Interest Groups & Photos**:
+   - A profile carries a short bio, a city and interests picked from a fixed
+     catalogue of 40 hobbies, activities and topics.
+   - **Groups** are rooms for people who are *not* friends yet — the point is to
+     meet, then befriend from the member list. Group admins rename, re-tag, add,
+     remove, promote and delete, WhatsApp-style.
+   - Groups are **recommended by shared interests**, so a new account has
+     somewhere to go.
+   - **Photos** can be sent in any conversation, direct or group.
+7. **Live Conversation Accessibility (in-call sign→text and speech→text)**:
    - During a call each side picks how they speak: **sign** (recognised by the same server-side models as the workspace) or **voice** (browser speech recognition, `az-AZ`, no API key).
    - The other side reads it as large on-screen text, so a Deaf and a hearing person can converse without either of them typing.
    - Recognised text is editable before sending, and the whole exchange is saved to the chat transcript.
@@ -210,9 +219,79 @@ hidden with a notice.
 
 ---
 
+## Profile & Interests
+
+Open **Profil** in the header, or go to `/profile`. A newly registered account
+lands here first (`/profile?welcome=1`) with the interest picker in front of it,
+so choosing interests is part of signing up — and skippable, because an
+onboarding step should not be a wall in front of the product.
+
+The picker is a fixed catalogue of 40 entries in three sections (Hobbi, İdman və
+fəaliyyət, Mövzular). It is a catalogue rather than free text because group
+recommendation is an *overlap* count: free-text hobbies would turn that into a
+fuzzy string problem where "futbol", "Futbol " and "fudbol" are three different
+interests and the recommendations mean nothing.
+
+## Groups
+
+Open **Dostlar → Qruplar**. A group is a room for people who are **not friends
+yet** — meeting there and becoming friends afterwards is the whole point, so
+membership is the only access check and friendship plays no part in it.
+
+1. **Find one**: the "Sizə uyğun qruplar" list is ranked by how many of your
+   interests each group is tagged with, then by size. With no interests picked
+   you still get the busiest groups, because an empty discovery page guarantees
+   you never join anything.
+2. **Create one**: name, description, up to 6 topic tags, and whether anyone may
+   join. A closed group is still discoverable in search — hiding it would defeat
+   the purpose — but only an admin can add members to it.
+3. **Admins** can rename, re-describe, re-tag, open/close, add a friend, remove
+   a member, promote or demote another admin, and delete the group. The creator
+   starts as admin.
+   - A group can never be left without an admin: the last admin cannot demote
+     themselves, and if they *leave*, the longest-standing member is promoted
+     automatically. Otherwise the group would be frozen with no route back.
+   - The last person to leave closes the group, and its messages go with it.
+4. **Meet people**: every member row offers "Dost əlavə et", which is the
+   intended path from a group to a friendship (and from there to a call).
+
+Group calls are **not** offered. A call here is one WebRTC peer connection
+between two browsers; a group call needs either a full mesh or a media server,
+and neither fits a free-tier deployment.
+
+## Photos
+
+The 📷 button in the composer sends an image in any conversation, direct or
+group.
+
+The browser re-encodes before uploading: downscaled to 1600px on the long edge
+and re-compressed as JPEG. That is not only about size — it also applies the
+rotation phone cameras record in EXIF rather than in the pixels (otherwise every
+phone photo arrives sideways) and drops the EXIF block, **which is where the GPS
+coordinates of where the photo was taken live**. Animated GIFs are passed
+through untouched, since a canvas round-trip would keep only the first frame.
+
+Images are stored **as bytes in PostgreSQL**, not in object storage. That is a
+deliberate trade-off: every S3/Cloudinary-style service wants an account and a
+card, and this project has no paid dependency. A free Postgres tier holds a few
+thousand downscaled chat photos, which is the honest limit of the approach —
+moving to object storage later means changing `save_attachment()` and the
+serving route, and nothing else.
+
+Two rules the server enforces regardless of what the browser sends:
+
+* the image **type comes from the bytes**, not the `Content-Type` header — a
+  file claiming to be a PNG is rejected unless it really starts like one;
+* an image is visible only to people in the conversation it was sent to, and
+  only its uploader may attach it to a message. An attachment id is a small
+  integer, so without that check the id space would be a directory of
+  everyone's photos.
+
+---
+
 ## Running the Test Suite
 
-Run the full automated test suite (all 126 tests must pass):
+Run the full automated test suite (all 307 tests must pass):
 
 ```powershell
 py -m pytest tests/ -q
@@ -220,7 +299,7 @@ py -m pytest tests/ -q
 
 Expected output:
 ```text
-126 passed, 1 warning in ~35s
+307 passed, 1 warning in ~60s
 ```
 
 The suite needs no database or network: `tests/conftest.py` points

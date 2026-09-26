@@ -109,11 +109,13 @@ CONTAINER_REQUIRED = [
     "src/web_demo/webapp.py",
     "src/web_demo/deps.py",
     "src/web_demo/social.py",
+    "src/web_demo/groups.py",
     "src/web_demo/db.py",
     "src/web_demo/frontend/index.html",
     "src/web_demo/frontend/friends.html",
     "src/web_demo/frontend/landing.html",
     "src/web_demo/frontend/register.html",
+    "src/web_demo/frontend/profile.html",
     "src/web_demo/frontend/models/azsl_hierarchical_model.json",
     "src/models/hand_landmarker.task",
     "outputs/vocabulary_24_cap50/checkpoints/gru_24_cap50_best.pt",
@@ -128,11 +130,13 @@ VERCEL_REQUIRED = [
     "src/web_demo/webapp.py",
     "src/web_demo/deps.py",
     "src/web_demo/social.py",
+    "src/web_demo/groups.py",
     "src/web_demo/db.py",
     "src/web_demo/frontend/index.html",
     "src/web_demo/frontend/friends.html",
     "src/web_demo/frontend/landing.html",
     "src/web_demo/frontend/register.html",
+    "src/web_demo/frontend/profile.html",
 ]
 
 
@@ -228,12 +232,22 @@ def check_web_layer() -> None:
         paths = {getattr(r, "path", "") for r in app.routes}
 
         expected = [
-            "/", "/login", "/register", "/app", "/friends", "/health",
+            "/", "/login", "/register", "/app", "/friends", "/profile", "/health",
             "/api/register", "/api/login", "/api/logout", "/api/me",
             "/api/ws-token", "/api/tts",
             "/api/friends", "/api/friends/requests", "/api/friends/request",
             "/api/friends/respond", "/api/friends/remove",
             "/api/users/search", "/api/messages", "/api/rtc-config",
+            # groups.py — a forgotten include_router() is invisible until a page
+            # 404s in the browser, so name every one of them here.
+            "/api/interests", "/api/profile", "/api/profile/{user_id}",
+            "/api/groups", "/api/groups/recommended", "/api/groups/search",
+            "/api/groups/{group_id}", "/api/groups/{group_id}/join",
+            "/api/groups/{group_id}/leave", "/api/groups/{group_id}/members",
+            "/api/groups/{group_id}/members/{member_id}",
+            "/api/groups/{group_id}/members/{member_id}/role",
+            "/api/groups/{group_id}/messages",
+            "/api/uploads/image", "/api/attachments/{attachment_id}",
             "/ws/social",
         ]
         missing = [p for p in expected if p not in paths]

@@ -1,7 +1,8 @@
 # AzSL Web Demo — `src/web_demo/`
 
 The web product around the AzSL recognition models: sign-language recognition
-in the browser, plus accounts, friends, chat and calls.
+in the browser, plus accounts, profiles, friends, interest groups, chat, photos
+and calls.
 
 Everything here is served by FastAPI. There is no build step and no npm — the
 frontend is hand-written HTML/CSS/JS served as static pages.
@@ -13,9 +14,10 @@ frontend is hand-written HTML/CSS/JS served as static pages.
 | File | Role | Imports the ML stack? |
 | :--- | :--- | :---: |
 | `deps.py` | Session config, signed `/ws` token, `get_db` / `current_user` / `require_user` | no |
-| `db.py` | SQLAlchemy models + queries: users, friendships, messages | no |
+| `db.py` | SQLAlchemy models + queries: users, profiles, friendships, messages, interests, groups, attachments | no |
 | `webapp.py` | Pages, auth API, Azerbaijani TTS, and the wiring in `build_web_layer()` | no |
-| `social.py` | Friends/chat REST, and the `/ws/social` socket (presence, live chat, call signalling) | no |
+| `social.py` | Friends/chat REST, and the `/ws/social` socket (presence, live chat, group chat, call signalling) | no |
+| `groups.py` | Profiles, interests, groups and image attachments — all plain REST | no |
 | `backend.py` | Everything above **plus** the `/ws` recognition socket (MediaPipe + the GRU) | **yes** |
 
 The split exists so the Vercel function can import `webapp.py` without pulling
@@ -41,7 +43,8 @@ py -m uvicorn api.index:app --host 0.0.0.0 --port 8000
 | `/` | `frontend/landing.html` | Public marketing page |
 | `/login`, `/register` | `frontend/register.html` | Redirects to `/app` when already signed in |
 | `/app` | `frontend/index.html` | The recognition workspace — auth required |
-| `/friends` | `frontend/friends.html` | Friends, chat and calls — auth required |
+| `/friends` | `frontend/friends.html` | Friends, groups, chat, photos and calls — auth required |
+| `/profile` | `frontend/profile.html` | Bio, interests, and the groups they recommend — auth required |
 
 `/app` and `/friends` are served through `_serve_configured()`, which injects
 `window.__AZSL_CONFIG__` before `</head>`:

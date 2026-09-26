@@ -29,6 +29,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 from starlette.middleware.sessions import SessionMiddleware
 
 from src.web_demo import db as auth_db
+from src.web_demo import groups
 from src.web_demo import social
 from src.web_demo.deps import (  # re-exported: backend.py imports verify_ws_token from here
     WS_TOKEN_MAX_AGE,
@@ -331,6 +332,20 @@ async def friends_page(user=Depends(current_user)):
     return _serve_configured("friends.html")
 
 
+@page_router.get("/profile")
+async def profile_page(user=Depends(current_user)):
+    """Interests, bio, and the group recommendations they produce.
+
+    Reached two ways: from the nav at any time, and as ``/profile?welcome=1``
+    immediately after registering, which is what makes "choose your interests
+    while signing up" true without adding a second step to the sign-up form
+    itself. The page reads the flag and leads with the picker.
+    """
+    if user is None:
+        return RedirectResponse(url="/login", status_code=302)
+    return _serve_configured("profile.html")
+
+
 @page_router.get("/workspace")
 async def workspace_alias():
     return RedirectResponse(url="/app")
@@ -376,6 +391,7 @@ def build_web_layer(app: FastAPI, *, serves_ws: bool = False) -> None:
     app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
     app.include_router(api_router)
     app.include_router(social.social_router)
+    app.include_router(groups.groups_router)
     app.include_router(page_router)
     if serves_ws:
         social.register_social_ws(app)

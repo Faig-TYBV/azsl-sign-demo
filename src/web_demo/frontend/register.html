@@ -477,6 +477,11 @@ body {
     /* Where the user lands after a successful registration.
        '/app' is the existing, already-working CV workspace. */
     var APP_URL = '/app';
+    /* A brand-new account goes to the profile page first, with the interest
+       picker leading, so choosing interests is part of signing up rather than
+       something nobody ever gets round to. Logging in skips it — you did this
+       once already. The page itself offers "later", so it is not a wall. */
+    var ONBOARDING_URL = '/profile?welcome=1';
 
     /* ===================================================================
      * Background: chaotic drifting Azerbaijani letters & words
@@ -796,7 +801,7 @@ body {
                 submitLabel.textContent = 'Yönləndirilir...';
                 card.classList.add('submitting');
                 window.setTimeout(function () {
-                    window.location.href = APP_URL;
+                    window.location.href = loginMode ? APP_URL : ONBOARDING_URL;
                 }, reduceMotion ? 0 : 420);
                 return;
             }
