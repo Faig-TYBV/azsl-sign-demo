@@ -222,7 +222,7 @@ equally-live paths.
 - ~~No automated tests for `src/web_demo`~~ — `tests/test_web_api.py` drives
   auth, friends and chat over real HTTP with real session cookies, and
   `tests/test_social.py` covers the friendship/message rules, ICE config and
-  call routing. Suite is now **307 tests** (was 91) and needs no Postgres:
+  call routing. Suite is now **324 tests** (was 91) and needs no Postgres:
   `tests/conftest.py` points `DATABASE_URL` at a temporary SQLite file.
   *Still untested:* the TTS endpoint (it calls out to Microsoft's service).
 - ~~`src/web_demo/README.md` is stale~~ — rewritten to match the current
@@ -241,7 +241,7 @@ equally-live paths.
 2. **Social state is single-process** — see §5b. Fine for the current demo
    scale; a blocker before running two instances.
 3. **End-to-end deploy not yet verified in a browser** — the full stack was
-   verified locally (307 unit/integration tests, plus a live two-client socket
+   verified locally (324 unit/integration tests, plus a live two-client socket
    run covering presence, chat delivery and the complete call handshake), but
    the webcam → `/ws` → GRU → TTS round trip and a real camera-to-camera call
    still need confirming on an actual HTTPS deployment. **Calls cannot be
@@ -293,6 +293,6 @@ python scripts/verify_vocabulary_24_cap50.py   # audits the checkpoint before it
 python -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port 8000
 # then open http://localhost:8000 , register/login, and go to /app
 
-# Run the test suite (307 tests: ML modules + the web/social/groups layer)
+# Run the test suite (324 tests: ML modules + the web/social/groups layer)
 pytest
 ```

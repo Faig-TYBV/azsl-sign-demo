@@ -175,7 +175,56 @@ def _dbg(msg: str) -> None:
 MIN_VALID_FRAMES_FOR_INFERENCE = 5
 
 
-async def _record_word_frame(state, websocket, feat_126, valid: float) -> None:
+def _landmarks_for_overlay(frame_result) -> list:
+    """The detected hands' 21 points, for the page to draw over the preview.
+
+    Sent from the server rather than re-detected in the browser on purpose: the
+    point of the overlay is to show what the model ACTUALLY received. A separate
+    browser-side detection could find a hand the server missed, which would be
+    misleading in exactly the case you are trying to diagnose.
+
+    Only x and y, rounded to 4 decimals - z is not drawn, and the rounding is
+    the difference between roughly 500 bytes per frame and 2 KB at 15 fps.
+    """
+    hands = []
+    for i in range(min(frame_result.num_hands, len(frame_result.landmarks))):
+        hands.append([
+            [round(float(p[0]), 4), round(float(p[1]), 4)]
+            for p in frame_result.landmarks[i]
+        ])
+    return hands
+
+
+def _detect_only(state, base64_data: str):
+    """Run the landmarker on a JPEG and return the FrameResult, or None.
+
+    Used where we want the overlay but no inference. Errors are swallowed rather
+    than reported: the caller is about to send a reply that does not depend on
+    this, and an overlay that fails to draw must not turn into an error message
+    in front of the user.
+    """
+    if not base64_data:
+        return None
+    try:
+        if "," in base64_data:
+            base64_data = base64_data.split(",", 1)[1]
+        nparr = np.frombuffer(base64.b64decode(base64_data), np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if frame is None:
+            return None
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+        now_ms = int(asyncio.get_event_loop().time() * 1000)
+        timestamp_ms = max(now_ms, state.last_timestamp_ms + 1)
+        state.last_timestamp_ms = timestamp_ms
+        return state.landmarker.detect_for_video(mp_image, timestamp_ms)
+    except Exception:
+        return None
+
+
+async def _record_word_frame(
+    state, websocket, feat_126, valid: float, landmarks: list | None = None
+) -> None:
     """Add one frame to the current trial, and classify once it is full.
 
     Shared by both input paths: frames the server extracted itself from a JPEG,
@@ -199,6 +248,7 @@ async def _record_word_frame(state, websocket, feat_126, valid: float) -> None:
             "buffer_progress": f"{rec_len}/{TARGET_SEQ_LEN}",
             "buffer_full": False,
             "hand_present": bool(valid),
+            "landmarks": landmarks or [],
             "prediction": "-",
             "confidence": 0.0,
             "raw_prediction": "-",
@@ -223,6 +273,7 @@ async def _record_word_frame(state, websocket, feat_126, valid: float) -> None:
         "buffer_progress": f"{TARGET_SEQ_LEN}/{TARGET_SEQ_LEN}",
         "buffer_full": True,
         "hand_present": vf_count >= MIN_VALID_FRAMES_FOR_INFERENCE,
+        "landmarks": landmarks or [],
         "prediction": "-",
         "confidence": 0.0,
         "raw_prediction": "-",
@@ -645,12 +696,25 @@ async def websocket_endpoint(websocket: WebSocket):
                         continue
 
                     elif state.word_state == "COUNTDOWN":
+                        # Detect purely for the overlay. This is where someone is
+                        # framing their hand, so seeing the skeleton here is what
+                        # tells them the camera has them before the 26 frames
+                        # start counting. Bounded to the ~3 s countdown, unlike
+                        # the READY state above, which a page can sit in for
+                        # minutes -- detecting there would keep a 0.1-CPU
+                        # instance busy for as long as the tab is open.
+                        cd_result = _detect_only(state, message.get("data", ""))
+                        cd_landmarks = (
+                            _landmarks_for_overlay(_mp_result_to_frame_result(cd_result))
+                            if cd_result is not None else []
+                        )
                         await websocket.send_text(json.dumps({
                             "mode": "word",
                             "word_state": "COUNTDOWN",
                             "countdown_title": state.countdown_title,
                             "countdown_text": state.countdown_text,
                             "countdown_val": state.countdown_val,
+                            "landmarks": cd_landmarks,
                             "frame_index": 0,
                             "total_frames": TARGET_SEQ_LEN,
                             "valid_frames": 0,
@@ -821,6 +885,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     response = {
                         "mode": "alphabet",
                         "hand_present": has_hand,
+                        "landmarks": _landmarks_for_overlay(frame_result),
                         "raw_prediction": stab_result["raw_letter"],
                         "raw_confidence": round(stab_result["raw_confidence"], 2),
                         "stable_candidate": stab_result["stable_candidate"],
@@ -845,7 +910,10 @@ async def websocket_endpoint(websocket: WebSocket):
                     feat_126 = np.zeros(126, dtype=np.float32)
                     valid = 0.0
 
-                await _record_word_frame(state, websocket, feat_126, valid)
+                await _record_word_frame(
+                    state, websocket, feat_126, valid,
+                    landmarks=_landmarks_for_overlay(frame_result),
+                )
                 continue
 
             else:

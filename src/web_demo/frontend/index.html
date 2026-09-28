@@ -1518,6 +1518,12 @@ async function initWebSocket() {
                 return;
             }
 
+            // The landmarks the server saw on this frame. An empty array means
+            // "looked, found nothing" and clears the overlay; absent (a status
+            // or trial-result message) leaves the last drawing alone rather
+            // than flickering it away.
+            if (Array.isArray(data.landmarks)) drawLandmarks(data.landmarks);
+
             // Route Alphabet mode responses
             if (data.mode === 'alphabet' || currentMode === 'alphabet') {
                 handleAlphabetBackendResponse(data);
@@ -1789,7 +1795,125 @@ function stopCamera() {
 
     setStatus('Kamera dayandırıldı');
     showLoading(false);
+    // No camera, no hand: a skeleton left behind would claim otherwise.
+    clearLandmarks();
 }
+
+// ---------------------------------------------------------------------------
+// MediaPipe landmark overlay
+//
+// Draws the 21 hand points and the bones between them over the camera preview.
+// This is a diagnostic, not decoration: without it, "the model got it wrong"
+// and "the model never saw your hand" look identical on screen, and they call
+// for opposite responses — move into better light versus sign differently.
+//
+// The points come from the SERVER, in the frame reply, because this page sends
+// JPEGs and the server is what runs MediaPipe. Re-detecting in the browser
+// would draw a hand the model may not have received, which is misleading in
+// precisely the situation you are debugging.
+// ---------------------------------------------------------------------------
+const HAND_CONNECTIONS = [
+    [0, 1], [1, 2], [2, 3], [3, 4],            // thumb
+    [0, 5], [5, 6], [6, 7], [7, 8],            // index
+    [5, 9], [9, 10], [10, 11], [11, 12],       // middle
+    [9, 13], [13, 14], [14, 15], [15, 16],     // ring
+    [13, 17], [17, 18], [18, 19], [19, 20],    // little
+    [0, 17],                                   // palm edge
+];
+
+const landmarkCanvas = document.getElementById('landmark-canvas');
+const landmarkCtx = landmarkCanvas ? landmarkCanvas.getContext('2d') : null;
+
+/* Where the video's picture actually sits inside its element.
+   `object-fit` letterboxes the frame (contain) or crops it (cover — which the
+   mobile breakpoint switches to), so normalised 0..1 coordinates do NOT map to
+   the element's box. Drawing as if they did puts the skeleton off the hand by
+   the size of the letterbox, which looks exactly like a tracking error. */
+function videoContentRect() {
+    const bw = video.clientWidth;
+    const bh = video.clientHeight;
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!vw || !vh || !bw || !bh) return { x: 0, y: 0, w: bw, h: bh };
+
+    const fit = window.getComputedStyle(video).objectFit || 'contain';
+    const scale = fit === 'cover'
+        ? Math.max(bw / vw, bh / vh)
+        : Math.min(bw / vw, bh / vh);
+    const w = vw * scale;
+    const h = vh * scale;
+    return { x: (bw - w) / 2, y: (bh - h) / 2, w: w, h: h };
+}
+
+function clearLandmarks() {
+    if (!landmarkCtx) return;
+    landmarkCtx.setTransform(1, 0, 0, 1, 0, 0);
+    landmarkCtx.clearRect(0, 0, landmarkCanvas.width, landmarkCanvas.height);
+}
+
+function drawLandmarks(hands) {
+    if (!landmarkCtx || !video) return;
+
+    // Match the backing store to the CSS box, in device pixels, or the lines
+    // come out blurry on a high-DPI screen and stretched on any resize.
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = video.clientWidth;
+    const cssH = video.clientHeight;
+    if (!cssW || !cssH) return;
+    if (landmarkCanvas.width !== Math.round(cssW * dpr) ||
+        landmarkCanvas.height !== Math.round(cssH * dpr)) {
+        landmarkCanvas.width = Math.round(cssW * dpr);
+        landmarkCanvas.height = Math.round(cssH * dpr);
+    }
+    landmarkCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    landmarkCtx.clearRect(0, 0, cssW, cssH);
+
+    if (!hands || !hands.length) return;
+
+    const rect = videoContentRect();
+    // NOTE: #video on this page is NOT mirrored. If a selfie view is ever added
+    // with transform: scaleX(-1), the x mapping below has to flip with it or
+    // the skeleton will sit on the wrong side of the screen.
+    const toX = (nx) => rect.x + nx * rect.w;
+    const toY = (ny) => rect.y + ny * rect.h;
+
+    hands.forEach((points, handIndex) => {
+        if (!points || points.length < 21) return;
+
+        // Two hands get two colours, so it is obvious when MediaPipe has
+        // latched onto a face or a background object as a second "hand".
+        const bone = handIndex === 0 ? 'rgba(160, 255, 255, 0.95)' : 'rgba(255, 204, 0, 0.95)';
+        const joint = handIndex === 0 ? '#A0FFFF' : '#FFCC00';
+
+        landmarkCtx.lineWidth = 3;
+        landmarkCtx.strokeStyle = bone;
+        landmarkCtx.lineCap = 'round';
+        landmarkCtx.beginPath();
+        HAND_CONNECTIONS.forEach(([a, b]) => {
+            if (!points[a] || !points[b]) return;
+            landmarkCtx.moveTo(toX(points[a][0]), toY(points[a][1]));
+            landmarkCtx.lineTo(toX(points[b][0]), toY(points[b][1]));
+        });
+        landmarkCtx.stroke();
+
+        points.forEach((p, i) => {
+            // The wrist is the origin every feature is measured from, so it is
+            // drawn larger — if it jumps, the whole feature vector jumps.
+            const r = i === 0 ? 6 : 4;
+            landmarkCtx.beginPath();
+            landmarkCtx.arc(toX(p[0]), toY(p[1]), r, 0, Math.PI * 2);
+            landmarkCtx.fillStyle = joint;
+            landmarkCtx.fill();
+            landmarkCtx.lineWidth = 1.5;
+            landmarkCtx.strokeStyle = 'rgba(20, 20, 20, 0.85)';
+            landmarkCtx.stroke();
+        });
+    });
+}
+
+// A resize changes the letterbox, so the last drawing is wrong until the next
+// frame arrives. Clearing is better than leaving a skeleton in the wrong place.
+window.addEventListener('resize', clearLandmarks);
 
 // Frame loop: capture the camera video into an offscreen canvas, encode as
 // JPEG, and stream each frame to the backend. The backend is the only
@@ -1847,6 +1971,7 @@ function startFrameLoop() {
 
 function resetBuffer() {
     framesSent = 0;
+    clearLandmarks();
     if (bufferEl) bufferEl.textContent = '0/26';
     updateHandStatus('Not Detecting');
     if (trialStageBadge) { trialStageBadge.textContent = 'HAZIRDIR'; trialStageBadge.className = 'trial-badge ready'; }

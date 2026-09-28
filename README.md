@@ -291,7 +291,7 @@ Two rules the server enforces regardless of what the browser sends:
 
 ## Running the Test Suite
 
-Run the full automated test suite (all 307 tests must pass):
+Run the full automated test suite (all 324 tests must pass):
 
 ```powershell
 py -m pytest tests/ -q
@@ -299,7 +299,7 @@ py -m pytest tests/ -q
 
 Expected output:
 ```text
-307 passed, 1 warning in ~60s
+324 passed, 1 warning in ~50s
 ```
 
 The suite needs no database or network: `tests/conftest.py` points
