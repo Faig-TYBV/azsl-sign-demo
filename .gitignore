@@ -6,6 +6,14 @@ dist/
 .venv/
 venv/
 
+# --- Local databases ---
+# SETUP.md offers SQLite as a no-password alternative to a local Postgres, so
+# the file it creates must not be committable. These are development data, and
+# they contain real password hashes and chat contents.
+*.sqlite3
+*.sqlite
+*.db
+
 # --- Local secrets / environment ---
 .env
 .env.local
