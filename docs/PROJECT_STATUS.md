@@ -106,6 +106,71 @@ This checkpoint is what the live backend loads — see §6.
   (client-side fingerspelling helper), and `friends.html` (the social page —
   same design tokens and glassmorphism cards as `index.html`).
 
+## 5a. What the 85.21% actually means (measured 2026-09-28)
+
+**The headline number is dominated by one word.** `MƏN` is 379 of the 676 test
+clips (56%) and scores 0.955 F1. Support-weighted F1 across the other 23 words
+is **0.739**. Anyone reading "85% accurate" as "85% of signs are recognised" will
+be disappointed, and that disappointment is not a regression.
+
+Per-class F1 on the test set, worst first:
+
+| Word | F1 | Precision | Recall | Clips |
+|---|---|---|---|---|
+| BAKI | 0.414 | 0.316 | 0.600 | 10 |
+| SƏN | 0.500 | 0.385 | 0.714 | 7 |
+| YEMƏK | 0.545 | 0.500 | 0.600 | 5 |
+| HARDA | 0.545 | 0.500 | 0.600 | 5 |
+| BURDA | 0.556 | 0.476 | 0.667 | 15 |
+| TELEFON | 0.588 | 0.455 | 0.833 | 6 |
+| SİZ | 0.650 | 0.745 | 0.576 | 66 |
+| NECƏ | 0.667 | 0.500 | 1.000 | 4 |
+| SABAH | 0.667 | 0.500 | 1.000 | 6 |
+| ALMAQ | 0.706 | 0.600 | 0.857 | 7 |
+| OLMAQ | 0.727 | 0.800 | 0.667 | 6 |
+| İSTƏMƏK | 0.737 | 0.636 | 0.875 | 16 |
+| BİZ, GƏLMƏK, YOX | 0.800 | | | 25, 5, 6 |
+| EV | 0.818 | | | 12 |
+| AZƏRBAYCAN | 0.833 | | | 6 |
+| VAR, BU | 0.875 | | | 16, 50 |
+| SALAM | 0.889 | | | 4 |
+| GETMƏK | 0.923 | | | 7 |
+| SAĞLAM | 0.941 | | | 8 |
+| MƏN | 0.955 | 0.981 | 0.931 | 379 |
+| BU GÜN | 1.000 | 1.000 | 1.000 | 5 |
+
+**12 of 24 words are below 0.75 F1; five are close to a coin flip.** `BAKI` has
+precision 0.316 — when the model says BAKI it is wrong about two times in three.
+
+The biggest confusions, which is what a demo will actually hit:
+
+| Signed | Comes out as | Count |
+|---|---|---|
+| SİZ | BAKI | 10 |
+| MƏN | SİZ | 9 |
+| MƏN | İSTƏMƏK | 7 |
+| SİZ | SƏN | 5 |
+| BU | BURDA | 5 |
+
+**For a demo, stick to** BU GÜN, MƏN, SAĞLAM, GETMƏK, SALAM, VAR, BU — all ≥0.875.
+**Avoid** BAKI, SƏN, YEMƏK, HARDA, BURDA unless the point is to show the limits.
+
+Two caveats on the small numbers: several classes have only 4-7 test clips, so
+their F1 has a very wide confidence interval — 0.667 on 4 clips is two or three
+correct, not a stable estimate. And this was measured on recorded clips; a live
+webcam at a different distance, in different light, at a different signing speed
+is harder than the test set, so treat these as a ceiling.
+
+**Verified unchanged** (same date): the checkpoint and the normalisation stats
+have never been modified since training; `extract_landmarks.py` differs from its
+state at training time only by a file-path fix; the removed "tuning constants"
+in `bf23eb7` each had exactly one reference (their own definition) and changed
+no behaviour; `tests/test_serving_parity.py` shows the web layer reproduces
+direct model inference bit-for-bit, and that the model is in `eval()` mode so
+dropout is not making predictions stochastic. **The offline benchmark cannot be
+re-run**: `data/features/` is gitignored and all 676 test feature files are
+absent from the working copy.
+
 ## 5b. Social Layer — friends, chat, calls (added 2026-09-15)
 
 - **`deps.py`** (new) — session config, the signed `/ws` token, and the
@@ -222,7 +287,7 @@ equally-live paths.
 - ~~No automated tests for `src/web_demo`~~ — `tests/test_web_api.py` drives
   auth, friends and chat over real HTTP with real session cookies, and
   `tests/test_social.py` covers the friendship/message rules, ICE config and
-  call routing. Suite is now **324 tests** (was 91) and needs no Postgres:
+  call routing. Suite is now **332 tests** (was 91) and needs no Postgres:
   `tests/conftest.py` points `DATABASE_URL` at a temporary SQLite file.
   *Still untested:* the TTS endpoint (it calls out to Microsoft's service).
 - ~~`src/web_demo/README.md` is stale~~ — rewritten to match the current
@@ -241,7 +306,7 @@ equally-live paths.
 2. **Social state is single-process** — see §5b. Fine for the current demo
    scale; a blocker before running two instances.
 3. **End-to-end deploy not yet verified in a browser** — the full stack was
-   verified locally (324 unit/integration tests, plus a live two-client socket
+   verified locally (332 unit/integration tests, plus a live two-client socket
    run covering presence, chat delivery and the complete call handshake), but
    the webcam → `/ws` → GRU → TTS round trip and a real camera-to-camera call
    still need confirming on an actual HTTPS deployment. **Calls cannot be
@@ -293,6 +358,6 @@ python scripts/verify_vocabulary_24_cap50.py   # audits the checkpoint before it
 python -m uvicorn src.web_demo.backend:app --host 0.0.0.0 --port 8000
 # then open http://localhost:8000 , register/login, and go to /app
 
-# Run the test suite (324 tests: ML modules + the web/social/groups layer)
+# Run the test suite (332 tests: ML modules + the web/social/groups layer)
 pytest
 ```

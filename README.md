@@ -289,9 +289,29 @@ Two rules the server enforces regardless of what the browser sends:
 
 ---
 
+## Which words the model is actually good at
+
+The trained model reports **85.21% test accuracy**, but that figure is carried by
+one word: `MƏN` is 56% of the test set and scores 0.955 F1. Across the other 23
+words, support-weighted F1 is **0.739**, and 12 of the 24 sit below 0.75.
+
+**Reliable (F1 ≥ 0.875):** BU GÜN, MƏN, SAĞLAM, GETMƏK, SALAM, VAR, BU
+**Close to a coin flip:** BAKI (0.414), SƏN (0.500), YEMƏK (0.545), HARDA (0.545), BURDA (0.556)
+
+The confusions you will actually hit: SİZ→BAKI, MƏN→SİZ, MƏN→İSTƏMƏK, BU→BURDA.
+
+Full per-class table, the confusion pairs, and the caveats on the small
+per-class sample sizes are in
+[docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) §5a. If recognition feels worse
+than you expect, check that table before assuming something broke — and use the
+landmark overlay on `/app` to tell "the model misread my hand" apart from "the
+camera never found my hand", which need opposite fixes.
+
+---
+
 ## Running the Test Suite
 
-Run the full automated test suite (all 324 tests must pass):
+Run the full automated test suite (all 332 tests must pass):
 
 ```powershell
 py -m pytest tests/ -q
@@ -299,7 +319,7 @@ py -m pytest tests/ -q
 
 Expected output:
 ```text
-324 passed, 1 warning in ~50s
+332 passed, 1 warning in ~50s
 ```
 
 The suite needs no database or network: `tests/conftest.py` points
