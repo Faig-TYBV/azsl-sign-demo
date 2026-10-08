@@ -9,6 +9,7 @@ trained via src/web_demo/frontend/models/azsl_hierarchical_model.json.
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -327,37 +328,96 @@ class AlphabetClassifier:
         return None, float(letter_result["confidence"])
 
 
+# --- Stabilizer tuning ---------------------------------------------------------
+# Everything is measured in milliseconds, not frames. The workspace page sends
+# frames only as fast as the backend answers, so the frame rate swings with
+# machine load. A frame-count gate ("10 frames") meant 0.7 s on a fast machine
+# and 2 s or more on a slow one.
+#
+# The letter MLP has no "not-a-letter" class and its softmax saturates, so the
+# gates below — not the confidence floor alone — are what keep a hand at rest
+# or in transit from spelling nonsense.
+STAB_FRAME_CONF = 0.60     # a frame below this is "no evidence": it pauses the hold, doesn't reset it
+STAB_COMMIT_CONF = 0.72    # mean confidence over the hold required to commit
+STAB_HOLD_MS = 450.0       # how long one letter must be held
+STAB_MIN_FRAMES = 3        # floor on agreeing frames, for very low frame rates
+STAB_GRACE_MS = 250.0      # interruptions shorter than this are forgiven
+STAB_SWITCH_FRAMES = 2     # consecutive frames of a new letter that replace the current one
+# Wrist speed, in normalised image units per second, above which the hand is
+# "in transit". 0.5/s is roughly the old 0.030-per-frame at 15 fps, but stays
+# the same at any frame rate instead of tightening as fps drops.
+STAB_MOTION_SPEED = 0.5
+
+
 class AlphabetStabilizer:
     """
     Temporal stabilization and debounce layer for fingerspelling.
-    Prevents single-frame flickering, duplicate letter additions while a gesture is held,
-    and handles control gestures (SPACE / DEL).
+
+    Commits a letter once it has been held for ``hold_ms`` with a mean
+    confidence of at least ``commit_confidence`` while the hand is still.
+    Unlike a strict consecutive-frame streak, a short interruption — one
+    low-confidence frame, a one-frame flicker to another letter, a frame
+    MediaPipe dropped, a wobble of the wrist — only pauses the hold instead of
+    restarting it.
+
+    A committed letter is latched: holding it does not type it again. Taking
+    the hand out of frame (or committing a different letter) releases the
+    latch, so real double letters ("LL") are still possible.
+
+    src/web_demo/frontend/js/azsl_alphabet.js carries a line-for-line port
+    (AlphabetStabilizer) for the in-call path; tests/test_alphabet_stabilizer.py
+    holds the two to the same output.
     """
 
     def __init__(
         self,
-        min_confidence: float = MIN_CONFIDENCE,
-        stability_frames: int = 3,
+        min_confidence: float = STAB_FRAME_CONF,
+        commit_confidence: float = STAB_COMMIT_CONF,
+        hold_ms: float = STAB_HOLD_MS,
+        min_frames: int = STAB_MIN_FRAMES,
+        grace_ms: float = STAB_GRACE_MS,
+        switch_frames: int = STAB_SWITCH_FRAMES,
+        motion_speed: float = STAB_MOTION_SPEED,
     ):
         self.min_confidence = min_confidence
-        self.stability_frames = stability_frames
+        self.commit_confidence = commit_confidence
+        self.hold_ms = hold_ms
+        self.min_frames = min_frames
+        self.grace_ms = grace_ms
+        self.switch_frames = switch_frames
+        self.motion_speed = motion_speed
 
-        self.candidate: Optional[str] = None
-        self.consecutive_count: int = 0
-        self.candidate_conf: float = 0.0
         self.accepted_letter: Optional[str] = None
         self.committed_letter: Optional[str] = None
-        self.already_committed: bool = False
         self.spelled_word: str = ""
+        self._reset_streak()
+        self._reset_tracking()
+
+    def _reset_streak(self) -> None:
+        self.candidate: Optional[str] = None
+        self.cand_start = 0.0
+        self.cand_last = 0.0
+        self.cand_frames = 0
+        self.cand_conf_sum = 0.0
+        self._reset_challenger()
+
+    def _reset_challenger(self) -> None:
+        self.challenger: Optional[str] = None
+        self.challenger_start = 0.0
+        self.challenger_frames = 0
+        self.challenger_conf_sum = 0.0
+
+    def _reset_tracking(self) -> None:
+        self.prev_wrist: Optional[Tuple[float, float]] = None
+        self.prev_t: Optional[float] = None
+        self.absent_since: Optional[float] = None
 
     def reset(self) -> None:
-        self.candidate = None
-        self.consecutive_count = 0
-        self.candidate_conf = 0.0
         self.accepted_letter = None
         self.committed_letter = None
-        self.already_committed = False
         self.spelled_word = ""
+        self._reset_streak()
+        self._reset_tracking()
 
     def clear_word(self) -> None:
         self.spelled_word = ""
@@ -366,84 +426,137 @@ class AlphabetStabilizer:
         if self.spelled_word:
             self.spelled_word = self.spelled_word[:-1]
 
+    def _progress(self) -> float:
+        if self.candidate is None:
+            return 0.0
+        if self.candidate == self.committed_letter:
+            return 1.0
+        by_time = (self.cand_last - self.cand_start) / self.hold_ms if self.hold_ms > 0 else 1.0
+        by_frames = self.cand_frames / self.min_frames if self.min_frames > 0 else 1.0
+        return max(0.0, min(1.0, by_time, by_frames))
+
+    def _result(
+        self, raw_letter: Optional[str], raw_conf: float, moving: bool, just_accepted: bool
+    ) -> Dict[str, Any]:
+        progress = self._progress()
+        cand_conf = self.cand_conf_sum / self.cand_frames if self.cand_frames else 0.0
+        return {
+            "raw_letter": raw_letter if raw_letter else "-",
+            "raw_confidence": float(raw_conf),
+            "stable_candidate": self.candidate if self.candidate else "-",
+            "candidate_confidence": float(cand_conf),
+            # Half-up, matching Math.round in the JS port (round() is half-even).
+            "candidate_ratio": int(progress * 1000 + 0.5) / 1000,
+            "candidate_progress": f"{int(progress * 100 + 0.5)}%",
+            "is_moving": bool(moving),
+            "accepted_letter": self.accepted_letter or "-",
+            "just_accepted": just_accepted,
+            "spelled_word": self.spelled_word,
+        }
+
+    def _commit(self, letter: str) -> None:
+        self.accepted_letter = letter
+        self.committed_letter = letter
+        if letter == "SPACE":
+            if self.spelled_word and not self.spelled_word.endswith(" "):
+                self.spelled_word += " "
+        elif letter == "DEL":
+            if self.spelled_word:
+                self.spelled_word = self.spelled_word[:-1]
+        else:
+            self.spelled_word += letter
+
     def update(
         self,
         raw_letter: Optional[str],
         raw_confidence: float,
         hand_present: bool = True,
         is_moving: bool = False,
+        wrist: Optional[Tuple[float, float]] = None,
+        now_ms: Optional[float] = None,
     ) -> Dict[str, Any]:
-        just_accepted = False
+        """
+        raw_letter / raw_confidence: the classifier's top guess for this frame,
+            unfiltered (predict_frame with min_confidence=0), so the UI can show
+            what the model sees before it is sure.
+        wrist: (x, y) of landmark 0 in normalised image coords; enables the
+            built-in per-second motion gate.
+        is_moving: an external motion verdict, OR-ed with the built-in one.
+        now_ms: frame time in milliseconds; defaults to the monotonic clock.
+        """
+        now = time.monotonic() * 1000.0 if now_ms is None else float(now_ms)
 
-        # Hand fully out of frame: reset everything AND release the commit latch,
-        # so deliberately lowering the hand and re-signing the same letter (a
-        # real double letter, e.g. "AA") works.
+        # Hand gone. A dropout shorter than the grace window is MediaPipe
+        # losing the hand for a frame, not the signer lowering it: keep the
+        # streak and the latch. A longer absence resets both.
         if not hand_present:
-            self.candidate = None
-            self.consecutive_count = 0
-            self.candidate_conf = 0.0
-            self.committed_letter = None
-            self.already_committed = False
-            return {
-                "raw_letter": "-",
-                "raw_confidence": 0.0,
-                "stable_candidate": "-",
-                "candidate_progress": f"0/{self.stability_frames}",
-                "accepted_letter": self.accepted_letter or "-",
-                "just_accepted": False,
-                "spelled_word": self.spelled_word,
-            }
+            if self.absent_since is None:
+                self.absent_since = now
+            if now - self.absent_since >= self.grace_ms:
+                self._reset_streak()
+                self.committed_letter = None
+                self.prev_wrist = None
+                self.prev_t = None
+            return self._result(None, 0.0, False, False)
+        self.absent_since = None
 
-        # Hand present but not spelling right now: it's mid-motion between poses,
-        # the frame has no confident letter, or confidence is below threshold.
-        # Drop the in-progress streak so nothing commits, but KEEP committed_letter
-        # so a single flicker can't double-type the letter just accepted.
-        if is_moving or raw_letter is None or raw_confidence < self.min_confidence:
-            self.candidate = None
-            self.consecutive_count = 0
-            self.candidate_conf = 0.0
-            return {
-                "raw_letter": raw_letter if raw_letter else "-",
-                "raw_confidence": float(raw_confidence),
-                "stable_candidate": "-",
-                "candidate_progress": f"0/{self.stability_frames}",
-                "accepted_letter": self.accepted_letter or "-",
-                "just_accepted": False,
-                "spelled_word": self.spelled_word,
-            }
+        # Motion gate, per second rather than per frame, so a lower frame rate
+        # doesn't make the same slow movement look like a jump.
+        moving = bool(is_moving)
+        if wrist is not None:
+            if self.prev_wrist is not None and self.prev_t is not None:
+                dt_s = max(now - self.prev_t, 1000.0 / 60.0) / 1000.0
+                dx = wrist[0] - self.prev_wrist[0]
+                dy = wrist[1] - self.prev_wrist[1]
+                if (dx * dx + dy * dy) ** 0.5 / dt_s > self.motion_speed:
+                    moving = True
+            self.prev_wrist = (float(wrist[0]), float(wrist[1]))
+            self.prev_t = now
 
-        # Hand is present and confidence >= min_confidence
-        if raw_letter == self.candidate:
-            self.consecutive_count += 1
-            self.candidate_conf = max(self.candidate_conf, raw_confidence)
-        else:
-            self.candidate = raw_letter
-            self.consecutive_count = 1
-            self.candidate_conf = raw_confidence
+        evidence = (
+            not moving and raw_letter is not None and raw_confidence >= self.min_confidence
+        )
 
-        # Check if candidate is confirmed for stability_frames
-        if self.consecutive_count >= self.stability_frames:
-            if self.candidate != self.committed_letter:
-                self.accepted_letter = self.candidate
-                self.committed_letter = self.candidate
-                self.already_committed = True
-                just_accepted = True
+        if evidence and raw_letter == self.candidate:
+            self.cand_frames += 1
+            self.cand_conf_sum += raw_confidence
+            self.cand_last = now
+            self._reset_challenger()
+        elif evidence:
+            # A different letter. Take it at once if the current candidate is
+            # stale; otherwise make it hold for a couple of frames, so a
+            # single-frame flicker can't wipe out a hold in progress.
+            if raw_letter == self.challenger:
+                self.challenger_frames += 1
+                self.challenger_conf_sum += raw_confidence
+            else:
+                self.challenger = raw_letter
+                self.challenger_start = now
+                self.challenger_frames = 1
+                self.challenger_conf_sum = raw_confidence
+            stale = self.candidate is None or now - self.cand_last > self.grace_ms
+            if stale or self.challenger_frames >= self.switch_frames:
+                self.candidate = self.challenger
+                self.cand_start = self.challenger_start
+                self.cand_last = now
+                self.cand_frames = self.challenger_frames
+                self.cand_conf_sum = self.challenger_conf_sum
+                self._reset_challenger()
+        elif self.candidate is not None and now - self.cand_last > self.grace_ms:
+            # No usable evidence for longer than the grace window: the hand is
+            # in transit or the pose isn't a letter. Drop the hold.
+            self._reset_streak()
 
-                if self.candidate == "SPACE":
-                    if self.spelled_word and not self.spelled_word.endswith(" "):
-                        self.spelled_word += " "
-                elif self.candidate == "DEL":
-                    if self.spelled_word:
-                        self.spelled_word = self.spelled_word[:-1]
-                else:
-                    self.spelled_word += self.candidate
+        just_accepted = False
+        if (
+            evidence
+            and self.candidate == raw_letter
+            and self.candidate != self.committed_letter
+            and self.cand_frames >= self.min_frames
+            and self.cand_last - self.cand_start >= self.hold_ms
+            and self.cand_conf_sum / self.cand_frames >= self.commit_confidence
+        ):
+            self._commit(self.candidate)
+            just_accepted = True
 
-        return {
-            "raw_letter": raw_letter,
-            "raw_confidence": float(raw_confidence),
-            "stable_candidate": self.candidate if self.candidate else "-",
-            "candidate_progress": f"{min(self.consecutive_count, self.stability_frames)}/{self.stability_frames}",
-            "accepted_letter": self.accepted_letter or "-",
-            "just_accepted": just_accepted,
-            "spelled_word": self.spelled_word,
-        }
+        return self._result(raw_letter, raw_confidence, moving, just_accepted)

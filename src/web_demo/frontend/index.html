@@ -943,6 +943,23 @@ main {
     font-weight: 600;
 }
 .alphabet-meta .item .value.empty { color: var(--border-muted); font-weight: 400; }
+/* The model's guess before it has enough evidence to count. */
+.alphabet-meta .item .value.tentative { color: var(--border-muted); }
+.alphabet-meta .item .value.accepted { color: var(--state-success); }
+.alphabet-hold {
+    height: 4px;
+    margin-top: 0.5rem;
+    border-radius: 2px;
+    background-color: rgba(194, 178, 128, 0.15);
+    overflow: hidden;
+}
+.alphabet-hold-fill {
+    height: 100%;
+    width: 0;
+    background-color: var(--state-trial);
+    transition: width 0.12s linear;
+}
+.alphabet-hold-fill.done { background-color: var(--state-success); }
 .alphabet-help {
     font-size: 0.85rem;
     color: var(--border-muted);
@@ -1089,6 +1106,9 @@ main {
             <div class="item">
                 <label>Cari Hərf</label>
                 <div class="value empty" id="alphabet-live-letter">-</div>
+                <div class="alphabet-hold" aria-hidden="true">
+                    <div class="alphabet-hold-fill" id="alphabet-hold-fill"></div>
+                </div>
             </div>
             <div class="item">
                 <label>Dəqiqlik</label>
@@ -1111,7 +1131,8 @@ main {
         </div>
         <p class="alphabet-help">
             Hərfləri bir-bir hecalayın. Qəbul edilməzdən əvvəl hər hərf
-            təxminən <b>700 ms</b> saxlanmalıdır. Hecalanmış sözü cümləyə
+            təxminən <b>yarım saniyə</b> sabit saxlanmalıdır — zolaq dolduqda
+            hərf əlavə olunur. Hecalanmış sözü cümləyə
             əlavə etmək üçün <b>SPACE</b> jestindən (baş barmaq içəri
             qatlanmış yumruq, yuxarı baxan) istifadə edin, son hərfi silmək
             üçün isə <b>DEL</b> jestindən (şəhadət barmağı yuxarı, digərləri
@@ -1338,34 +1359,48 @@ function setLoadingText(message) {
 function handleAlphabetBackendResponse(data) {
     const liveLetterEl = document.getElementById('alphabet-live-letter');
     const liveConfEl   = document.getElementById('alphabet-live-conf');
+    const holdFillEl   = document.getElementById('alphabet-hold-fill');
 
-    if (!data.hand_present || !data.accepted_letter || data.accepted_letter === '-') {
-        if (liveLetterEl) { liveLetterEl.textContent = '-'; liveLetterEl.classList.add('empty'); }
-        if (liveConfEl)   { liveConfEl.textContent   = '-'; liveConfEl.classList.add('empty'); }
-        updateHandStatus(data.hand_present ? 'Detecting' : 'Not Detecting');
-        if (data.spelled_word !== undefined) {
-            spelledWord = data.spelled_word;
-            renderSpelledWord();
-        }
-        return;
-    }
-
-    updateHandStatus('Detecting');
-    const letter = data.accepted_letter;
-    const conf = data.alphabet_confidence || data.raw_confidence || 0.0;
-
-    if (liveLetterEl) {
-        liveLetterEl.textContent = letter;
-        liveLetterEl.classList.remove('empty');
-    }
-    if (liveConfEl) {
-        liveConfEl.textContent = (conf * 100).toFixed(1) + '%';
-        liveConfEl.classList.remove('empty');
+    function show(el, text, state) {
+        if (!el) return;
+        el.textContent = text;
+        el.classList.toggle('empty', state === 'empty');
+        el.classList.toggle('tentative', state === 'tentative');
+        el.classList.toggle('accepted', state === 'accepted');
     }
 
     if (data.spelled_word !== undefined) {
         spelledWord = data.spelled_word;
-        renderSpelledWord(data.just_accepted ? letter : null);
+        renderSpelledWord(data.just_accepted ? data.accepted_letter : null);
+    }
+    updateHandStatus(data.hand_present ? 'Detecting' : 'Not Detecting');
+
+    // Show what the model sees on every frame, not only once a letter has
+    // been committed — otherwise the panel sits on "-" for the whole hold and
+    // looks like nothing is happening.
+    const candidate = data.stable_candidate && data.stable_candidate !== '-'
+        ? data.stable_candidate : null;
+    const raw = data.raw_prediction && data.raw_prediction !== '-'
+        ? data.raw_prediction : null;
+    const letter = candidate || raw;
+
+    if (!data.hand_present || !letter) {
+        show(liveLetterEl, '-', 'empty');
+        show(liveConfEl, '-', 'empty');
+    } else {
+        const ratio = candidate ? (data.candidate_ratio || 0) : 0;
+        const state = data.just_accepted || ratio >= 1 ? 'accepted'
+            : candidate ? null : 'tentative';
+        show(liveLetterEl, data.is_moving ? letter + ' · hərəkət' : letter, state);
+        const conf = data.raw_confidence || 0;
+        const floor = data.frame_conf_floor || 0;
+        show(liveConfEl, (conf * 100).toFixed(1) + '%', conf < floor ? 'tentative' : null);
+    }
+
+    if (holdFillEl) {
+        const ratio = data.hand_present && candidate ? (data.candidate_ratio || 0) : 0;
+        holdFillEl.style.width = (ratio * 100).toFixed(0) + '%';
+        holdFillEl.classList.toggle('done', ratio >= 1);
     }
 }
 

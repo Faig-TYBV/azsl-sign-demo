@@ -184,7 +184,7 @@ Open `http://localhost:8000` in your web browser (Chrome, Edge, or Safari).
   6. Tap **NEXT TRIAL [SPACE]** to proceed to the next word.
 * **Alphabet Mode**:
   1. Switch mode toggle to **Alphabet Mode**.
-  2. Present hand gestures to spell letters. Hold each gesture for ~700 ms to accept.
+  2. Present hand gestures to spell letters. Hold each gesture still for ~0.45 s to accept; a brief wobble or flicker pauses the hold rather than restarting it.
   3. Use **Add to Sentence**, **Backspace**, or **Clear Word** to construct phrases.
 
 ---

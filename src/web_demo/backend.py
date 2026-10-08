@@ -135,15 +135,10 @@ alphabet_classifier = AlphabetClassifier()
 print("Alphabet classifier loaded successfully.", flush=True)
 
 # --- Alphabet (fingerspelling) mode tuning ------------------------------------
-# The alphabet MLP has no "not-a-letter" class, so its softmax saturates and the
-# confidence gate alone can't stop garbage from accumulating ("FFAX" while the
-# user isn't even signing). These three knobs do the real work:
-#   * a long stable-hold requirement (~0.7 s at 15 fps, matches the UI hint)
-#   * a motion gate: a hand travelling between poses can't commit anything
-#   * a high confidence floor
-ALPHA_MIN_CONF = 0.82           # per-frame letter confidence required
-ALPHA_STABILITY_FRAMES = 10     # consecutive agreeing frames to commit (~0.66 s @ 15 fps)
-ALPHA_MOTION_THRESH = 0.030     # wrist travel (normalised image units) per frame; above => "moving"
+# The gates (hold time, grace window, per-second motion gate, confidence floors)
+# live in AlphabetStabilizer and are tuned in milliseconds, not frames, because
+# this page's frame rate follows backend load. See the STAB_* constants in
+# src/inference/alphabet_classifier.py.
 # MediaPipe reports handedness as if the image were mirrored (selfie view); the
 # frontend sends a raw, un-mirrored frame, so the Left/Right label is inverted
 # relative to reality. Flip it back before the classifier mirrors the hand.
@@ -351,11 +346,7 @@ class ConnectionState:
         self.last_word_result = None
 
         # --- Alphabet Mode Stabilization Engine ---
-        self.stabilizer = AlphabetStabilizer(
-            min_confidence=ALPHA_MIN_CONF, stability_frames=ALPHA_STABILITY_FRAMES
-        )
-        # Previous-frame wrist (x, y) in normalised image space, for the motion gate.
-        self.alpha_prev_wrist = None
+        self.stabilizer = AlphabetStabilizer()
 
         self.landmarker = None
         self.last_timestamp_ms = 0
@@ -847,20 +838,14 @@ async def websocket_endpoint(websocket: WebSocket):
                     has_hand = frame_result.num_hands > 0
                     raw_letter = None
                     raw_conf = 0.0
-                    is_moving = False
+                    wrist_xy = None
 
                     if has_hand:
                         hand_lm = frame_result.landmarks[0]
-
-                        # Motion gate: how far did the wrist travel since the
-                        # last frame? A hand in transit between poses must not
-                        # be allowed to commit a letter.
+                        # The stabilizer turns successive wrist positions into a
+                        # per-second speed: a hand in transit between poses must
+                        # not be allowed to commit a letter.
                         wrist_xy = (float(hand_lm[0][0]), float(hand_lm[0][1]))
-                        if state.alpha_prev_wrist is not None:
-                            dx = wrist_xy[0] - state.alpha_prev_wrist[0]
-                            dy = wrist_xy[1] - state.alpha_prev_wrist[1]
-                            is_moving = (dx * dx + dy * dy) ** 0.5 > ALPHA_MOTION_THRESH
-                        state.alpha_prev_wrist = wrist_xy
 
                         hand_label = (
                             frame_result.handedness[0] if frame_result.handedness else "Right"
@@ -868,17 +853,18 @@ async def websocket_endpoint(websocket: WebSocket):
                         if ALPHA_HANDEDNESS_IS_MIRRORED:
                             hand_label = "Left" if hand_label == "Right" else "Right"
 
+                        # Unfiltered top guess, so the panel can show what the
+                        # model sees while it is still building confidence. The
+                        # stabilizer decides what counts.
                         raw_letter, raw_conf = alphabet_classifier.predict_frame(
-                            hand_lm, handedness=hand_label, min_confidence=ALPHA_MIN_CONF
+                            hand_lm, handedness=hand_label, min_confidence=0.0
                         )
-                    else:
-                        state.alpha_prev_wrist = None
 
                     stab_result = state.stabilizer.update(
                         raw_letter=raw_letter,
                         raw_confidence=raw_conf,
                         hand_present=has_hand,
-                        is_moving=is_moving,
+                        wrist=wrist_xy,
                     )
                     total_ms = (time.perf_counter() - t0) * 1000.0
 
@@ -889,7 +875,11 @@ async def websocket_endpoint(websocket: WebSocket):
                         "raw_prediction": stab_result["raw_letter"],
                         "raw_confidence": round(stab_result["raw_confidence"], 2),
                         "stable_candidate": stab_result["stable_candidate"],
+                        "candidate_confidence": round(stab_result["candidate_confidence"], 2),
                         "candidate_progress": stab_result["candidate_progress"],
+                        "candidate_ratio": stab_result["candidate_ratio"],
+                        "is_moving": stab_result["is_moving"],
+                        "frame_conf_floor": state.stabilizer.min_confidence,
                         "accepted_letter": stab_result["accepted_letter"],
                         "just_accepted": stab_result["just_accepted"],
                         "spelled_word": stab_result["spelled_word"],

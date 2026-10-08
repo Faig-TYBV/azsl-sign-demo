@@ -3057,17 +3057,11 @@ const local = {
     landmarker: null,
     alphabetModel: null,
     lastVideoTime: -1,
-    // Mirrors AlphabetStabilizer in src/inference/alphabet_classifier.py.
-    stab: {
-        candidate: null, count: 0, committed: null, prevWrist: null,
-    },
+    // The same stabilizer the server runs (AlphabetStabilizer in
+    // alphabet_classifier.py, ported in azsl_alphabet.js). Created lazily
+    // because azsl_alphabet.js may load after this script.
+    stab: null,
 };
-
-// Same numbers as the server constants in backend.py; the gates are what stop
-// a hand in transit between poses from committing letters.
-const ALPHA_MIN_CONF = 0.82;
-const ALPHA_STABILITY_FRAMES = 10;
-const ALPHA_MOTION_THRESH = 0.030;
 
 async function initLocalRecognition() {
     if (local.ready) return true;
@@ -3197,21 +3191,16 @@ function detectLocal(video) {
    classifier has no "not a letter" class, so without these it happily spells
    nonsense while someone is just moving their hand. */
 function classifyAlphabetLocally(hands) {
+    if (!local.alphabetModel || !window.AzslAlphabet) return null;
+    if (!local.stab) local.stab = new window.AzslAlphabet.AlphabetStabilizer();
     const st = local.stab;
-    if (!hands || !hands.length || !local.alphabetModel || !window.AzslAlphabet) {
-        st.candidate = null; st.count = 0; st.committed = null; st.prevWrist = null;
+    if (!hands || !hands.length) {
+        // Feed the absence through: a one-frame dropout is forgiven, a longer
+        // one releases the latch so a double letter can be signed.
+        st.update({ handPresent: false });
         return null;
     }
     const lm = hands[0].landmarks;
-
-    const wrist = [lm[0][0], lm[0][1]];
-    let moving = false;
-    if (st.prevWrist) {
-        const dx = wrist[0] - st.prevWrist[0];
-        const dy = wrist[1] - st.prevWrist[1];
-        moving = Math.sqrt(dx * dx + dy * dy) > ALPHA_MOTION_THRESH;
-    }
-    st.prevWrist = wrist;
 
     let label = null;
     let confidence = 0;
@@ -3258,22 +3247,16 @@ function classifyAlphabetLocally(hands) {
         return null;
     }
 
-    if (moving || !label || confidence < ALPHA_MIN_CONF) {
-        st.candidate = null; st.count = 0;
-        return { raw: label, confidence: confidence, accepted: null, moving: moving };
-    }
-
-    if (label === st.candidate) st.count += 1;
-    else { st.candidate = label; st.count = 1; }
-
-    let accepted = null;
-    if (st.count >= ALPHA_STABILITY_FRAMES && st.candidate !== st.committed) {
-        accepted = st.candidate;
-        st.committed = st.candidate;
-    }
+    const r = st.update({
+        letter: label, confidence: confidence, handPresent: true,
+        wrist: [lm[0][0], lm[0][1]],
+    });
     return {
-        raw: label, confidence: confidence, accepted: accepted, moving: false,
-        progress: Math.min(st.count, ALPHA_STABILITY_FRAMES) + '/' + ALPHA_STABILITY_FRAMES,
+        raw: label, confidence: confidence,
+        accepted: r.justAccepted ? r.acceptedLetter : null,
+        moving: r.isMoving,
+        candidate: r.stableCandidate !== '-' ? r.stableCandidate : null,
+        progress: r.candidateProgress,
     };
 }
 
@@ -3455,8 +3438,10 @@ function applyLocalAlphabet(out) {
         convStatus('Qəbul edildi: ' + out.accepted);
         return;
     }
-    if (out.raw) {
-        convStatus('Hərf: ' + out.raw + (out.progress ? ' (' + out.progress + ')' : ''));
+    const shown = out.candidate || out.raw;
+    if (shown) {
+        convStatus('Hərf: ' + shown + ' · ' + Math.round(out.confidence * 100) + '%' +
+                   (out.candidate ? ' (' + out.progress + ')' : ''));
     }
 }
 

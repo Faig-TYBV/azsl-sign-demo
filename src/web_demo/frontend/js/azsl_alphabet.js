@@ -477,6 +477,169 @@
   }
 
   // ==========================================================================
+  // STABILIZER - line-for-line port of AlphabetStabilizer in
+  // src/inference/alphabet_classifier.py (tests/test_alphabet_stabilizer.py
+  // holds the two to the same output). Time-based, in milliseconds: a short
+  // interruption pauses a hold instead of restarting it.
+  // ==========================================================================
+  var STABILIZER_DEFAULTS = {
+    minConfidence:    0.60,
+    commitConfidence: 0.72,
+    holdMs:           450,
+    minFrames:        3,
+    graceMs:          250,
+    switchFrames:     2,
+    motionSpeed:      0.5
+  };
+
+  function AlphabetStabilizer(opts) {
+    var o = opts || {};
+    for (var k in STABILIZER_DEFAULTS) {
+      this[k] = (o[k] != null) ? o[k] : STABILIZER_DEFAULTS[k];
+    }
+    this.acceptedLetter = null;
+    this.committedLetter = null;
+    this.spelledWord = '';
+    this._resetStreak();
+    this._resetTracking();
+  }
+  AlphabetStabilizer.prototype._resetStreak = function () {
+    this.candidate = null;
+    this.candStart = 0;
+    this.candLast = 0;
+    this.candFrames = 0;
+    this.candConfSum = 0;
+    this._resetChallenger();
+  };
+  AlphabetStabilizer.prototype._resetChallenger = function () {
+    this.challenger = null;
+    this.challengerStart = 0;
+    this.challengerFrames = 0;
+    this.challengerConfSum = 0;
+  };
+  AlphabetStabilizer.prototype._resetTracking = function () {
+    this.prevWrist = null;
+    this.prevT = null;
+    this.absentSince = null;
+  };
+  AlphabetStabilizer.prototype.reset = function () {
+    this.acceptedLetter = null;
+    this.committedLetter = null;
+    this.spelledWord = '';
+    this._resetStreak();
+    this._resetTracking();
+  };
+  AlphabetStabilizer.prototype._progress = function () {
+    if (this.candidate === null) return 0;
+    if (this.candidate === this.committedLetter) return 1;
+    var byTime = this.holdMs > 0 ? (this.candLast - this.candStart) / this.holdMs : 1;
+    var byFrames = this.minFrames > 0 ? this.candFrames / this.minFrames : 1;
+    return Math.max(0, Math.min(1, byTime, byFrames));
+  };
+  AlphabetStabilizer.prototype._result = function (rawLetter, rawConf, moving, justAccepted) {
+    var progress = this._progress();
+    return {
+      rawLetter: rawLetter || '-',
+      rawConfidence: rawConf,
+      stableCandidate: this.candidate || '-',
+      candidateConfidence: this.candFrames ? this.candConfSum / this.candFrames : 0,
+      candidateRatio: Math.round(progress * 1000) / 1000,
+      candidateProgress: Math.round(progress * 100) + '%',
+      isMoving: !!moving,
+      acceptedLetter: this.acceptedLetter || '-',
+      justAccepted: justAccepted,
+      spelledWord: this.spelledWord
+    };
+  };
+  AlphabetStabilizer.prototype._commit = function (letter) {
+    this.acceptedLetter = letter;
+    this.committedLetter = letter;
+    if (letter === LABELS.SPACE) {
+      if (this.spelledWord && this.spelledWord.slice(-1) !== ' ') this.spelledWord += ' ';
+    } else if (letter === LABELS.DEL) {
+      this.spelledWord = this.spelledWord.slice(0, -1);
+    } else {
+      this.spelledWord += letter;
+    }
+  };
+  /** frame: { letter, confidence, handPresent, wrist: [x, y] | null,
+   *           isMoving, nowMs }. letter/confidence are the unfiltered top guess. */
+  AlphabetStabilizer.prototype.update = function (frame) {
+    var now = frame.nowMs != null ? frame.nowMs
+      : (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    var rawLetter = frame.letter || null;
+    var rawConf = frame.confidence || 0;
+    var handPresent = frame.handPresent !== false;
+
+    if (!handPresent) {
+      if (this.absentSince === null) this.absentSince = now;
+      if (now - this.absentSince >= this.graceMs) {
+        this._resetStreak();
+        this.committedLetter = null;
+        this.prevWrist = null;
+        this.prevT = null;
+      }
+      return this._result(null, 0, false, false);
+    }
+    this.absentSince = null;
+
+    var moving = !!frame.isMoving;
+    var wrist = frame.wrist;
+    if (wrist) {
+      if (this.prevWrist && this.prevT !== null) {
+        var dtS = Math.max(now - this.prevT, 1000 / 60) / 1000;
+        var dx = wrist[0] - this.prevWrist[0];
+        var dy = wrist[1] - this.prevWrist[1];
+        if (Math.sqrt(dx * dx + dy * dy) / dtS > this.motionSpeed) moving = true;
+      }
+      this.prevWrist = [wrist[0], wrist[1]];
+      this.prevT = now;
+    }
+
+    var evidence = !moving && rawLetter !== null && rawConf >= this.minConfidence;
+
+    if (evidence && rawLetter === this.candidate) {
+      this.candFrames += 1;
+      this.candConfSum += rawConf;
+      this.candLast = now;
+      this._resetChallenger();
+    } else if (evidence) {
+      if (rawLetter === this.challenger) {
+        this.challengerFrames += 1;
+        this.challengerConfSum += rawConf;
+      } else {
+        this.challenger = rawLetter;
+        this.challengerStart = now;
+        this.challengerFrames = 1;
+        this.challengerConfSum = rawConf;
+      }
+      var stale = this.candidate === null || now - this.candLast > this.graceMs;
+      if (stale || this.challengerFrames >= this.switchFrames) {
+        this.candidate = this.challenger;
+        this.candStart = this.challengerStart;
+        this.candLast = now;
+        this.candFrames = this.challengerFrames;
+        this.candConfSum = this.challengerConfSum;
+        this._resetChallenger();
+      }
+    } else if (this.candidate !== null && now - this.candLast > this.graceMs) {
+      this._resetStreak();
+    }
+
+    var justAccepted = false;
+    if (evidence &&
+        this.candidate === rawLetter &&
+        this.candidate !== this.committedLetter &&
+        this.candFrames >= this.minFrames &&
+        this.candLast - this.candStart >= this.holdMs &&
+        this.candConfSum / this.candFrames >= this.commitConfidence) {
+      this._commit(this.candidate);
+      justAccepted = true;
+    }
+    return this._result(rawLetter, rawConf, moving, justAccepted);
+  };
+
+  // ==========================================================================
   // EXPOSE
   // ==========================================================================
   global.AzslAlphabet = {
@@ -498,7 +661,8 @@
     computeTrajectoryFeatures: computeTrajectoryFeatures,
     DynamicHysteresis: DynamicHysteresis,
     rescoreWithTrajectory: rescoreWithTrajectory,
-    predictGesture: predictGesture
+    predictGesture: predictGesture,
+    AlphabetStabilizer: AlphabetStabilizer
   };
 
 })(typeof window !== 'undefined' ? window : globalThis);
