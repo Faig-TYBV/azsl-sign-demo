@@ -52,6 +52,7 @@ class FakeState:
     def __init__(self):
         self.recorded_features = []
         self.recorded_validity = []
+        self.recorded_labels = []
         self.word_state = "RECORDING"
         self.last_word_result = None
 

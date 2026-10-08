@@ -1557,7 +1557,7 @@ async function initWebSocket() {
             // "looked, found nothing" and clears the overlay; absent (a status
             // or trial-result message) leaves the last drawing alone rather
             // than flickering it away.
-            if (Array.isArray(data.landmarks)) drawLandmarks(data.landmarks);
+            if (Array.isArray(data.landmarks)) drawLandmarks(data.landmarks, data.hand_labels);
 
             // Route Alphabet mode responses
             if (data.mode === 'alphabet' || currentMode === 'alphabet') {
@@ -1567,6 +1567,13 @@ async function initWebSocket() {
 
             // Word mode trial handling
             const wordState = data.word_state || (data.status === 'READY' ? 'READY' : null);
+
+            // The server only runs MediaPipe during COUNTDOWN and RECORDING.
+            // In every other state its replies carry no landmarks, so whatever
+            // is on the overlay is frame 26 frozen in place, not a live hand.
+            if (wordState && wordState !== 'COUNTDOWN' && wordState !== 'RECORDING') {
+                clearLandmarks();
+            }
             const countdownOverlay = document.getElementById('countdown-overlay');
             const countdownTitle = document.getElementById('countdown-title');
             const countdownNum = document.getElementById('countdown-num');
@@ -1886,7 +1893,9 @@ function clearLandmarks() {
     landmarkCtx.clearRect(0, 0, landmarkCanvas.width, landmarkCanvas.height);
 }
 
-function drawLandmarks(hands) {
+const HAND_NAMES = { Left: 'Sol əl', Right: 'Sağ əl' };
+
+function drawLandmarks(hands, handLabels) {
     if (!landmarkCtx || !video) return;
 
     // Match the backing store to the CSS box, in device pixels, or the lines
@@ -1943,6 +1952,22 @@ function drawLandmarks(hands) {
             landmarkCtx.strokeStyle = 'rgba(20, 20, 20, 0.85)';
             landmarkCtx.stroke();
         });
+
+        // Which hand the server believes this is. Left-handed signs are
+        // mirrored onto the right hand on the strength of this label, so it is
+        // worth seeing: raise your right hand and it should read "Sağ əl".
+        const name = handLabels && HAND_NAMES[handLabels[handIndex]];
+        if (name) {
+            const wx = toX(points[0][0]);
+            const wy = toY(points[0][1]) + 20;
+            landmarkCtx.font = '600 13px system-ui, sans-serif';
+            landmarkCtx.textAlign = 'center';
+            landmarkCtx.lineWidth = 3;
+            landmarkCtx.strokeStyle = 'rgba(20, 20, 20, 0.85)';
+            landmarkCtx.strokeText(name, wx, wy);
+            landmarkCtx.fillStyle = joint;
+            landmarkCtx.fillText(name, wx, wy);
+        }
     });
 }
 

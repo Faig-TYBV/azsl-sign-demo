@@ -129,7 +129,12 @@ def test_the_browser_feature_path_does_not_claim_server_landmarks():
     landmarks on that path, so it must not invent any."""
     backend = (PROJECT_ROOT / "src" / "web_demo" / "backend.py").read_text(encoding="utf-8")
     # The features call site passes no landmarks, so the default None -> [].
-    assert "await _record_word_frame(state, websocket, feat_126, valid)\n" in backend
+    # (It does pass the browser's hand labels, for left-hand mirroring.)
+    call = backend[backend.index('message.get("features")'):]
+    call = call[call.index("await _record_word_frame("):]
+    call = call[:call.index(")\n") + 2]
+    assert "landmarks=" not in call, call
+    assert "hand_labels=" in call, call
     assert "landmarks: list | None = None" in backend
 
 
@@ -232,7 +237,10 @@ def test_the_overlay_is_actually_drawn_somewhere():
     assert 'id="landmark-canvas"' in html
     assert "getElementById('landmark-canvas')" in html, "the canvas is never claimed"
     assert "function drawLandmarks(" in html
-    assert "if (Array.isArray(data.landmarks)) drawLandmarks(data.landmarks);" in html, (
+    assert (
+        "if (Array.isArray(data.landmarks)) drawLandmarks(data.landmarks, data.hand_labels);"
+        in html
+    ), (
         "nothing calls the drawing function on a frame reply"
     )
 
@@ -254,19 +262,27 @@ def test_the_skeleton_covers_every_finger():
 
 
 def test_the_overlay_is_cleared_when_there_is_nothing_to_show():
-    """Three things invalidate the drawing: no camera, a new trial, and a resize.
+    """Four things invalidate the drawing: no camera, a new trial, a resize, and
+    the trial leaving the states where the server detects at all.
 
     The resize case passes the function by reference to addEventListener and is
-    asserted in test_high_dpi_and_resize_are_handled; the other two are direct
+    asserted in test_high_dpi_and_resize_are_handled; the others are direct
     calls. A stale skeleton is worse than none - it claims a hand is being
-    tracked when nothing is.
+    tracked when nothing is. After frame 26 the server stops detecting, and the
+    last skeleton used to stay frozen on screen through the whole result.
     """
     html = INDEX.read_text(encoding="utf-8")
     assert "function clearLandmarks(" in html
-    assert html.count("clearLandmarks();") == 2, "expected stopCamera and resetBuffer"
+    assert html.count("clearLandmarks();") == 3, (
+        "expected stopCamera, resetBuffer and the post-recording clear"
+    )
     # Anchored to their surroundings, so a future edit cannot drop one silently.
     assert "showLoading(false);\n    // No camera, no hand" in html
     assert "framesSent = 0;\n    clearLandmarks();" in html
+    assert (
+        "if (wordState && wordState !== 'COUNTDOWN' && wordState !== 'RECORDING') {\n"
+        "                clearLandmarks();"
+    ) in html
 
 
 def test_high_dpi_and_resize_are_handled():

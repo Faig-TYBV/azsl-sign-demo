@@ -121,6 +121,28 @@
     return feats;
   }
 
+  // Mirrors MEDIAPIPE_LABELS_ARE_SWAPPED in src/inference/handedness.py
+  // (tests/test_handedness.py keeps the two equal). MediaPipe labels hands as
+  // if the image were a mirrored selfie; these frames are raw.
+  var MEDIAPIPE_LABELS_ARE_SWAPPED = true;
+
+  /** MediaPipe's label -> the hand it really is ('Left'/'Right'), or null. */
+  function actualHand(rawLabel) {
+    if (rawLabel !== 'Left' && rawLabel !== 'Right') return null;
+    if (!MEDIAPIPE_LABELS_ARE_SWAPPED) return rawLabel;
+    return rawLabel === 'Right' ? 'Left' : 'Right';
+  }
+
+  /** MediaPipe's raw labels in slot order, matching frameFeatures126. The
+   *  server needs them to recognise a left-handed sign, since a lone hand sits
+   *  in slot 0 either way. */
+  function frameLabels(hands) {
+    if (!hands || !hands.length) return [];
+    return orderHands(hands).slice(0, MAX_HANDS).map(function (h) {
+      return (h && h.label) || null;
+    });
+  }
+
   /** MediaPipe Tasks result -> the shape the functions above expect. */
   function handsFromMediaPipe(result) {
     var out = [];
@@ -147,6 +169,9 @@
     orderHands: orderHands,
     frameFeatures126: frameFeatures126,
     handsFromMediaPipe: handsFromMediaPipe,
+    MEDIAPIPE_LABELS_ARE_SWAPPED: MEDIAPIPE_LABELS_ARE_SWAPPED,
+    actualHand: actualHand,
+    frameLabels: frameLabels,
   };
 
   global.AzslFeatures = api;

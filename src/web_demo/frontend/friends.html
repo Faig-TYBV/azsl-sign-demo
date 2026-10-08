@@ -3211,10 +3211,10 @@ function classifyAlphabetLocally(hands) {
         // produced NaN for every coordinate.
         const points = lm.map(function (p) { return { x: p[0], y: p[1], z: p[2] }; });
 
-        // MediaPipe labels handedness as if the image were mirrored (selfie
-        // view) while the frame is raw, so the label is inverted relative to
-        // reality. Same flip as ALPHA_HANDEDNESS_IS_MIRRORED in backend.py.
-        const actual = hands[0].label === 'Right' ? 'Left' : 'Right';
+        // The classifier mirrors left hands onto the right hand it was
+        // trained on. actualHand() undoes MediaPipe's selfie-view labels, the
+        // same setting the server uses (handedness.py).
+        const actual = window.AzslFeatures.actualHand(hands[0].label) || 'Right';
         const coords = A.normalizeLandmarks(points, actual === 'Left');
 
         // Deliberately not predictGesture(): it takes
@@ -3382,6 +3382,9 @@ function startFramePump() {
                 mode: 'word',
                 features: feats.map((v) => Math.round(v * 1e5) / 1e5),
                 valid: hands.length > 0 ? 1 : 0,
+                // Lets the server tell a left-handed sign from a right-handed
+                // one and mirror it, so both give the same word.
+                labels: window.AzslFeatures.frameLabels(hands),
             });
             return;
         }

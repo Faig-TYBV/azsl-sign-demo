@@ -46,6 +46,7 @@ from src.features.extract_landmarks import (
 from src.features.preprocess_sequence import TARGET_SEQ_LEN
 from src.models.gru_classifier import GRUClassifier
 from src.inference.alphabet_classifier import AlphabetClassifier, AlphabetStabilizer
+from src.inference.handedness import actual_hand, canonicalize_trial, clean_labels
 from src.data.normalization import FeatureNormalizer
 from src.inference.predict import get_device
 from src.web_demo import db as auth_db
@@ -139,11 +140,9 @@ print("Alphabet classifier loaded successfully.", flush=True)
 # live in AlphabetStabilizer and are tuned in milliseconds, not frames, because
 # this page's frame rate follows backend load. See the STAB_* constants in
 # src/inference/alphabet_classifier.py.
-# MediaPipe reports handedness as if the image were mirrored (selfie view); the
-# frontend sends a raw, un-mirrored frame, so the Left/Right label is inverted
-# relative to reality. Flip it back before the classifier mirrors the hand.
-# If letters come out consistently wrong, set this to False.
-ALPHA_HANDEDNESS_IS_MIRRORED = True
+# Which hand is which (MediaPipe's labels assume a mirrored image; these frames
+# are raw) is decided in one place for both modes: MEDIAPIPE_LABELS_ARE_SWAPPED
+# in src/inference/handedness.py.
 
 # Server-side logging verbosity.
 #   False (default): only operational / error / hand-presence events print
@@ -190,6 +189,13 @@ def _landmarks_for_overlay(frame_result) -> list:
     return hands
 
 
+def _hand_labels_for_overlay(raw_labels) -> list:
+    """The real hand ("Left"/"Right"/None) for each overlay entry, in the same
+    order. Drawn next to each wrist so the handedness setting can be checked by
+    eye: raise your right hand, and it should say so."""
+    return [actual_hand(l) for l in (raw_labels or [])]
+
+
 def _detect_only(state, base64_data: str):
     """Run the landmarker on a JPEG and return the FrameResult, or None.
 
@@ -218,7 +224,8 @@ def _detect_only(state, base64_data: str):
 
 
 async def _record_word_frame(
-    state, websocket, feat_126, valid: float, landmarks: list | None = None
+    state, websocket, feat_126, valid: float, landmarks: list | None = None,
+    hand_labels: list | None = None,
 ) -> None:
     """Add one frame to the current trial, and classify once it is full.
 
@@ -230,6 +237,10 @@ async def _record_word_frame(
     """
     state.recorded_features.append(feat_126)
     state.recorded_validity.append(valid)
+    # MediaPipe's raw labels, in slot order. Needed at the end of the trial to
+    # tell a left-handed sign from a right-handed one; the 126 floats alone
+    # can't, because a lone hand sits in slot 0 either way.
+    state.recorded_labels.append(list(hand_labels or []))
     rec_len = len(state.recorded_features)
 
     if rec_len < TARGET_SEQ_LEN:
@@ -244,6 +255,7 @@ async def _record_word_frame(
             "buffer_full": False,
             "hand_present": bool(valid),
             "landmarks": landmarks or [],
+            "hand_labels": _hand_labels_for_overlay(hand_labels) if landmarks else [],
             "prediction": "-",
             "confidence": 0.0,
             "raw_prediction": "-",
@@ -269,6 +281,7 @@ async def _record_word_frame(
         "buffer_full": True,
         "hand_present": vf_count >= MIN_VALID_FRAMES_FOR_INFERENCE,
         "landmarks": landmarks or [],
+        "hand_labels": _hand_labels_for_overlay(hand_labels) if landmarks else [],
         "prediction": "-",
         "confidence": 0.0,
         "raw_prediction": "-",
@@ -286,6 +299,11 @@ async def _record_word_frame(
             flush=True,
         )
     else:
+        # Left-handed trials are mirrored onto the right-handed version the
+        # model learned, so the same sign gives the same word with either hand.
+        trial_feats, mirrored = canonicalize_trial(trial_feats, state.recorded_labels)
+        if mirrored:
+            print("[WORD TRIAL] left-handed signing: mirrored onto the right hand", flush=True)
         norm_feats = normalizer(trial_feats, trial_val)
         inp = torch.from_numpy(norm_feats).unsqueeze(0).to(device)
         with torch.no_grad():
@@ -343,6 +361,7 @@ class ConnectionState:
         self.trial_seq = 0
         self.recorded_features = []
         self.recorded_validity = []
+        self.recorded_labels = []
         self.last_word_result = None
 
         # --- Alphabet Mode Stabilization Engine ---
@@ -417,6 +436,7 @@ async def websocket_endpoint(websocket: WebSocket):
             state.last_word_result = None
             state.recorded_features = []
             state.recorded_validity = []
+            state.recorded_labels = []
             state.countdown_title = "HAZIRLAŞIN..."
             state.countdown_text = "3"
             state.countdown_val = 3
@@ -502,6 +522,7 @@ async def websocket_endpoint(websocket: WebSocket):
             # Countdown complete -> begin recording 26 frames
             state.recorded_features = []
             state.recorded_validity = []
+            state.recorded_labels = []
             state.countdown_title = "BAŞLA!"
             state.countdown_text = "BAŞLA!"
             state.countdown_val = 0
@@ -560,6 +581,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 state.word_state = "READY"
                 state.recorded_features = []
                 state.recorded_validity = []
+                state.recorded_labels = []
                 state.last_word_result = None
                 state.countdown_val = None
                 state.countdown_text = ""
@@ -580,6 +602,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     state.last_word_result = None
                     state.recorded_features = []
                     state.recorded_validity = []
+                    state.recorded_labels = []
                     state.countdown_task = asyncio.create_task(run_countdown(state.trial_seq))
                     continue
 
@@ -591,6 +614,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     state.word_state = "READY"
                     state.recorded_features = []
                     state.recorded_validity = []
+                    state.recorded_labels = []
                     state.last_word_result = None
                     state.countdown_val = None
                     state.countdown_text = ""
@@ -695,10 +719,11 @@ async def websocket_endpoint(websocket: WebSocket):
                         # minutes -- detecting there would keep a 0.1-CPU
                         # instance busy for as long as the tab is open.
                         cd_result = _detect_only(state, message.get("data", ""))
-                        cd_landmarks = (
-                            _landmarks_for_overlay(_mp_result_to_frame_result(cd_result))
-                            if cd_result is not None else []
+                        cd_frame = (
+                            _mp_result_to_frame_result(cd_result) if cd_result is not None else None
                         )
+                        cd_landmarks = _landmarks_for_overlay(cd_frame) if cd_frame else []
+                        cd_labels = _hand_labels_for_overlay(cd_frame.handedness) if cd_frame else []
                         await websocket.send_text(json.dumps({
                             "mode": "word",
                             "word_state": "COUNTDOWN",
@@ -706,6 +731,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             "countdown_text": state.countdown_text,
                             "countdown_val": state.countdown_val,
                             "landmarks": cd_landmarks,
+                            "hand_labels": cd_labels,
                             "frame_index": 0,
                             "total_frames": TARGET_SEQ_LEN,
                             "valid_frames": 0,
@@ -802,7 +828,10 @@ async def websocket_endpoint(websocket: WebSocket):
 
                     valid = 1.0 if message.get("valid") else 0.0
                     state.frame_count += 1
-                    await _record_word_frame(state, websocket, feat_126, valid)
+                    await _record_word_frame(
+                        state, websocket, feat_126, valid,
+                        hand_labels=clean_labels(message.get("labels")),
+                    )
                     continue
 
                 # Frame decoding for RECORDING (Word) or ALPHABET mode
@@ -847,11 +876,11 @@ async def websocket_endpoint(websocket: WebSocket):
                         # not be allowed to commit a letter.
                         wrist_xy = (float(hand_lm[0][0]), float(hand_lm[0][1]))
 
-                        hand_label = (
-                            frame_result.handedness[0] if frame_result.handedness else "Right"
-                        )
-                        if ALPHA_HANDEDNESS_IS_MIRRORED:
-                            hand_label = "Left" if hand_label == "Right" else "Right"
+                        # The classifier mirrors left hands onto the right
+                        # hand it was trained on, so it needs the real hand.
+                        hand_label = actual_hand(
+                            frame_result.handedness[0] if frame_result.handedness else None
+                        ) or "Right"
 
                         # Unfiltered top guess, so the panel can show what the
                         # model sees while it is still building confidence. The
@@ -872,6 +901,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         "mode": "alphabet",
                         "hand_present": has_hand,
                         "landmarks": _landmarks_for_overlay(frame_result),
+                        "hand_labels": _hand_labels_for_overlay(frame_result.handedness),
                         "raw_prediction": stab_result["raw_letter"],
                         "raw_confidence": round(stab_result["raw_confidence"], 2),
                         "stable_candidate": stab_result["stable_candidate"],
@@ -903,6 +933,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 await _record_word_frame(
                     state, websocket, feat_126, valid,
                     landmarks=_landmarks_for_overlay(frame_result),
+                    hand_labels=list(frame_result.handedness),
                 )
                 continue
 
