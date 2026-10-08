@@ -3308,14 +3308,28 @@ async function openRecognition() {
         ws.onclose = () => {
             callLog('recognition socket closed');
             conv.recogWs = null;
-            stopFramePump();
-            if (conv.mode === 'sign') convStatus('Tanıma bağlantısı kəsildi.');
+            // On-device fingerspelling doesn't use this socket; losing it
+            // must not stop the letters.
+            if (!localAlphabetActive()) {
+                stopFramePump();
+                if (conv.mode === 'sign') convStatus('Tanıma bağlantısı kəsildi.');
+            }
             if (!settled) { settled = true; resolve(false); }
         };
         // The backend builds a MediaPipe landmarker per connection (~300 ms of
         // CPU, seconds on a throttled instance) before it says READY.
         setTimeout(() => { if (!settled) { settled = true; resolve(true); } }, 12000);
     });
+}
+
+/* Open the recognition socket if it isn't already. False (with a status
+   message) when it can't be reached. */
+async function ensureRecognition() {
+    if (conv.recogWs && conv.recogWs.readyState === WebSocket.OPEN) return true;
+    convStatus('Tanıma bağlantısı qurulur…');
+    if (await openRecognition() && conv.recogWs) return true;
+    convStatus('Tanıma bağlantısı qurula bilmədi.');
+    return false;
 }
 
 function closeRecognition() {
@@ -3335,6 +3349,11 @@ function recogSend(payload) {
 }
 
 /* ---- pushing frames from the call's own video stream ---- */
+/* Fingerspelling handled entirely in this browser: no recognition socket. */
+function localAlphabetActive() {
+    return local.ready && conv.signMode === 'alphabet';
+}
+
 function startFramePump() {
     if (conv.frameTimer) return;
     if (!conv.canvas) {
@@ -3346,7 +3365,11 @@ function startFramePump() {
     conv.frameTimer = setInterval(() => {
         const video = $('local-video');
         if (!video || !video.videoWidth) return;
-        if (!conv.recogWs || conv.recogWs.readyState !== WebSocket.OPEN) return;
+        // On-device fingerspelling never talks to the server, and setConvMode
+        // deliberately doesn't open the socket for it. Requiring the socket
+        // here for every path meant that mode, the default, never ran a frame.
+        if (!localAlphabetActive() &&
+            (!conv.recogWs || conv.recogWs.readyState !== WebSocket.OPEN)) return;
 
         // In word mode the backend ignores frames until a trial is running, so
         // sending them would burn the instance's CPU for nothing.
@@ -3789,8 +3812,11 @@ async function setConvMode(mode) {
 
         // With local detection, fingerspelling needs no server at all. Word
         // mode still does — the GRU is PyTorch — but it only sends landmarks.
-        if (local.ready && conv.signMode === 'alphabet') {
-            local.stab = { candidate: null, count: 0, committed: null, prevWrist: null };
+        if (localAlphabetActive()) {
+            // A fresh stabilizer; classifyAlphabetLocally creates it on demand.
+            // (Assigning the old plain-object state here made it skip that and
+            // call .update() on an object that has none.)
+            local.stab = null;
             startFramePump();
             convStatus('Hərf-hərf işarə edin (cihazda tanınır)');
             return;
@@ -3876,13 +3902,18 @@ $('sign-alphabet').addEventListener('click', () => {
     renderConvModes();
     if (conv.mode === 'sign') { startFramePump(); convStatus('Hərf-hərf işarə edin'); }
 });
-$('sign-word').addEventListener('click', () => {
+$('sign-word').addEventListener('click', async () => {
     conv.signMode = 'word';
     renderConvModes();
-    if (conv.mode === 'sign') convStatus('SINAĞA BAŞLA düyməsini basın');
-});
-$('sign-trial').addEventListener('click', () => {
     if (conv.mode !== 'sign') return;
+    // Coming from on-device fingerspelling there is no socket yet, and the
+    // word model only runs on the server.
+    if (!await ensureRecognition()) return;
+    convStatus('SINAĞA BAŞLA düyməsini basın');
+});
+$('sign-trial').addEventListener('click', async () => {
+    if (conv.mode !== 'sign') return;
+    if (!await ensureRecognition()) return;
     conv.wordState = 'COUNTDOWN';
     startFramePump();
     recogSend({ type: 'start', mode: 'word' });
