@@ -337,8 +337,12 @@ class AlphabetClassifier:
 # The letter MLP has no "not-a-letter" class and its softmax saturates, so the
 # gates below — not the confidence floor alone — are what keep a hand at rest
 # or in transit from spelling nonsense.
-STAB_FRAME_CONF = 0.60     # a frame below this is "no evidence": it pauses the hold, doesn't reset it
-STAB_COMMIT_CONF = 0.72    # mean confidence over the hold required to commit
+# The version that recognised letters well (the original in-browser one) accepted
+# a held letter at 0.35. 0.82, and later 0.60/0.72, left real hands that score
+# 40-70% showing a letter that never committed. The hold time and the motion
+# gate, not a high floor, are what keep a hand at rest from spelling nonsense.
+STAB_FRAME_CONF = 0.35     # a frame below this is "no evidence": it pauses the hold, doesn't reset it
+STAB_COMMIT_CONF = 0.45    # mean confidence over the hold required to commit
 STAB_HOLD_MS = 450.0       # how long one letter must be held
 STAB_MIN_FRAMES = 3        # floor on agreeing frames, for very low frame rates
 STAB_GRACE_MS = 250.0      # interruptions shorter than this are forgiven

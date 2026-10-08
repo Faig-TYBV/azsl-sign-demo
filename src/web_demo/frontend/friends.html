@@ -3365,36 +3365,36 @@ function startFramePump() {
     conv.frameTimer = setInterval(() => {
         const video = $('local-video');
         if (!video || !video.videoWidth) return;
-        // On-device fingerspelling never talks to the server, and setConvMode
-        // deliberately doesn't open the socket for it. Requiring the socket
-        // here for every path meant that mode, the default, never ran a frame.
-        if (!localAlphabetActive() &&
-            (!conv.recogWs || conv.recogWs.readyState !== WebSocket.OPEN)) return;
-
-        // In word mode the backend ignores frames until a trial is running, so
-        // sending them would burn the instance's CPU for nothing.
-        if (conv.signMode === 'word' &&
-            conv.wordState !== 'COUNTDOWN' && conv.wordState !== 'RECORDING') return;
-
-        // One frame in flight at a time: on a slow instance a fixed rate would
-        // queue frames faster than they are processed and latency would grow
-        // without bound.
-        if (conv.frameInFlight) return;
-        conv.frameInFlight = true;
+        // The server only wants word frames while a trial is running; outside
+        // one, sending them would burn the instance's CPU for nothing.
+        const wordTrial = conv.signMode === 'word' &&
+            (conv.wordState === 'COUNTDOWN' || conv.wordState === 'RECORDING');
+        const socketOpen = !!conv.recogWs && conv.recogWs.readyState === WebSocket.OPEN;
 
         // --- preferred path: detect here, send almost nothing -------------
         if (local.ready) {
+            // Detection runs in this browser and costs the server nothing, so
+            // it runs in every state. It used to stop with the server traffic
+            // outside a word trial, so in word mode the skeleton never showed
+            // and the hand looked undetected. On-device fingerspelling never
+            // needs the socket at all; setConvMode doesn't even open it.
+            if (conv.frameInFlight) return;
             const hands = detectLocal(video);
-            if (hands === null) { conv.frameInFlight = false; return; }
+            if (hands === null) return;
             drawHandOverlay(hands);
 
             if (conv.signMode === 'alphabet') {
                 // Never leaves the browser.
-                conv.frameInFlight = false;
                 const out = classifyAlphabetLocally(hands);
                 if (out) applyLocalAlphabet(out);
                 return;
             }
+            if (!wordTrial || !socketOpen) return;
+
+            // One frame in flight at a time: on a slow instance a fixed rate
+            // would queue frames faster than they are processed and latency
+            // would grow without bound.
+            conv.frameInFlight = true;
 
             // Word mode: 126 floats instead of a ~20 KB image. Rounded to 5
             // decimals — far finer than the model can distinguish, and it
@@ -3411,6 +3411,12 @@ function startFramePump() {
             });
             return;
         }
+
+        // The server path detects remotely, so it has nothing to do outside a
+        // word trial (alphabet mode streams continuously).
+        if (!socketOpen || (conv.signMode === 'word' && !wordTrial)) return;
+        if (conv.frameInFlight) return;
+        conv.frameInFlight = true;
 
         // --- fallback: the original server-side path ----------------------
         conv.ctx.drawImage(video, 0, 0, CONV_CAPTURE_W, CONV_CAPTURE_H);

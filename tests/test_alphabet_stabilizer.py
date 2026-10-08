@@ -84,7 +84,7 @@ def test_one_frame_hand_dropout_is_forgiven():
 
 
 def test_low_confidence_pose_never_commits():
-    frames = hold("E", 0.65, 0, 15, 2000)  # above the frame floor, below commit mean
+    frames = hold("E", 0.40, 0, 15, 2000)  # above the frame floor, below commit mean
     stab = AlphabetStabilizer()
     feed(stab, frames)
     assert stab.spelled_word == ""

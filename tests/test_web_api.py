@@ -255,7 +255,12 @@ def test_word_mode_does_not_stream_frames_while_idle():
     pushing ~10 JPEGs a second that the server will discard is not free.
     """
     html = (FRONTEND / "friends.html").read_text(encoding="utf-8")
-    assert "conv.wordState !== 'COUNTDOWN' && conv.wordState !== 'RECORDING'" in html
+    pump = html.split("function startFramePump()", 1)[1].split("\nfunction ", 1)[0]
+    assert "(conv.wordState === 'COUNTDOWN' || conv.wordState === 'RECORDING')" in pump
+    # Both send paths are gated on it: local features and the JPEG fallback.
+    assert "if (!wordTrial || !socketOpen) return;" in pump
+    assert "(conv.signMode === 'word' && !wordTrial)) return;" in pump
+    # tests/test_call_sign_pump.py runs this loop and checks nothing is sent.
 
 
 def test_remote_video_playback_is_requested_explicitly():
@@ -607,7 +612,9 @@ def test_hand_landmarks_are_drawn_over_the_local_preview():
     assert "function drawHandOverlay" in html
     # Drawn from the same detection that feeds recognition, so what is shown is
     # what the model is actually being given.
-    pump = html.split("if (local.ready) {", 1)[1][:400]
+    pump = html.split("if (local.ready) {", 1)[1]
+    pump = pump[:pump.index("recogSend(")]
+    assert "const hands = detectLocal(video);" in pump
     assert "drawHandOverlay(hands)" in pump
 
     # It must mirror with the preview, or a landmark at the fingertip lands on

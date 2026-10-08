@@ -73,7 +73,8 @@ const local = {{ ready: true, alphabetModel: {{}}, stab: null }};
 const conv = {{ signMode: 'alphabet', wordState: 'READY', recogWs: null, frameInFlight: false,
                frameTimer: null }};
 function detectLocal() {{ return [{{ label: 'Left', landmarks: hand }}]; }}
-function drawHandOverlay() {{}}
+let drawn = 0;
+function drawHandOverlay() {{ drawn++; }}
 function recogSend(p) {{ sent.push(p.mode || p.type); }}
 function callLog() {{}}
 function toast() {{}}
@@ -89,7 +90,7 @@ function frames(n) {{
   }}
 }}
 main();
-process.stdout.write(JSON.stringify({{ sent, classified: classified.length, errors }}));
+process.stdout.write(JSON.stringify({{ sent, classified: classified.length, errors, drawn }}));
 """
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "pump.cjs"
@@ -132,3 +133,22 @@ def test_set_conv_mode_does_not_plant_a_stabilizer_without_update():
         "a plain object here makes classifyAlphabetLocally skip creating the "
         "real AlphabetStabilizer and then call .update() on it"
     )
+
+
+def test_word_mode_shows_the_hand_outside_a_trial_without_using_the_server():
+    """Detection is local and free; only sending waits for a trial. It used to
+    stop with the sending, so in word mode the skeleton never appeared and the
+    hand looked undetected."""
+    result = run("""
+function main() {
+  conv.signMode = 'word';
+  conv.wordState = 'READY';
+  conv.recogWs = { readyState: 1 };
+  startFramePump();
+  frames(4);
+  conv.wordState = 'RESULT';
+  frames(2);
+}""")
+    assert result["errors"] == []
+    assert result["drawn"] == 6, "the hand overlay must run in every word state"
+    assert result["sent"] == [], "nothing goes to the server outside a trial"

@@ -483,8 +483,8 @@
   // interruption pauses a hold instead of restarting it.
   // ==========================================================================
   var STABILIZER_DEFAULTS = {
-    minConfidence:    0.60,
-    commitConfidence: 0.72,
+    minConfidence:    0.35,
+    commitConfidence: 0.45,
     holdMs:           450,
     minFrames:        3,
     graceMs:          250,
